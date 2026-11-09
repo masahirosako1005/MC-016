@@ -1,0 +1,82 @@
+/** 文言。やさしい日本語は easy 側。足りないキーは標準の文言を使う。 */
+import { usePrefs } from "./settings";
+
+const STD = {
+  tab_explore: "しらべる",
+  tab_today: "きょう",
+  tab_memories: "おもいで",
+  tab_wallet: "おさいふ",
+  today_title: "きょう会えそうな人",
+  today_spots: "きょうのスポット",
+  today_unmanned: "無人のお店",
+  met_button: "会えた",
+  met_done: "会えました",
+  checkin_button: "行けた",
+  checkin_done: "行けました",
+  ar_photo: "AR フォトを撮る",
+  receipt_button: "レシートを登録",
+  letter_ready: "今夜のおもいで便が届いています",
+  letter_wait: "きょうの記録は 18:00 以降におもいで便になります",
+  plan_today_hint: "つぎの旅の予定日です。計画の場所を先に並べています。",
+  seed_bud: "つぼみ",
+  seed_flower: "花がさいた",
+  fulfill_hint: "1.2 秒長押しで約束を果たす",
+  settings: "設定",
+  font_size: "文字の大きさ",
+  theme: "配色",
+  easy_ja: "やさしい日本語",
+  standard: "標準",
+  contrast: "はっきり",
+  explore_title: "星凪諸島をしらべる",
+  explore_search: "キーワードで探す",
+  next_trip: "つぎの旅",
+  add_to_plan: "つぎの旅に入れる",
+  in_plan: "つぎの旅に入っています",
+  voices: "SNS で見かけた声",
+  promises: "季節の約束",
+  memories_letters: "おもいで便",
+  memories_book: "ひとめぐり帖",
+  wallet_points: "ポイント",
+  draw: "抽選する",
+  coupons: "クーポン",
+  receipts: "レシート",
+  back: "もどる",
+  loading: "読み込み中…",
+};
+
+const EASY: Partial<typeof STD> = {
+  today_title: "きょう 会える かもしれない 人",
+  today_spots: "きょうの 見る ところ",
+  today_unmanned: "人が いない お店",
+  met_button: "会えた",
+  checkin_button: "行った",
+  checkin_done: "行きました",
+  ar_photo: "しゃしんを とる",
+  receipt_button: "レシートを 入れる",
+  letter_ready: "こんやの おもいで便が とどいて います",
+  letter_wait: "きょうの きろくは 18時 から おもいで便に なります",
+  plan_today_hint: "きょうは つぎの旅の 日です。きめた ところを 上に ならべて います。",
+  seed_flower: "花が さいた",
+  fulfill_hint: "ながく おして やくそくを はたす",
+  font_size: "字の 大きさ",
+  theme: "色",
+  easy_ja: "やさしい 日本語",
+  explore_title: "星凪諸島を しらべる",
+  explore_search: "ことばで さがす",
+  next_trip: "つぎの 旅",
+  add_to_plan: "つぎの 旅に 入れる",
+  in_plan: "つぎの 旅に 入って います",
+  voices: "みんなの 声",
+  promises: "きせつの やくそく",
+  wallet_points: "ポイント",
+  draw: "くじを ひく",
+  back: "もどる",
+  loading: "よみこみ中…",
+};
+
+export type TKey = keyof typeof STD;
+
+export function useT() {
+  const { easy } = usePrefs();
+  return (k: TKey): string => (easy && EASY[k]) || STD[k];
+}

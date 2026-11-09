@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hitomeguri-demo",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "scripts/start.ps1", "-Demo", "-SkipBuild"],
+      "port": 8000
+    },
+    {
+      "name": "hitomeguri",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "scripts/start.ps1", "-SkipBuild"],
+      "port": 8000
+    }
+  ]
+}
