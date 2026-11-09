@@ -1,0 +1,164 @@
+[
+ {
+  "type": "wallpaper",
+  "key": "spring",
+  "label": "春・月花の風車丘（菜の花と風車）",
+  "width": 1170,
+  "height": 2532,
+  "svg": "/img/gifts/wallpapers/wp_spring.svg",
+  "png": "/img/gifts/wallpapers/wp_spring.png"
+ },
+ {
+  "type": "wallpaper",
+  "key": "summer",
+  "label": "夏・風詠みの灯台（海と灯台）",
+  "width": 1170,
+  "height": 2532,
+  "svg": "/img/gifts/wallpapers/wp_summer.svg",
+  "png": "/img/gifts/wallpapers/wp_summer.png"
+ },
+ {
+  "type": "wallpaper",
+  "key": "autumn",
+  "label": "秋・瑠璃凪の水鏡湖（もみじと湖）",
+  "width": 1170,
+  "height": 2532,
+  "svg": "/img/gifts/wallpapers/wp_autumn.svg",
+  "png": "/img/gifts/wallpapers/wp_autumn.png"
+ },
+ {
+  "type": "wallpaper",
+  "key": "winter",
+  "label": "冬・灯雲の石畳通り（雪と家々の灯り）",
+  "width": 1170,
+  "height": 2532,
+  "svg": "/img/gifts/wallpapers/wp_winter.svg",
+  "png": "/img/gifts/wallpapers/wp_winter.png"
+ },
+ {
+  "type": "wallpaper",
+  "key": "night",
+  "label": "星凪の夜（天の川と三日月）",
+  "width": 1170,
+  "height": 2532,
+  "svg": "/img/gifts/wallpapers/wp_night.svg",
+  "png": "/img/gifts/wallpapers/wp_night.png"
+ },
+ {
+  "type": "wallpaper",
+  "key": "ai",
+  "label": "藍染（青海波と星凪諸島）",
+  "width": 1170,
+  "height": 2532,
+  "svg": "/img/gifts/wallpapers/wp_ai.svg",
+  "png": "/img/gifts/wallpapers/wp_ai.png"
+ },
+ {
+  "type": "sticker",
+  "key": "hello",
+  "label": "こんにちは",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_hello.svg",
+  "png": "/img/gifts/stickers/st_hello.png"
+ },
+ {
+  "type": "sticker",
+  "key": "thanks",
+  "label": "ありがとう",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_thanks.svg",
+  "png": "/img/gifts/stickers/st_thanks.png"
+ },
+ {
+  "type": "sticker",
+  "key": "yatta",
+  "label": "やったー！",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_yatta.svg",
+  "png": "/img/gifts/stickers/st_yatta.png"
+ },
+ {
+  "type": "sticker",
+  "key": "sorry",
+  "label": "ごめんね",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_sorry.svg",
+  "png": "/img/gifts/stickers/st_sorry.png"
+ },
+ {
+  "type": "sticker",
+  "key": "oyasumi",
+  "label": "おやすみ",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_oyasumi.svg",
+  "png": "/img/gifts/stickers/st_oyasumi.png"
+ },
+ {
+  "type": "sticker",
+  "key": "uun",
+  "label": "うーん…",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_uun.svg",
+  "png": "/img/gifts/stickers/st_uun.png"
+ },
+ {
+  "type": "sticker",
+  "key": "matane",
+  "label": "またきてね",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_matane.svg",
+  "png": "/img/gifts/stickers/st_matane.png"
+ },
+ {
+  "type": "sticker",
+  "key": "photo",
+  "label": "いい写真！",
+  "width": 370,
+  "height": 320,
+  "svg": "/img/gifts/stickers/st_photo.svg",
+  "png": "/img/gifts/stickers/st_photo.png"
+ },
+ {
+  "type": "nurie",
+  "key": "basic",
+  "label": "ほしまるぬりえ（灯台・手紙・星）",
+  "width": 1240,
+  "height": 1754,
+  "svg": "/img/gifts/nurie/nurie_basic.svg",
+  "png": "/img/gifts/nurie/nurie_basic.png"
+ },
+ {
+  "type": "nurie",
+  "key": "dress",
+  "label": "きせかえぬりえ（ぼうしや服を描き足す）",
+  "width": 1240,
+  "height": 1754,
+  "svg": "/img/gifts/nurie/nurie_dress.svg",
+  "png": "/img/gifts/nurie/nurie_dress.png"
+ },
+ {
+  "type": "card",
+  "key": "nakama",
+  "label": "星凪諸島なかま証",
+  "width": 1011,
+  "height": 638,
+  "svg": "/img/gifts/card/nakama.svg",
+  "png": "/img/gifts/card/nakama.png"
+ },
+ {
+  "type": "ar_frame",
+  "key": "gift_thanks",
+  "label": "ありがとうフレーム（回答者だけ）",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_gift_thanks.svg",
+  "png": "/img/frames/frame_gift_thanks.png"
+ }
+]

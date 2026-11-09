@@ -10,7 +10,7 @@ import { Mascot } from "../components/mascots";
 import { SeedIcon } from "../components/art";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, TopBar } from "../components/ui";
-import type { PlaceCard } from "./Plan";
+import type { PlaceCard, PlaceInfo } from "./Plan";
 
 type Coupon = { id: number; category: string; name: string; face_value: number; valid_from: string; valid_until: string };
 type ShopView = { shop: { id: number; name: string; category: string; rate_percent: number }; coupons_usable: Coupon[]; coupons_not_yet: Coupon[] };
@@ -54,7 +54,14 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
           {pl.recommend && <p className="small" style={{ color: "#7a5300" }}>★ お店からのおすすめ: {pl.recommend}</p>}
           <p className="muted small">アクセス: {pl.access}</p>
           <button className={`btn block ${pl.in_plan ? "done" : "primary mark"}`} onClick={toggle}>{pl.in_plan ? `${t("want_done")}（はずす）` : t("want_button")}</button>
+          {pl.info && pl.info.length > 0 && <TravelInfo items={pl.info} />}
         </>
+      )}
+      {onTrip && pl.info && pl.info.length > 0 && (
+        <details className="card" style={{ marginTop: 10 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 700 }}>住所・電話・行き方</summary>
+          <TravelInfo items={pl.info} bare />
+        </details>
       )}
 
       <h2>{t("people_here")}</h2>
@@ -120,6 +127,7 @@ export function Bloom({ title, next, onClose }: { title: string; next: Seed | nu
   return (
     <div className="bloom" role="dialog" aria-modal="true">
       <div className="inner">
+        <img src="/img/mascot/ui/hoshimaru_cheer.png" alt="" width={96} height={96} style={{ display: "block", margin: "0 auto -24px" }} />
         <svg viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
           {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <ellipse key={a} cx="60" cy="34" rx="12" ry="24" fill="#e3a21a" opacity=".9" transform={`rotate(${a} 60 60)`} />)}
           <circle cx="60" cy="60" r="14" fill="#fbfcfd" stroke="#1b2a44" strokeWidth="3" />
@@ -399,6 +407,13 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
           <Photo src={p.place.image} alt={p.place.name} ratio="3 / 1" caption={p.place.name} sub={`${p.place.area}・${p.shop.hours}${p.shop.closed_weekday !== null && p.shop.closed_weekday !== undefined ? `・${"月火水木金土日"[p.shop.closed_weekday]}曜定休` : "・無休"}`} onClick={() => navigate(`/place/${p.place!.id}`)} />
         </div>
       )}
+      {(p.shop.address || p.shop.nearest || p.shop.notes) && (
+        <TravelInfo
+          items={[{ shop_id: p.shop.id, shop_name: p.shop.name, category: p.shop.category, hours: p.shop.hours,
+            closed: p.shop.closed_weekday !== null && p.shop.closed_weekday !== undefined ? `${"月火水木金土日"[p.shop.closed_weekday]}曜定休` : "無休",
+            address: p.shop.address ?? null, phone: p.shop.phone ?? null, url: p.shop.url ?? null, nearest: p.shop.nearest ?? null, notes: p.shop.notes ?? null }]}
+        />
+      )}
       <div style={{ marginTop: 10 }}>
         {canMeet || p.met_today ? (
           <PersonAction p={p} placeId={p.place?.id ?? p.spot_id} onChange={async () => { await load(); onChanged?.(); }} onBloom={setBloom} />
@@ -419,7 +434,7 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
       )}
       {p.place && (
         <div className="card row" style={{ marginTop: 10 }}>
-          <Mascot k={MASCOT_BY_SPOT[p.place.id] ?? "toudai"} size={72} />
+          <Mascot k={MASCOT_BY_SPOT[p.place.id] ?? "lighthouse"} size={72} />
           <div className="grow small">この場所のほしまる。{p.name}に会えた日は、いっしょに AR フォトが撮れます。</div>
         </div>
       )}
@@ -467,4 +482,38 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
   );
 }
 
-export const MASCOT_BY_SPOT: Record<number, string> = { 1: "toudai", 2: "hoshimi", 3: "yoichi", 4: "kohan", 5: "kazaguruma", 6: "ishidatami", 7: "ongakudo" };
+export const MASCOT_BY_SPOT: Record<number, string> = { 1: "lighthouse", 2: "cape", 3: "market", 4: "lake", 5: "windmill", 6: "street", 7: "hall" };
+
+/** 旅行に関係する情報（住所・電話・営業時間・最寄り・行き方・ひとこと）。店ごとに 1 ブロック。 */
+export function TravelInfo({ items, bare = false }: { items: PlaceInfo[]; bare?: boolean }) {
+  const body = items.map((i) => (
+    <div key={i.shop_id} className="stack" style={{ gap: 2, marginTop: bare ? 8 : 0 }}>
+      {items.length > 1 && <div style={{ fontWeight: 700 }}>{i.shop_name}</div>}
+      <InfoRow k="住所" v={i.address} />
+      <InfoRow k="電話" v={i.phone} />
+      <InfoRow k="営業" v={`${i.hours}・${i.closed}`} />
+      <InfoRow k="最寄り" v={i.nearest} />
+      {i.url && <InfoRow k="Web" v={i.url} />}
+      <InfoRow k="メモ" v={i.notes} />
+    </div>
+  ));
+  if (bare) return <>{body}</>;
+  return (
+    <div className="card stack" style={{ marginTop: 10, gap: 10 }}>
+      <div className="row" style={{ gap: 8 }}>
+        <img src="/img/mascot/ui/hoshimaru_point.png" alt="" width={36} height={36} />
+        <div style={{ fontWeight: 700 }}>行き方と連絡先</div>
+      </div>
+      {body}
+    </div>
+  );
+}
+function InfoRow({ k, v }: { k: string; v: string | null | undefined }) {
+  if (!v) return null;
+  return (
+    <div className="row small" style={{ alignItems: "flex-start", gap: 8 }}>
+      <span className="muted" style={{ minWidth: 44 }}>{k}</span>
+      <span className="grow" style={{ wordBreak: "break-all" }}>{v}</span>
+    </div>
+  );
+}

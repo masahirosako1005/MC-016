@@ -29,9 +29,10 @@ def frame_info(conn: sqlite3.Connection, uid: int, kind: str, target_id: int, no
         unlocked = conn.execute("SELECT 1 FROM meetings WHERE user_id = ? AND person_id = ? AND met_on = ?", (uid, target_id, day)).fetchone() is not None
         sp = master.spot(conn, p["spot_id"])
         nxt = master.promise(conn, target_id, next_season(season))
-        from ..seed.mascots import mascot_for
+        from ..seed.mascots import frames_for, mascot_for
         return {
             "mascot": mascot_for(p["spot_id"], season),
+            "frames": frames_for(sp["svg_key"], sp["name"].split("（")[0]) if sp else [],
             "spot_id": p["spot_id"],
             "kind": "person", "id": target_id, "unlocked": unlocked,
             "reason": "" if unlocked else "今日その人に「会えた」を押した日だけ撮れます",

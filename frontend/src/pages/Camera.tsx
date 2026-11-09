@@ -1,18 +1,20 @@
 /**
- * AR フォト。カメラ映像（なければ選んだ写真、なければその場所の風景写真）の上に、
- * その場所の「ほしまる」（季節の衣装・場所の小物）と日付・場所を重ね、端末の傾きで少し動く。マーカー認識はしない。
- * 合成は canvas: 背景 → ほしまる PNG → 小物・文字の SVG。保存後はその場所の画面にもどる。
+ * AR フォト。カメラ映像（なければ選んだ写真、なければその場所の風景写真）に、
+ * その場所の「ほしまる」のフレーム（img/frames/）を重ねる。フレームなしのときは、場所のほしまるをドラッグで置ける。
+ * マーカー認識はしない。合成は canvas: 背景 → ほしまる or フレーム PNG → 日付の札。保存後はその場所の画面にもどる。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { get, sendForm, toast } from "../api";
 import { navigate, useRoute } from "../router";
-import { MascotProps } from "../components/mascots";
+import { Hoshimaru } from "../components/hoshimaru";
 import { Loading, TopBar } from "../components/ui";
 
+type FrameDef = { key: string; label: string; png: string | null; spot: boolean };
 type Frame = {
   kind: "person"; id: number; unlocked: boolean; reason: string; title: string; subtitle: string; area: string; role: string;
   person_image: string; scene_image: string | null; place_name: string; date: string; season: string; season_label: string; spot_id: number;
   mascot: { key: string; name: string; about: string; pose: string; outfit: string; image: string } | null;
+  frames: FrameDef[];
   promise: { season_label: string; title: string } | null;
 };
 type Source = "camera" | "file" | "scene";
@@ -28,11 +30,11 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [pos, setPos] = useState({ x: 0.5, y: 0.7 });
   const [big, setBig] = useState(false);
+  const [frameKey, setFrameKey] = useState<string>("");
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [busy, setBusy] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
-  const propsRef = useRef<SVGSVGElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const dragging = useRef(false);
@@ -40,7 +42,12 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
   const backPath = from ? `/place/${from}` : frame ? `/place/${frame.spot_id}` : "/";
 
   useEffect(() => {
-    get<Frame>(`/photos/frame/${kind}/${id}`).then(setFrame).catch((e) => toast((e as Error).message, "error"));
+    get<Frame>(`/photos/frame/${kind}/${id}`)
+      .then((f) => {
+        setFrame(f);
+        setFrameKey(f.frames[0]?.key ?? "none");
+      })
+      .catch((e) => toast((e as Error).message, "error"));
   }, [kind, id]);
 
   const stopCamera = useCallback(() => {
@@ -86,17 +93,22 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
     return (
       <div className="page">
         <TopBar title="AR フォト" backTo={backPath} />
-        <div className="card">
-          <div className="title">{frame.title}</div>
-          <p>{frame.reason}</p>
-          <p className="muted">その場で、その人に会えた日だけ撮れる一枚です。</p>
+        <div className="card row">
+          <Hoshimaru pose="sorry" size={64} />
+          <div className="grow">
+            <div className="title">{frame.title}</div>
+            <p style={{ margin: "4px 0 0" }}>{frame.reason}</p>
+            <p className="muted small">その場で、その人に会えた日だけ撮れる一枚です。</p>
+          </div>
         </div>
       </div>
     );
   }
   const mascot = frame.mascot;
+  const sel = frame.frames.find((f) => f.key === frameKey) ?? frame.frames[0];
+  const useFrame = !!sel?.png;
   const onPointer = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging.current) return;
+    if (!dragging.current || useFrame) return;
     const r = e.currentTarget.getBoundingClientRect();
     setPos({ x: Math.min(0.95, Math.max(0.05, (e.clientX - r.left) / r.width)), y: Math.min(0.95, Math.max(0.1, (e.clientY - r.top) / r.height)) });
   };
@@ -123,14 +135,13 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
         ctx.fillStyle = "#e6eaf1";
         ctx.fillRect(0, 0, W, H);
       }
-      if (mascot) {
+      if (useFrame && sel?.png) {
+        const fr = await loadImage(sel.png);
+        ctx.drawImage(fr, 0, 0, W, H);
+      } else if (mascot) {
         const r = size * W;
         const base = await loadImage(mascot.image);
         ctx.drawImage(base, px * W - r / 2, py * H - r / 2, r, r);
-        if (propsRef.current) {
-          const pr = await svgToImage(propsRef.current, r, r);
-          ctx.drawImage(pr, px * W - r / 2, py * H - r / 2, r, r);
-        }
       }
       if (overlayRef.current) {
         const ov = await svgToImage(overlayRef.current, W, H);
@@ -154,7 +165,7 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
 
   return (
     <div className="page" style={{ paddingBottom: "calc(var(--tab-h) + 16px)" }}>
-      <TopBar title={`AR フォト・${frame.place_name}`} backTo={backPath} />
+      <TopBar title={`AR フォト・${frame.place_name}`} backTo={backPath} right={<Hoshimaru pose="camera" size={40} />} />
       <div
         style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", background: "var(--ai-900)", borderRadius: 8, overflow: "hidden", touchAction: "none" }}
         onPointerDown={(e) => { dragging.current = true; onPointer(e); }}
@@ -165,22 +176,24 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
         {source === "camera" && <video ref={videoRef} playsInline muted style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         {source === "file" && fileUrl && <img src={fileUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         {(source === "scene" || source === null) && frame.scene_image && <img src={frame.scene_image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
-        {mascot && (
-          <div style={{ position: "absolute", left: `${px * 100}%`, top: `${py * 100}%`, width: `${size * 100}%`, aspectRatio: "1 / 1", transform: "translate(-50%, -50%)", pointerEvents: "none", filter: "drop-shadow(0 3px 6px rgba(0,0,0,.35))" }}>
-            <img src={mascot.image} alt={mascot.name} draggable={false} style={{ width: "100%", height: "100%", display: "block" }} />
-            <MascotProps ref={propsRef} k={mascot.key} season={frame.season} size={100} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
-          </div>
+        {useFrame && sel?.png && <img src={sel.png} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />}
+        {!useFrame && mascot && (
+          <img src={mascot.image} alt={mascot.name} draggable={false} style={{ position: "absolute", left: `${px * 100}%`, top: `${py * 100}%`, width: `${size * 100}%`, transform: "translate(-50%, -50%)", pointerEvents: "none", filter: "drop-shadow(0 3px 6px rgba(0,0,0,.35))" }} />
         )}
-        <Overlay ref={overlayRef} frame={frame} />
+        <Overlay ref={overlayRef} frame={frame} compact={useFrame} />
         {source === null && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#fff", background: "#0006" }}>カメラを準備中…</div>}
       </div>
-      {mascot && (
-        <p className="muted small" style={{ margin: "6px 0" }}>
-          <b>{mascot.name}</b>（{mascot.outfit}）— {mascot.about} ドラッグで動かせます。{source === "scene" ? `いまは${frame.place_name}の風景写真に合成しています。` : ""}
-        </p>
-      )}
+      <div className="row wrap" style={{ gap: 6, margin: "8px 0 4px" }}>
+        {frame.frames.map((f) => (
+          <button key={f.key} className={`chip ${frameKey === f.key ? "on" : ""}`} onClick={() => setFrameKey(f.key)}>{f.spot ? "★ " : ""}{f.label}</button>
+        ))}
+      </div>
+      <p className="muted small" style={{ margin: "4px 0 8px" }}>
+        {useFrame ? `${sel?.label}。この場所でしか選べない★フレームもあります。` : mascot ? `${mascot.name} — ${mascot.about} ドラッグで動かせます。` : ""}
+        {source === "scene" ? `いまは${frame.place_name}の風景写真に合成しています。` : ""}
+      </p>
       <div className="row" style={{ marginBottom: 8 }}>
-        <button className="btn small ghost grow" onClick={() => setBig((b) => !b)}>{big ? "小さく" : "大きく"}</button>
+        {!useFrame && <button className="btn small ghost grow" onClick={() => setBig((b) => !b)}>{big ? "小さく" : "大きく"}</button>}
         <button className="btn small ghost grow" onClick={() => fileRef.current?.click()}>写真を選ぶ</button>
         <button className="btn small ghost grow" onClick={() => { stopCamera(); setSource("scene"); }}>風景で撮る</button>
         {source !== "camera" && <button className="btn small ghost grow" onClick={startCamera}>カメラ</button>}
@@ -193,14 +206,24 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
 }
 
 import { forwardRef } from "react";
-const Overlay = forwardRef<SVGSVGElement, { frame: Frame }>(function Overlay({ frame }, ref) {
+const Overlay = forwardRef<SVGSVGElement, { frame: Frame; compact: boolean }>(function Overlay({ frame, compact }, ref) {
   return (
     <svg ref={ref} viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-      <rect x="40" y="40" width={W - 80} height="124" rx="8" fill="#fbfcfd" opacity=".9" />
-      <rect x="40" y="40" width="8" height="124" fill="#1b2a44" />
-      <text x="72" y="92" fontSize="40" fontFamily="'Yu Mincho', serif" fontWeight="700" fill="#1b2a44">{frame.place_name}</text>
-      <text x="72" y="140" fontSize="28" fontFamily="'Yu Gothic UI', sans-serif" fill="#2f446a">{frame.date.replace(/-/g, "/")}・{frame.season_label}・{frame.title}と</text>
-      <text x={W - 60} y={H - 50} fontSize="26" fontFamily="sans-serif" textAnchor="end" fill="#fbfcfd" stroke="#1b2a4466" strokeWidth="1">#ひとめぐり便 #星凪諸島 #ほしまる</text>
+      {compact ? (
+        <g>
+          <rect x="40" y="52" width="430" height="56" rx="8" fill="#fbfcfd" opacity=".88" />
+          <rect x="40" y="52" width="8" height="56" fill="#1b2a44" />
+          <text x="64" y="90" fontSize="24" fontFamily="'Yu Gothic UI', sans-serif" fill="#1b2a44" fontWeight="700">{frame.date.replace(/-/g, "/")}・{frame.season_label}・{frame.title}と</text>
+        </g>
+      ) : (
+        <g>
+          <rect x="40" y="40" width={W - 80} height="124" rx="8" fill="#fbfcfd" opacity=".9" />
+          <rect x="40" y="40" width="8" height="124" fill="#1b2a44" />
+          <text x="72" y="92" fontSize="40" fontFamily="'Yu Mincho', serif" fontWeight="700" fill="#1b2a44">{frame.place_name}</text>
+          <text x="72" y="140" fontSize="28" fontFamily="'Yu Gothic UI', sans-serif" fill="#2f446a">{frame.date.replace(/-/g, "/")}・{frame.season_label}・{frame.title}と</text>
+          <text x={W - 60} y={H - 50} fontSize="26" fontFamily="sans-serif" textAnchor="end" fill="#fbfcfd" stroke="#1b2a4466" strokeWidth="1">#ひとめぐり便 #星凪諸島 #ほしまる</text>
+        </g>
+      )}
     </svg>
   );
 });

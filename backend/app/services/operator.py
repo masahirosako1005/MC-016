@@ -128,7 +128,7 @@ def shop_dashboard(conn: sqlite3.Connection, shop_id: int, now: datetime) -> dic
     msgs = [dict(r) for r in conn.execute("SELECT * FROM messages WHERE shop_id = ? ORDER BY id DESC LIMIT 10", (shop_id,))]
     coupons_used = conn.execute("SELECT COUNT(*), COALESCE(SUM(face_value),0) FROM coupons WHERE used_shop_id = ?", (shop_id,)).fetchone()
     return {
-        "shop": {k: sh[k] for k in ("id", "name", "area", "category", "description", "access", "rate_percent", "spot_id", "recommend", "photo_path")} | {"photo_url": f"/api/shops/{shop_id}/photo" if sh.get("photo_path") else None},
+        "shop": {k: sh.get(k) for k in ("id", "name", "area", "category", "description", "access", "rate_percent", "spot_id", "recommend", "photo_path", "address", "phone", "url", "nearest", "notes", "open_time", "close_time", "closed_weekday")} | {"photo_url": f"/api/shops/{shop_id}/photo" if sh.get("photo_path") else None},
         "person": dict(person) if person else None,
         "months": months, "series": series, "relationships": rel,
         "upcoming_events": upcoming, "upcoming_visits": visits, "messages": msgs,
@@ -149,13 +149,21 @@ def update_shop(conn: sqlite3.Connection, shop_id: int, patch: dict, now: dateti
     sh = master.shop(conn, shop_id)
     if sh is None:
         raise AppError(404, "shop_not_found", "お店が見つかりません")
-    before = {k: sh.get(k) for k in ("description", "access", "recommend")}
+    keys = ("description", "access", "recommend", "address", "phone", "url", "nearest", "notes", "open_time", "close_time")
+    before = {k: sh.get(k) for k in keys}
     after = dict(before)
-    for k in ("description", "access", "recommend"):
+    for k in keys:
         if patch.get(k) is not None:
             after[k] = patch[k].strip()[:300]
+    if "closed_weekday" in patch:
+        before["closed_weekday"] = sh.get("closed_weekday")
+        after["closed_weekday"] = patch["closed_weekday"]
     if after != before:
-        conn.execute("UPDATE shops SET description = ?, access = ?, recommend = ? WHERE id = ?", (after["description"], after["access"], after["recommend"], shop_id))
+        conn.execute(
+            "UPDATE shops SET description = ?, access = ?, recommend = ?, address = ?, phone = ?, url = ?, nearest = ?, notes = ?, open_time = ?, close_time = ?, closed_weekday = ? WHERE id = ?",
+            (after["description"], after["access"], after["recommend"], after["address"], after["phone"], after["url"], after["nearest"], after["notes"],
+             after["open_time"] or sh["open_time"], after["close_time"] or sh["close_time"], after.get("closed_weekday", sh.get("closed_weekday")), shop_id),
+        )
         from .admin import _hist
         _hist(conn, now, "shop_edit", f"shop:{shop_id} {sh['name']}", {k: v for k, v in before.items() if before[k] != after[k]}, {k: v for k, v in after.items() if before[k] != after[k]})
     return dict(master.shop(conn, shop_id) or {})
@@ -204,16 +212,14 @@ def delete_event(conn: sqlite3.Connection, event_id: int) -> None:
 
 
 # ---- お店からの便り（店 → 旅行者）。クーポンを添えられる。
-def send_message(conn: sqlite3.Connection, shop_id: int, now: datetime, title: str, body: str, coupon_face_value: int | None, coupon_days: int | None) -> dict:
+def send_message(conn: sqlite3.Connection, shop_id: int, now: datetime, title: str, body: str, coupon_face_value: int | None, coupon_days: int | None,
+                 stages: list[str] | None = None, seeds: list[str] | None = None) -> dict:
     sh = master.shop(conn, shop_id)
     if sh is None:
         raise AppError(404, "shop_not_found", "お店が見つかりません")
     person = conn.execute("SELECT id, name FROM people WHERE shop_id = ?", (shop_id,)).fetchone()
-    recipients = [
-        r["user_id"] for r in conn.execute(
-            "SELECT DISTINCT m.user_id FROM meetings m JOIN people p ON p.id = m.person_id WHERE p.shop_id = ? AND m.is_dummy = 0", (shop_id,)
-        )
-    ]
+    from .advice import audience
+    recipients = audience(conn, shop_id, stages, seeds)["users"]
     cur = conn.execute(
         "INSERT INTO messages(shop_id, title, body, coupon_face_value, coupon_days, created_at, sent_to) VALUES(?,?,?,?,?,?,?)",
         (shop_id, title.strip()[:60], body.strip()[:400], coupon_face_value, coupon_days, now.isoformat(timespec="seconds"), len(recipients)),

@@ -53,3 +53,33 @@ def test_shop_message_with_coupon_reaches_traveler(client):
     assert c["face_value"] == 300 and c["state"] == "usable" and c["category"] == "飲食"
     # 抽選の確率表には出ない
     assert all(p["name"] != "お店からの便り" for p in w["prizes"])
+
+
+def test_audience_targeting_and_advice(client):
+    conn = client.app.state.conn
+    clock.set_demo_clock(conn, datetime(2026, 10, 24, 11, 0))
+    client.post("/api/meetings", json={"person_id": 6})  # 鈴さん → はじめまして・冬の種（つぼみ）
+    a = client.get("/api/admin/shops/8/audience").json()
+    assert a["total"] == 1 and a["stages"]["first"] == 1 and a["seeds"]["bud"] == 1
+    assert client.get("/api/admin/shops/8/audience", params={"stages": "regular"}).json()["selected"] == 0
+    assert client.get("/api/admin/shops/8/audience", params={"seeds": "bud"}).json()["selected"] == 1
+    # 絞り込んだ宛先にだけ届く
+    r = client.post("/api/admin/shops/8/messages", json={"title": "x", "body": "y", "stages": ["regular"]})
+    assert r.json()["sent_to"] == 0
+    r = client.post("/api/admin/shops/8/messages", json={"title": "x", "body": "y", "seeds": ["bud"], "coupon_face_value": 300, "coupon_days": 30})
+    assert r.json()["sent_to"] == 1
+    # 次の一手
+    adv = client.get("/api/admin/shops/8/advice").json()
+    assert adv["advice"] and any("種" in x["title"] for x in adv["advice"])
+    assert all(set(x) >= {"priority", "title", "why", "action"} for x in adv["advice"])
+    d = client.get("/api/admin/advice").json()
+    assert "advice" in d and "生成 AI" in d["note"]
+    # 店の旅行情報
+    sd = client.get("/api/admin/shops/8/dashboard").json()
+    assert sd["shop"]["address"].startswith("星凪諸島") and sd["shop"]["phone"]
+    r = client.put("/api/admin/shops/8", json={"address": "星凪諸島 鈴風高原 1-2-3", "closed_weekday": 3, "open_time": "09:30", "close_time": "16:30"})
+    assert r.status_code == 200 and r.json()["address"].endswith("1-2-3") and r.json()["closed_weekday"] == 3 and r.json()["open_time"] == "09:30"
+    p = client.get("/api/people/6").json()
+    assert p["shop"]["address"].endswith("1-2-3") and p["shop"]["phone"]
+    f = client.get("/api/photos/frame/person/6").json()
+    assert f["mascot"]["image"] == "/img/mascot/hoshimaru_hall.png" and f["frames"][0]["key"] == "spot_hall" and f["frames"][-1]["key"] == "none"

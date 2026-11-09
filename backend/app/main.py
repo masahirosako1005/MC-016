@@ -31,6 +31,9 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         conn = dbmod.connect(db_path or settings.db_path)
         dbmod.init_schema(conn)
         seed_master(conn)
+        from .seed.shop_details import seed_shop_details
+
+        seed_shop_details(conn)
         app.state.conn = conn
         settings.uploads_dir.mkdir(parents=True, exist_ok=True)
         settings.photos_dir.mkdir(parents=True, exist_ok=True)

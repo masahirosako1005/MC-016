@@ -17,8 +17,9 @@ export function Toasts() {
   return (
     <>
       {items.map((t, i) => (
-        <div key={t.id} className={`toast ${t.kind}`} style={{ bottom: `calc(var(--tab-h) + ${16 + i * 52}px)` }} role="status">
-          {t.msg}
+        <div key={t.id} className={`toast ${t.kind} row`} style={{ bottom: `calc(var(--tab-h) + ${16 + i * 52}px)`, gap: 8 }} role="status">
+          <img src={`/img/mascot/ui/hoshimaru_${t.kind === "error" ? "sorry" : "thanks"}.png`} alt="" width={28} height={28} />
+          <span>{t.msg}</span>
         </div>
       ))}
     </>
@@ -81,7 +82,12 @@ export function LongPressButton({ onComplete, children, className = "", disabled
 
 export function Loading() {
   const t = useT();
-  return <p className="muted">{t("loading")}</p>;
+  return (
+    <div className="row muted" style={{ gap: 8 }}>
+      <img src="/img/mascot/ui/hoshimaru_think.png" alt="" width={40} height={40} style={{ opacity: 0.8 }} />
+      <span>{t("loading")}</span>
+    </div>
+  );
 }
 
 export function Icon({ name, size = 24, style }: { name: string; size?: number; style?: React.CSSProperties }) {

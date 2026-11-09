@@ -1,11 +1,18 @@
-/** 運営の窓 › お店・施設の人向け: 自分の店の編集（写真・おすすめ）、来訪のダッシュボード（地域平均との比較）、イベントのお知らせ、旅行者への便り。 */
+/**
+ * 運営の窓 › お店・施設の人向け: 次の一手（提案）、来訪のダッシュボード（地域平均との比較）、
+ * お店の紹介の編集（写真・おすすめ・住所・電話・最寄り・営業時間）、イベントのお知らせ、旅行者への便り（来訪回数・種の状態で宛先を絞る）。
+ */
 import { useEffect, useRef, useState } from "react";
 import { get, post, put, sendForm, toast } from "../api";
+import { AdvicePanel, scrollToId, type Advice } from "../components/advice";
 import { BarChart, Stat } from "../components/charts";
 
 type ShopRow = { id: number; name: string; area: string; category: string; person_name?: string | null };
 type ShopDash = {
-  shop: { id: number; name: string; area: string; category: string; description: string; access: string; rate_percent: number; spot_id: number; recommend: string | null; photo_url: string | null };
+  shop: {
+    id: number; name: string; area: string; category: string; description: string; access: string; rate_percent: number; spot_id: number; recommend: string | null; photo_url: string | null;
+    address: string | null; phone: string | null; url: string | null; nearest: string | null; notes: string | null; open_time: string; close_time: string; closed_weekday: number | null;
+  };
   person: { id: number; name: string; role: string } | null;
   months: string[];
   series: { month: string; meetings: number; spend: number; visitors: number; meetings_area_avg: number; meetings_island_avg: number; spend_area_avg: number; spend_island_avg: number }[];
@@ -16,18 +23,46 @@ type ShopDash = {
   coupons_used: { count: number; amount: number };
   reach: number;
 };
+type Audience = { total: number; selected: number; stages: { first: number; again: number; regular: number }; seeds: { none: number; bud: number; flower: number } };
+
+const STAGES = [
+  { key: "first", label: "はじめまして", sub: "会えた日 1 日" },
+  { key: "again", label: "また会えたね", sub: "2〜3 日" },
+  { key: "regular", label: "おなじみ", sub: "4 日以上" },
+] as const;
+const SEEDS = [
+  { key: "none", label: "種なし", sub: "約束がまだ" },
+  { key: "bud", label: "種（つぼみ）", sub: "次の季節を待っている" },
+  { key: "flower", label: "花", sub: "いま約束を果たせる" },
+] as const;
+const WEEKDAYS = "月火水木金土日";
+
+type EditState = {
+  description: string; access: string; recommend: string; address: string; phone: string; url: string; nearest: string; notes: string;
+  open_time: string; close_time: string; closed_weekday: string;
+};
+const fromDash = (s: ShopDash["shop"]): EditState => ({
+  description: s.description ?? "", access: s.access ?? "", recommend: s.recommend ?? "", address: s.address ?? "", phone: s.phone ?? "", url: s.url ?? "",
+  nearest: s.nearest ?? "", notes: s.notes ?? "", open_time: s.open_time ?? "", close_time: s.close_time ?? "", closed_weekday: s.closed_weekday === null || s.closed_weekday === undefined ? "" : String(s.closed_weekday),
+});
 
 export function ShopPanel() {
   const [shops, setShops] = useState<ShopRow[]>([]);
   const [shopId, setShopId] = useState<number>(() => Number(localStorage.getItem("hitomeguri.admin.shop") || 4));
   const [d, setD] = useState<ShopDash | null>(null);
-  const [edit, setEdit] = useState({ description: "", access: "", recommend: "" });
+  const [edit, setEdit] = useState<EditState | null>(null);
   const [msg, setMsg] = useState({ title: "", body: "", coupon: "", days: "60" });
+  const [stages, setStages] = useState<string[]>([]);
+  const [seeds, setSeeds] = useState<string[]>([]);
+  const [aud, setAud] = useState<Audience | null>(null);
+  const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
   const load = async (id: number) => {
     const dd = await get<ShopDash>(`/admin/shops/${id}/dashboard`);
     setD(dd);
-    setEdit({ description: dd.shop.description ?? "", access: dd.shop.access ?? "", recommend: dd.shop.recommend ?? "" });
+    setEdit(fromDash(dd.shop));
+    setTick((n) => n + 1);
   };
   useEffect(() => {
     get<{ shops: ShopRow[] }>("/admin/overview").then((o) => setShops(o.shops)).catch(() => undefined);
@@ -40,9 +75,42 @@ export function ShopPanel() {
       /* ignore */
     }
   }, [shopId]);
-  if (!d) return <p className="muted">読み込み中…</p>;
+  useEffect(() => {
+    const q = new URLSearchParams({ stages: stages.join(","), seeds: seeds.join(",") });
+    get<Audience>(`/admin/shops/${shopId}/audience?${q}`).then(setAud).catch(() => setAud(null));
+  }, [shopId, stages, seeds, tick]);
+
+  if (!d || !edit) return <p className="muted">読み込み中…</p>;
   const labels = d.series.map((s) => s.month);
   const cur = d.series[d.series.length - 1];
+  const toggle = (list: string[], set: (v: string[]) => void, k: string) => set(list.includes(k) ? list.filter((x) => x !== k) : [...list, k]);
+
+  const onAdvice = (a: Advice["action"]) => {
+    const p = a.params as { stages?: string[]; seeds?: string[]; coupon?: number | null; title?: string; body?: string };
+    if (a.kind === "message") {
+      setStages(p.stages ?? []);
+      setSeeds(p.seeds ?? []);
+      setMsg({ title: p.title ?? "", body: p.body ?? "", coupon: p.coupon ? String(p.coupon) : "", days: "60" });
+      scrollToId("shop-message");
+      toast("宛先と下書きを入れました。直して送れます");
+    } else if (a.kind === "edit") scrollToId("shop-edit");
+    else scrollToId("shop-visits");
+  };
+
+  const save = async () => {
+    const body = {
+      ...edit,
+      open_time: edit.open_time || null, close_time: edit.close_time || null, closed_weekday: edit.closed_weekday === "" ? null : Number(edit.closed_weekday),
+    };
+    try {
+      await put(`/admin/shops/${shopId}`, body);
+      toast("保存しました。旅行者の場所画面にも反映されます");
+      await load(shopId);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+
   return (
     <div>
       <div className="row wrap" style={{ gap: 10, marginBottom: 10 }}>
@@ -54,6 +122,9 @@ export function ShopPanel() {
         </label>
         <div className="muted small" style={{ alignSelf: "end" }}>{d.shop.area}・{d.shop.category}・還元 {d.shop.rate_percent}%</div>
       </div>
+
+      <h2>次の一手</h2>
+      <AdvicePanel path={`/admin/shops/${shopId}/advice`} onAction={onAdvice} deps={[tick]} />
 
       <h2>来訪のようす</h2>
       <div className="grid3" style={{ marginBottom: 10 }}>
@@ -68,7 +139,7 @@ export function ShopPanel() {
       <p className="muted small">地域内の横の誘客のために、近くのお店の平均と並べています。順位はつけません。</p>
 
       <div className="grid2" style={{ alignItems: "start" }}>
-        <div>
+        <div id="shop-visits">
           <h2>これから来る人・イベント</h2>
           <div className="card">
             <div className="small" style={{ fontWeight: 700 }}>この場所に来る予定（旅行者の計画）</div>
@@ -84,7 +155,7 @@ export function ShopPanel() {
             <div className="muted small" style={{ marginTop: 6 }}>見込み人数が大きい日は仕入れや人手を増やす目安に。</div>
           </div>
         </div>
-        <div>
+        <div id="shop-edit">
           <h2>お店の紹介を編集</h2>
           <div className="card stack">
             <div className="row">
@@ -99,17 +170,66 @@ export function ShopPanel() {
             </div>
             <label className="field" style={{ margin: 0 }}><span>紹介文</span><textarea value={edit.description} maxLength={300} onChange={(e) => setEdit({ ...edit, description: e.target.value })} style={{ minHeight: 70 }} /></label>
             <label className="field" style={{ margin: 0 }}><span>おすすめのポイント（旅行者のカードに出ます）</span><textarea value={edit.recommend} maxLength={300} onChange={(e) => setEdit({ ...edit, recommend: e.target.value })} placeholder="例: 朝霧の時間、窓際の席が一番きれいです" style={{ minHeight: 60 }} /></label>
-            <label className="field" style={{ margin: 0 }}><span>アクセス</span><input type="text" value={edit.access} maxLength={120} onChange={(e) => setEdit({ ...edit, access: e.target.value })} /></label>
-            <button className="btn primary" onClick={async () => { try { await put(`/admin/shops/${shopId}`, edit); toast("保存しました"); await load(shopId); } catch (e) { toast((e as Error).message, "error"); } }}>保存する</button>
+
+            <div className="small" style={{ fontWeight: 700, marginTop: 4 }}>旅行に必要な情報（場所の画面「行き方と連絡先」に出ます）</div>
+            <label className="field" style={{ margin: 0 }}><span>住所</span><input type="text" value={edit.address} maxLength={120} onChange={(e) => setEdit({ ...edit, address: e.target.value })} placeholder="例: 星凪県星凪郡星凪町雫森谷 2-7" /></label>
+            <div className="grid2">
+              <label className="field" style={{ margin: 0 }}><span>電話</span><input type="tel" value={edit.phone} maxLength={30} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} placeholder="0XX-XXX-XXXX" /></label>
+              <label className="field" style={{ margin: 0 }}><span>Web（任意）</span><input type="url" value={edit.url} maxLength={200} onChange={(e) => setEdit({ ...edit, url: e.target.value })} placeholder="https://" /></label>
+            </div>
+            <label className="field" style={{ margin: 0 }}><span>最寄り（港・バス停・駐車場）</span><input type="text" value={edit.nearest} maxLength={120} onChange={(e) => setEdit({ ...edit, nearest: e.target.value })} placeholder="例: 星綴港から島内バス 12 分「湖畔」下車 徒歩 3 分" /></label>
+            <label className="field" style={{ margin: 0 }}><span>行き方のひとこと（短く）</span><input type="text" value={edit.access} maxLength={120} onChange={(e) => setEdit({ ...edit, access: e.target.value })} /></label>
+            <label className="field" style={{ margin: 0 }}><span>旅行者へのメモ（支払い・予約・持ち物など）</span><textarea value={edit.notes} maxLength={300} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} placeholder="例: 現金・交通系 IC が使えます。体験は前日までに電話で予約。" style={{ minHeight: 56 }} /></label>
+            <div className="grid3">
+              <label className="field" style={{ margin: 0 }}><span>開店</span><input type="time" value={edit.open_time} onChange={(e) => setEdit({ ...edit, open_time: e.target.value })} /></label>
+              <label className="field" style={{ margin: 0 }}><span>閉店</span><input type="time" value={edit.close_time} onChange={(e) => setEdit({ ...edit, close_time: e.target.value })} /></label>
+              <label className="field" style={{ margin: 0 }}><span>定休日</span>
+                <select value={edit.closed_weekday} onChange={(e) => setEdit({ ...edit, closed_weekday: e.target.value })}>
+                  <option value="">無休</option>
+                  {WEEKDAYS.split("").map((w, i) => <option key={w} value={i}>{w}曜</option>)}
+                </select>
+              </label>
+            </div>
+            <button className="btn primary" onClick={save}>保存する</button>
           </div>
         </div>
       </div>
 
-      <h2>旅行者への便り（{d.person ? `${d.person.name}から` : "お店から"}）</h2>
+      <h2 id="shop-message">旅行者への便り（{d.person ? `${d.person.name}から` : "お店から"}）</h2>
       <div className="card stack">
         <div className="muted small">
-          あなたに会ったことのある旅行者 <b>{d.reach} 人</b>に届きます。クーポンを添えると、その人のクーポンにすぐ入ります（補填の対象）。
+          あなたに会ったことのある旅行者は <b>{d.reach} 人</b>。来訪回数と種の状態で宛先を絞れます（何も選ばなければ全員）。クーポンを添えると、その人のクーポンにすぐ入ります（補填の対象）。
           これまでに使われたクーポン: {d.coupons_used.count} 枚・{d.coupons_used.amount.toLocaleString()} 円。
+        </div>
+        <div className="grid2" style={{ alignItems: "start" }}>
+          <div>
+            <div className="small" style={{ fontWeight: 700 }}>来訪回数（関係）で選ぶ</div>
+            <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
+              {STAGES.map((s) => (
+                <button key={s.key} className={`chip ${stages.includes(s.key) ? "on" : ""}`} onClick={() => toggle(stages, setStages, s.key)} title={s.sub}>
+                  {s.label} {aud ? aud.stages[s.key] : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="small" style={{ fontWeight: 700 }}>種の状態で選ぶ</div>
+            <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
+              {SEEDS.map((s) => (
+                <button key={s.key} className={`chip ${seeds.includes(s.key) ? "on" : ""}`} onClick={() => toggle(seeds, setSeeds, s.key)} title={s.sub}>
+                  {s.key === "flower" ? "✿ " : s.key === "bud" ? "● " : ""}{s.label} {aud ? aud.seeds[s.key] : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+          <img src="/img/mascot/ui/hoshimaru_letter.png" alt="" width={40} height={40} />
+          <div className="grow">
+            この条件で届く人: <b style={{ fontSize: "1.2rem" }}>{aud ? aud.selected : "…"} 人</b>
+            <span className="muted small">（関係と種は「どちらも満たす人」。数字はいまの人数の目安です）</span>
+          </div>
+          {(stages.length > 0 || seeds.length > 0) && <button className="btn small ghost" onClick={() => { setStages([]); setSeeds([]); }}>全員に</button>}
         </div>
         <div className="grid2">
           <label className="field" style={{ margin: 0 }}><span>件名</span><input type="text" value={msg.title} maxLength={60} onChange={(e) => setMsg({ ...msg, title: e.target.value })} placeholder="例: 雪見ぜんざい、はじめました" /></label>
@@ -119,14 +239,18 @@ export function ShopPanel() {
           </div>
         </div>
         <label className="field" style={{ margin: 0 }}><span>本文</span><textarea value={msg.body} maxLength={400} onChange={(e) => setMsg({ ...msg, body: e.target.value })} placeholder="例: 湖が凍りはじめました。窓際の席を温めて待っています。" /></label>
-        <button className="btn primary" disabled={!msg.title || !msg.body} onClick={async () => {
+        <button className="btn primary" disabled={!msg.title || !msg.body || (aud !== null && aud.selected === 0)} onClick={async () => {
           try {
-            const r = await post<{ sent_to: number }>(`/admin/shops/${shopId}/messages`, { title: msg.title, body: msg.body, coupon_face_value: msg.coupon ? Number(msg.coupon) : null, coupon_days: msg.coupon ? Number(msg.days) : null });
+            const r = await post<{ sent_to: number }>(`/admin/shops/${shopId}/messages`, {
+              title: msg.title, body: msg.body,
+              coupon_face_value: msg.coupon ? Number(msg.coupon) : null, coupon_days: msg.coupon ? Number(msg.days) : null,
+              stages: stages.length ? stages : null, seeds: seeds.length ? seeds : null,
+            });
             toast(`${r.sent_to} 人に届けました`);
             setMsg({ title: "", body: "", coupon: "", days: "60" });
             await load(shopId);
           } catch (e) { toast((e as Error).message, "error"); }
-        }}>便りを送る</button>
+        }}>{aud ? `${aud.selected} 人に便りを送る` : "便りを送る"}</button>
         {d.messages.length > 0 && (
           <table className="tbl">
             <thead><tr><th>日付</th><th>件名</th><th>クーポン</th><th className="num">届いた人</th></tr></thead>

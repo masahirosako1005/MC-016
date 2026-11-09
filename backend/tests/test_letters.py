@@ -89,4 +89,4 @@ def test_reminder_after_30_days_and_ics(client):
     assert any(x["date"] == "2026-12-01" and x["plans"] >= 1 for x in v["visits"])
     # ゆるキャラ
     f = client.get("/api/photos/frame/person/6").json()
-    assert f["mascot"]["key"] == "ongakudo" and f["mascot"]["outfit"]
+    assert f["mascot"]["key"] == "hall" and f["mascot"]["outfit"]

@@ -3,19 +3,23 @@ import { useEffect, useState, type ReactNode } from "react";
 import { navigate } from "../router";
 import { Badge } from "./ui";
 import { GuideFigure } from "./tutorial";
+import { Hoshimaru, poseForTodo } from "./hoshimaru";
 
 export type Todo = { kind: string; text: string; button: string | null; path: string | null; place_id?: number };
 
 export function TodoCard({ todo, onButton }: { todo: Todo; onButton?: () => void }) {
   return (
-    <div className="todo">
-      <div className="label">いまやること</div>
-      <div className="text">{todo.text}</div>
-      {todo.button && (
-        <button className="btn block" onClick={() => (onButton ? onButton() : todo.path && navigate(todo.path))}>
-          {todo.button}
-        </button>
-      )}
+    <div className="todo" style={{ display: "grid", gridTemplateColumns: "1fr 72px", gap: 8, alignItems: "center" }}>
+      <div>
+        <div className="label">いまやること</div>
+        <div className="text" style={{ marginBottom: todo.button ? 10 : 0 }}>{todo.text}</div>
+        {todo.button && (
+          <button className="btn block" onClick={() => (onButton ? onButton() : todo.path && navigate(todo.path))}>
+            {todo.button}
+          </button>
+        )}
+      </div>
+      <Hoshimaru pose={poseForTodo(todo.kind)} size={72} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,.25))" }} />
     </div>
   );
 }
@@ -113,7 +117,10 @@ export function FirstGuide() {
   return (
     <div className="guide-backdrop" role="dialog" aria-modal="true" aria-label="使い方">
       <div className="guide">
-        <div className="no">{g.no}</div>
+        <div className="row between">
+          <div className="no">{g.no}</div>
+          <Hoshimaru pose={i === 0 ? "wave" : i === 1 ? "camera" : "cheer"} size={56} />
+        </div>
         <h3>{g.title}</h3>
         <div className="figure">{g.figure}</div>
         <p style={{ margin: 0 }}>{g.body}</p>

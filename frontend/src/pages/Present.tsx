@@ -108,7 +108,7 @@ export function PresentPage() {
               <span className="muted small">{slide + 1} / {SLIDES.length}</span>
               <button className="btn ghost small" onClick={() => setSlide((s) => Math.min(SLIDES.length - 1, s + 1))} disabled={slide === SLIDES.length - 1}>次 →</button>
             </div>
-            <div style={{ position: "absolute", right: 14, top: 10, opacity: .9 }}><Mascot k={S.mascot ?? "toudai"} size={64} /></div>
+            <div style={{ position: "absolute", right: 14, top: 10, opacity: .9 }}><Mascot k={S.mascot ?? "lighthouse"} size={64} /></div>
           </div>
           <div className="card row wrap" style={{ gap: 8, padding: 8 }}>
             <span className="muted small">デモ操作:</span>
@@ -131,7 +131,7 @@ const Li = ({ children }: { children: React.ReactNode }) => <li style={{ margin:
 
 const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; body: (m: Metrics | null) => JSX.Element }[] = [
   {
-    scene: "pre", kicker: "01 課題", title: "スタンプラリーは、旅の途中で終わってしまう", mascot: "toudai",
+    scene: "pre", kicker: "01 課題", title: "スタンプラリーは、旅の途中で終わってしまう", mascot: "lighthouse",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>既存アプリは「旅の途中」の機能だけ。旅の後に開く理由がない。</Li>
@@ -142,7 +142,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    scene: "pre", kicker: "02 旅前", title: "計画: カードをスワイプして、行きたい場所を選ぶ", mascot: "hoshimi",
+    scene: "pre", kicker: "02 旅前", title: "計画: カードをスワイプして、行きたい場所を選ぶ", mascot: "cape",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>風景写真のカードを右へ「行く」、左へ「行かない」。7 枚だけ。</Li>
@@ -153,7 +153,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    scene: "trip", kicker: "03 旅中", title: "マップ: 行った先で、人に会う", mascot: "yoichi",
+    scene: "trip", kicker: "03 旅中", title: "マップ: 行った先で、人に会う", mascot: "market",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>地図アプリ風の島の地図。山吹の番号ピンが「きょう行く場所」、青い点が現在地、会えた場所はチェック。</Li>
@@ -165,7 +165,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    scene: "night", kicker: "04 その夜", title: "思い出: コルクボードに、今日の一日", mascot: "kohan",
+    scene: "night", kicker: "04 その夜", title: "思い出: コルクボードに、今日の一日", mascot: "lake",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>18:00 以降、会えた人・AR フォト・行った場所がコルクボードに貼られる。</Li>
@@ -175,7 +175,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    scene: "after30", kicker: "05 30 日後", title: "便り: あの日の思い出と、行きたい場所が届く", mascot: "ishidatami",
+    scene: "after30", kicker: "05 30 日後", title: "便り: あの日の思い出と、行きたい場所が届く", mascot: "street",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>旅から 30 日。星凪諸島から便りが届く（リマインド）。</Li>
@@ -185,7 +185,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    scene: "season", kicker: "06 次の季節", title: "花が咲く: 約束を果たし、また会いたくなる", mascot: "ongakudo",
+    scene: "season", kicker: "06 次の季節", title: "花が咲く: 約束を果たし、また会いたくなる", mascot: "hall",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>季節が変わると種が花に。その人に会えた日に「約束を果たす」。咲いた花はひとめぐり帖に増える。</Li>
@@ -196,7 +196,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    scene: "admin", kicker: "07 運営", title: "運営の窓: 指標・来訪予定・還元率・補填", mascot: "kazaguruma",
+    scene: "admin", kicker: "07 運営", title: "運営の窓: 指標・来訪予定・還元率・補填", mascot: "windmill",
     body: (m) => (
       <div>
         <ul style={{ paddingLeft: 20, marginTop: 0 }}>
@@ -209,7 +209,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
     ),
   },
   {
-    kicker: "08 技術と正直な注記", title: "ローカルで完結、外部に頼らない", mascot: "toudai",
+    kicker: "08 技術と正直な注記", title: "ローカルで完結、外部に頼らない", mascot: "lighthouse",
     body: () => (
       <ul style={{ paddingLeft: 20 }}>
         <Li>FastAPI + SQLite + React/TS。1 プロセス、外部 API・CDN・外部フォントなし。入力検証・CSP・先頭バイト判定・SHA-256 重複・7 日削除。</Li>

@@ -62,7 +62,9 @@ calendar（12549）, pin（00020）, map（10163）, letter（00024）, ticket�
 ### 地図の背景（衛星写真風）— Unsplash
 | ファイル | 写真 |
 |---|---|
-| map/island.jpg | https://unsplash.com/photos/Cgt8qnrgz4s （島々の空撮。星凪諸島の地図の背景に使用。ピン・航路・地名は自前の SVG） |
+| map/island.jpg | https://unsplash.com/photos/Cgt8qnrgz4s （島々の空撮。第 3 回 FB で地図の背景に使ったが、第 4 回で自作の地形図 map/hoshinagi_map.png に置き換え。現在は未使用、参考のため残す） |
 | mascot/ui/hoshimaru_<pose>.svg / .png | UI 用のポーズ差分 10 種（背景透過、PNG 720×720）。wave・cheer・point・letter・think・sleep・sorry・thanks・camera・coupon。一覧は mascot/ui/poses.json。`scripts/mascot/gen_hoshimaru_ui.py` で生成した自作素材 |
 | frames/frame_<key>.svg / .png | AR フォト用フレーム 5 種（900×1200、写真の部分は透明）。ai・hoshizora・hagaki・cheki・hyokkori。一覧は frames/frames.json。同じスクリプトで生成した自作素材 |
 | frames/frame_spot_<svg_key>.svg / .png | 場所ごとの特別フレーム 7 種（900×1200、写真の部分は透明。その場所の服装のほしまると場所名の札入り）。frames.json の `spot` に svg_key。同じスクリプトで生成した自作素材 |
+| map/hoshinagi_map.png | Azgaar's Fantasy Map Generator（https://azgaar.github.io/Fantasy-Map-Generator/ 、MIT License。生成した地図は自由に利用可）で作成した星凪諸島の地図（2560×1920）。高度マップはアプリの場所座標（map_x/map_y、400×300 を 4 倍）に合わせて自前で書き込み、水彩スタイル＋バイオーム・地形・川。文字・ピン・航路は入れない（アプリ側のレイヤーで重ねる） |
+| gifts/（wallpapers・stickers・nurie・card）/ frames/frame_gift_thanks | アンケート回答者へのお礼の品 18 点（待ち受け 6・スタンプ 8・ぬりえ 2・なかま証 1・ありがとうフレーム 1）。一覧は gifts/gifts.json。`scripts/mascot/gen_hoshimaru_gifts.py` で生成した自作素材 |

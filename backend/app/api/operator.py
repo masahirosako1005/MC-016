@@ -30,6 +30,39 @@ class ShopIn(BaseModel):
     description: str | None = Field(default=None, max_length=300)
     access: str | None = Field(default=None, max_length=120)
     recommend: str | None = Field(default=None, max_length=300)
+    address: str | None = Field(default=None, max_length=120)
+    phone: str | None = Field(default=None, max_length=30)
+    url: str | None = Field(default=None, max_length=200)
+    nearest: str | None = Field(default=None, max_length=120)
+    notes: str | None = Field(default=None, max_length=300)
+    open_time: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
+    close_time: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
+    closed_weekday: int | None = Field(default=None, ge=0, le=6)
+
+
+@router.get("/admin/advice")
+def dmo_advice(conn=Depends(get_conn)):
+    from ..services.advice import dmo_advice as adv
+
+    return {"advice": adv(conn, clock.now(conn)), "note": "デモではデータから規則で組み立てています。本番では生成 AI が下書きし、運営が確認して送る想定です。"}
+
+
+@router.get("/admin/shops/{shop_id}/advice")
+def shop_advice(shop_id: int, conn=Depends(get_conn)):
+    from ..services.advice import shop_advice as adv
+
+    return {"advice": adv(conn, shop_id, clock.now(conn)), "note": "デモではデータから規則で組み立てています。本番では生成 AI が下書きし、お店の人が確認して送る想定です。"}
+
+
+@router.get("/admin/shops/{shop_id}/audience")
+def shop_audience(shop_id: int, stages: str = "", seeds: str = "", conn=Depends(get_conn)):
+    from ..services.advice import audience
+
+    st = [s for s in stages.split(",") if s in ("first", "again", "regular")]
+    se = [s for s in seeds.split(",") if s in ("none", "bud", "flower")]
+    a = audience(conn, shop_id, st or None, se or None)
+    a.pop("users", None)
+    return a
 
 
 @router.put("/admin/shops/{shop_id}")
@@ -86,12 +119,16 @@ class MessageIn(BaseModel):
     body: str = Field(min_length=1, max_length=400)
     coupon_face_value: int | None = Field(default=None, ge=100, le=10000)
     coupon_days: int | None = Field(default=None, ge=1, le=365)
+    stages: list[str] | None = None
+    seeds: list[str] | None = None
 
 
 @router.post("/admin/shops/{shop_id}/messages")
 def post_message(shop_id: int, body: MessageIn, conn=Depends(get_conn)):
+    st = [s for s in (body.stages or []) if s in ("first", "again", "regular")] or None
+    se = [s for s in (body.seeds or []) if s in ("none", "bud", "flower")] or None
     with write_tx(conn):
-        return svc.send_message(conn, shop_id, clock.now(conn), body.title, body.body, body.coupon_face_value, body.coupon_days)
+        return svc.send_message(conn, shop_id, clock.now(conn), body.title, body.body, body.coupon_face_value, body.coupon_days, st, se)
 
 
 @router.get("/messages")

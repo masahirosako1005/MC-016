@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { get, post, put, sendForm, toast } from "../api";
 import { navigate } from "../router";
 import { BarChart, LineChart, Stat } from "../components/charts";
+import { AdvicePanel, scrollToId, type Advice } from "../components/advice";
 import { ShopPanel } from "./AdminShop";
 
 type MetricVal = { value: number | null; n: number; dummy_n: number; unit: string; suppressed: boolean };
@@ -83,7 +84,7 @@ export function AdminPage() {
           <button className="btn small ghost" onClick={() => navigate("/")}>本体へ</button>
         </div>
       </div>
-      {role === "dmo" ? <DmoPanel /> : <ShopPanel />}
+      {role === "dmo" ? <DmoPanel onShop={() => pick("shop")} /> : <ShopPanel />}
     </div>
   );
 }
@@ -170,7 +171,7 @@ function EventsPanel({ editable }: { editable: boolean }) {
   );
 }
 
-function DmoPanel() {
+function DmoPanel({ onShop }: { onShop: () => void }) {
   const [m, setM] = useState<Metrics | null>(null);
   const [ov, setOv] = useState<Overview | null>(null);
   const [preview, setPreview] = useState<ImportResult[] | null>(null);
@@ -194,10 +195,24 @@ function DmoPanel() {
     <div>
       <p className="muted" style={{ marginTop: 0 }}>{m.as_of.replace("T", " ")} 時点。{m.note} 店や人の格付け・順位は作りません。</p>
 
+      <h2>次の一手</h2>
+      <AdvicePanel
+        path="/admin/advice"
+        deps={[imported]}
+        onAction={(a: Advice["action"]) => {
+          if (a.kind === "notice" || a.kind === "shops_recommend") {
+            toast(a.kind === "notice" ? "お店の窓で「便り」を送れます" : "お店の窓で「紹介を編集」できます");
+            onShop();
+          } else if (a.kind === "prizes") scrollToId("dmo-prizes");
+          else if (a.kind === "events") scrollToId("dmo-events");
+          else scrollToId("dmo-visits");
+        }}
+      />
+
       <h2>ダッシュボード（観光消費・来訪者の推移）</h2>
       <DmoDashboard />
 
-      <h2>イベントのお知らせ（お店へ）</h2>
+      <h2 id="dmo-events">イベントのお知らせ（お店へ）</h2>
       <EventsPanel editable />
 
       <h2>指標</h2>
@@ -219,7 +234,7 @@ function DmoPanel() {
         </div>
       </div>
 
-      <h2>来訪予定（いつ、だれが来るか）</h2>
+      <h2 id="dmo-visits">来訪予定（いつ、だれが来るか）</h2>
       <VisitsTable />
 
       <h2>CSV 取り込み</h2>
@@ -273,7 +288,7 @@ function DmoPanel() {
           </div>
         </div>
         <div>
-          <h2 style={{ marginTop: 0 }}>抽選の商品（カテゴリ単位のクーポン）</h2>
+          <h2 id="dmo-prizes" style={{ marginTop: 0 }}>抽選の商品（カテゴリ単位のクーポン）</h2>
           <div className="card">
             <table className="tbl">
               <thead><tr><th>商品</th><th className="num">額面</th><th className="num">重み</th><th className="num">在庫</th><th className="num">確率</th><th></th></tr></thead>

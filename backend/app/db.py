@@ -283,6 +283,9 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE shops ADD COLUMN recommend TEXT")
     if "photo_path" not in scols:
         conn.execute("ALTER TABLE shops ADD COLUMN photo_path TEXT")
+    for col in ("address", "phone", "url", "nearest", "notes"):
+        if col not in scols:
+            conn.execute(f"ALTER TABLE shops ADD COLUMN {col} TEXT")
     conn.executescript(
         """
 CREATE TABLE IF NOT EXISTS events(

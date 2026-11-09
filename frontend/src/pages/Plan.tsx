@@ -15,7 +15,10 @@ export type PersonFull = Omit<PersonLite, "forecast" | "met_today" | "shop"> & {
   intro: string;
   seed: unknown;
   spot_id: number;
-  shop: { id: number; name: string; area: string; category: string; hours: string; open_time: string; close_time: string; closed_weekday: number | null };
+  shop: {
+    id: number; name: string; area: string; category: string; hours: string; open_time: string; close_time: string; closed_weekday: number | null;
+    description?: string; rate_percent?: number; address?: string | null; phone?: string | null; url?: string | null; nearest?: string | null; notes?: string | null; access?: string | null;
+  };
 };
 export type PlaceCard = {
   id: number; name: string; full_name: string; area: string; svg_key: string; image: string; description: string; access: string;
@@ -24,7 +27,9 @@ export type PlaceCard = {
   status: "open" | "not_yet" | "closed"; status_label: string; met_today: boolean;
   voices?: { id: number; season_label: string; author: string; text: string; hashtags: string }[];
   photos?: { id: number; url: string; taken_on: string; is_sample?: boolean }[];
+  info?: PlaceInfo[];
 };
+export type PlaceInfo = { shop_id: number; shop_name: string; category: string; hours: string; closed: string; address: string | null; phone: string | null; url: string | null; nearest: string | null; notes: string | null };
 export type PlacesView = { season: string; season_label: string; areas: string[]; places: PlaceCard[]; map: MapItem[]; note: string };
 export type MapItem = { id: number; name: string; map_x: number; map_y: number; in_plan: boolean; people: { id: number; image: string; status: string; met_today: boolean }[] };
 export type PlanView = {

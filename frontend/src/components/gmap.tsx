@@ -1,4 +1,4 @@
-/** 星凪諸島の地図。背景は島々の空撮写真（Unsplash、ローカル配信）。その上に航路・ピン・地名・現在地を自前 SVG で描く。外部タイルは使わない。 */
+/** 星凪諸島の地図。背景は自作の地形図（img/map/hoshinagi_map.png、2560×1920、文字なし）。地区名・場所名・ピン・人・現在地は自前 SVG で重ねる。外部タイルは使わない。 */
 import type { ReactNode } from "react";
 
 export type GPin = {
@@ -9,7 +9,18 @@ export type GPin = {
 
 const AI = "#1b2a44";
 const YAMA = "#e3a21a";
-const PORT = { x: 217, y: 258 };
+
+/** 地区名の置き場所（viewBox 400×300）。島の形に合わせて手で決めた。 */
+const AREAS: { name: string; x: number; y: number; anchor?: "start" | "middle" | "end"; small?: boolean }[] = [
+  { name: "白波離島", x: 68, y: 76 },
+  { name: "薄青岬", x: 352, y: 108 },
+  { name: "鈴風高原", x: 122, y: 128, anchor: "end" },
+  { name: "虹帆町", x: 196, y: 180 },
+  { name: "雫森谷", x: 72, y: 210, anchor: "end" },
+  { name: "月灯集落", x: 292, y: 182 },
+  { name: "星綴港", x: 215, y: 254 },
+  { name: "星凪の海", x: 330, y: 272, small: true },
+];
 
 export function GMap({
   pins, me, onPick, height = 300, children, selectable,
@@ -18,26 +29,21 @@ export function GMap({
     <svg viewBox="0 0 400 300" className="gmap" style={{ maxHeight: height }} role="img" aria-label="星凪諸島の地図">
       <defs>
         <clipPath id="g-av"><circle r="11" /></clipPath>
-        <filter id="g-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" floodColor="#000" floodOpacity=".45" /></filter>
-        <linearGradient id="g-vig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1b2a44" stopOpacity=".18" /><stop offset=".5" stopColor="#1b2a44" stopOpacity="0" /><stop offset="1" stopColor="#1b2a44" stopOpacity=".28" /></linearGradient>
+        <filter id="g-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" floodColor="#000" floodOpacity=".4" /></filter>
       </defs>
-      <image href="/img/map/island.jpg" x="0" y="0" width="400" height="300" preserveAspectRatio="xMidYMid slice" />
-      <rect width="400" height="300" fill="url(#g-vig)" />
-      {/* 航路（港から） */}
-      {pins.filter((p) => !(p.x === PORT.x && p.y === PORT.y)).map((p) => (
-        <path key={`r${p.id}`} d={`M${PORT.x} ${PORT.y} Q${(PORT.x + p.x) / 2 + 10} ${(PORT.y + p.y) / 2 - 20} ${p.x} ${p.y}`} stroke="#ffffff" strokeWidth="1" strokeDasharray="3 4" fill="none" opacity=".55" />
+      <image href="/img/map/hoshinagi_map.png" x="0" y="0" width="400" height="300" preserveAspectRatio="xMidYMid slice" />
+      {AREAS.map((a) => (
+        <text key={a.name} x={a.x} y={a.y} textAnchor={a.anchor ?? "middle"} fontSize={a.small ? 7 : 8.5} fontFamily="'Yu Mincho', 'Hiragino Mincho ProN', serif" fontWeight="700" fill={a.small ? "#2f5d7a" : "#2f446a"} letterSpacing={a.small ? 2 : 1} stroke="#fff" strokeWidth="2.5" paintOrder="stroke" opacity={a.small ? 0.8 : 0.95} style={{ pointerEvents: "none" }}>{a.name}</text>
       ))}
-      <text x="200" y="16" fontSize="10" fill="#ffffff" fontFamily="var(--font-head)" letterSpacing="3" textAnchor="middle" opacity=".9" stroke="#1b2a44" strokeWidth="2" paintOrder="stroke">星凪諸島</text>
-      <text x="8" y="292" fontSize="7" fill="#ffffff" opacity=".8">空撮: Unsplash（ローカル配信）</text>
       {children}
       {[...pins].sort((a, b) => (a.state === "plan" ? 1 : 0) - (b.state === "plan" ? 1 : 0)).map((p) => (
         <Pin key={p.id} p={p} onPick={onPick} selectable={selectable} />
       ))}
       {me && (
         <g transform={`translate(${me.x} ${me.y})`}>
-          <circle r="12" fill="#4a90e2" opacity=".25" />
-          <circle r="7" fill="#4a90e2" stroke="#fff" strokeWidth="2.5" filter="url(#g-shadow)" />
-          <text y="26" textAnchor="middle" fontSize="9" fill="#ffffff" fontWeight="700" stroke="#1b2a44" strokeWidth="3" paintOrder="stroke">{me.label ?? "現在地"}</text>
+          <circle r="11" fill="#4a90e2" opacity=".25" />
+          <circle r="6.5" fill="#4a90e2" stroke="#fff" strokeWidth="2.5" filter="url(#g-shadow)" />
+          <text y="22" textAnchor="middle" fontSize="8.5" fill="#2a63a8" fontWeight="700" stroke="#fff" strokeWidth="3" paintOrder="stroke">{me.label ?? "現在地"}</text>
         </g>
       )}
     </svg>
@@ -48,10 +54,10 @@ function Pin({ p, onPick, selectable }: { p: GPin; onPick?: (id: number) => void
   const plan = p.state === "plan";
   const visited = p.state === "visited";
   const off = p.state === "off";
-  const color = plan ? YAMA : visited ? AI : off ? "#c7ccd6" : "#f3f4f7";
-  const scale = plan ? 1.25 : 1;
+  const color = plan ? YAMA : visited ? AI : off ? "#c7ccd6" : "#ffffff";
+  const scale = plan ? 1.2 : 0.95;
   return (
-    <g transform={`translate(${p.x} ${p.y})`} style={{ cursor: onPick ? "pointer" : "default" }} onClick={() => onPick?.(p.id)} role={onPick ? "button" : undefined} aria-label={p.name} opacity={off ? 0.8 : 1}>
+    <g transform={`translate(${p.x} ${p.y})`} style={{ cursor: onPick ? "pointer" : "default" }} onClick={() => onPick?.(p.id)} role={onPick ? "button" : undefined} aria-label={p.name} opacity={off ? 0.85 : 1}>
       <g transform={`scale(${scale})`} filter="url(#g-shadow)">
         <path d="M0 0 c-7 -9 -11 -14 -11 -20 a11 11 0 1 1 22 0 c0 6 -4 11 -11 20z" fill={color} stroke={plan || visited ? "#fff" : AI} strokeWidth="1.5" />
         {plan && p.order !== undefined && <text y="-16" textAnchor="middle" fontSize="11" fill="#fff" fontWeight="800">{p.order}</text>}
@@ -64,9 +70,9 @@ function Pin({ p, onPick, selectable }: { p: GPin; onPick?: (id: number) => void
           <image href={q.image} x="-11" y="-11" width="22" height="22" clipPath="url(#g-av)" preserveAspectRatio="xMidYMin slice" />
         </g>
       ))}
-      <text y={plan ? 14 : 12} textAnchor="middle" fontSize={plan ? 11 : 10} fill="#ffffff" fontWeight={plan ? 800 : 700} stroke="#1b2a44" strokeWidth="3.5" paintOrder="stroke">{p.name}</text>
+      <text y="11" textAnchor="middle" fontSize="7.5" fill={plan ? "#7a5300" : AI} fontWeight="700" stroke="#fff" strokeWidth="2.5" paintOrder="stroke" style={{ pointerEvents: "none" }}>{p.name}</text>
       {selectable && (
-        <text y={plan ? 26 : 24} textAnchor="middle" fontSize="8" fill={plan ? "#ffe9b0" : "#ffffff"} stroke="#1b2a44" strokeWidth="3" paintOrder="stroke">{plan ? "行く（タップで外す）" : "タップで行きたいに"}</text>
+        <text y="21" textAnchor="middle" fontSize="7" fill={plan ? "#7a5300" : "#56698f"} fontWeight="700" stroke="#fff" strokeWidth="2.5" paintOrder="stroke" style={{ pointerEvents: "none" }}>{plan ? "行く（タップで外す）" : "タップで行きたいに"}</text>
       )}
     </g>
   );

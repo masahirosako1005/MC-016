@@ -52,8 +52,9 @@ def person_card(conn: sqlite3.Connection, p: dict, now: datetime, uid: int, with
             for pr in promises
         ]
         card["voices"] = _voices(conn, "shop", p["shop_id"])
-        card["shop"]["description"] = conn.execute("SELECT description FROM shops WHERE id = ?", (p["shop_id"],)).fetchone()[0]
-        card["shop"]["rate_percent"] = conn.execute("SELECT rate_percent FROM shops WHERE id = ?", (p["shop_id"],)).fetchone()[0]
+        row = master.shop(conn, p["shop_id"]) or {}
+        for k in ("description", "rate_percent", "address", "phone", "url", "nearest", "notes", "access"):
+            card["shop"][k] = row.get(k)
         card["photos"] = [
             {"id": r["id"], "taken_on": r["taken_on"], "url": f"/api/photos/{r['id']}/image"}
             for r in conn.execute("SELECT id, taken_on FROM photos WHERE person_id = ? ORDER BY id DESC LIMIT 6", (p["id"],))
@@ -96,6 +97,17 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
     }
     if with_detail:
         card["voices"] = _voices(conn, "spot", s["id"])
+        # 旅行に関係する情報（住所・電話・最寄り・行き方・ひとこと）。店ごとに 1 件
+        card["info"] = [
+            {
+                "shop_id": sh["id"], "shop_name": sh["name"], "category": sh["category"],
+                "hours": f"{sh['open_time']}〜{sh['close_time']}",
+                "closed": ("月火水木金土日"[sh["closed_weekday"]] + "曜定休") if sh.get("closed_weekday") is not None else "無休",
+                "address": sh.get("address"), "phone": sh.get("phone"), "url": sh.get("url"),
+                "nearest": sh.get("nearest"), "notes": sh.get("notes"),
+            }
+            for sh in master.shops(conn) if sh["spot_id"] == s["id"]
+        ]
         card["photos"] = [
             {"id": r["id"], "taken_on": r["taken_on"], "url": f"/api/photos/{r['id']}/image", "is_sample": bool(r["is_sample"])}
             for r in conn.execute(
