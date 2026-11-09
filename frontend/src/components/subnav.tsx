@@ -23,12 +23,27 @@ export function useSubTab(storageKey: string, initial: string): [string, (k: str
   return [tab, pick];
 }
 
-export function SubNav({ items, value, onChange }: { items: NavItem[]; value: string; onChange: (k: string) => void }) {
+export type NavItemX = NavItem & { icon?: string; desc?: string };
+
+/** 下線つきのタブ。選ばれているタブは太字 + 山吹の下線。下に「いまの場所」の行を出して、どの画面か分かるようにする。 */
+export function SubNav({ items, value, onChange, crumb }: { items: NavItemX[]; value: string; onChange: (k: string) => void; crumb?: string }) {
+  const cur = items.find((i) => i.key === value);
   return (
-    <nav className="subnav" aria-label="機能">
-      {items.map((it) => (
-        <button key={it.key} className={value === it.key ? "on" : ""} aria-current={value === it.key ? "page" : undefined} onClick={() => onChange(it.key)}>{it.label}</button>
-      ))}
-    </nav>
+    <div className="tabwrap">
+      <nav className="fntabs" aria-label="機能" role="tablist">
+        {items.map((it) => (
+          <button key={it.key} role="tab" className={value === it.key ? "on" : ""} aria-selected={value === it.key} onClick={() => onChange(it.key)}>
+            {it.icon && <span className="ico" aria-hidden="true">{it.icon}</span>}
+            <span>{it.label}</span>
+          </button>
+        ))}
+      </nav>
+      {cur && (
+        <div className="crumb">
+          <span className="muted small">{crumb ? `${crumb} › ` : ""}</span><b>{cur.label}</b>
+          {cur.desc && <span className="muted small">　{cur.desc}</span>}
+        </div>
+      )}
+    </div>
   );
 }

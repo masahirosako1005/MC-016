@@ -116,18 +116,63 @@ function seasonOf(day: string): string {
   const m = Number(day.slice(5, 7));
   return m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
 }
-/** 春夏秋冬のスタンプ。会えた季節は押され、会えた回数を数字で添える。 */
+/** 季節の絵のスタンプ（春=桜・夏=太陽と波・秋=もみじ・冬=雪の結晶）。会えた季節は藍のインクで押され、回数を山吹の札で添える。4 つそろうと「一年めぐった」。 */
 function SeasonStamps({ days }: { days: string[] }) {
   const counts: Record<string, number> = {};
   for (const d of days) counts[seasonOf(d)] = (counts[seasonOf(d)] ?? 0) + 1;
+  const all = SEASONS.every(([k]) => counts[k]);
   return (
     <div className="sstamps" aria-label="季節のスタンプ">
-      {SEASONS.map(([k, label]) => (
-        <span key={k} className={`sstamp ${counts[k] ? "on" : ""}`} title={counts[k] ? `${label}に ${counts[k]} 回` : `${label}はまだ`}>
-          {label}
-          {counts[k] > 1 && <span className="n">{counts[k]}</span>}
-        </span>
+      {SEASONS.map(([k, label], i) => (
+        <SeasonStamp key={k} season={k} label={label} count={counts[k] ?? 0} tilt={[-9, 6, -5, 8][i]} />
       ))}
+      {all && <span className="badge flower sstamp-all">一年めぐった</span>}
     </div>
+  );
+}
+function SeasonStamp({ season, label, count, tilt }: { season: string; label: string; count: number; tilt: number }) {
+  const on = count > 0;
+  const ink = on ? "#1b2a44" : "#a9b4c8";
+  return (
+    <span className={`sstamp2 ${on ? "on" : ""}`} style={{ transform: on ? `rotate(${tilt}deg)` : undefined }} title={on ? `${label}に ${count} 回` : `${label}はまだ`}>
+      <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
+        <circle cx="24" cy="24" r="22" fill={on ? "#fbfcfd" : "none"} stroke={ink} strokeWidth={on ? 2.2 : 1.2} strokeDasharray={on ? "26 2 10 2 18 3 30 2" : "3 3"} opacity={on ? 0.9 : 0.8} />
+        <circle cx="24" cy="24" r="18.5" fill="none" stroke={ink} strokeWidth="0.8" opacity={on ? 0.55 : 0.3} />
+        <g fill={ink} stroke={ink} opacity={on ? 0.9 : 0.35}>
+          {season === "spring" && (
+            <g transform="translate(24 22)">
+              {[0, 72, 144, 216, 288].map((a) => <ellipse key={a} cx="0" cy="-6.5" rx="3.6" ry="5.6" transform={`rotate(${a})`} stroke="none" />)}
+              <circle r="2.4" fill="#fbfcfd" stroke="none" />
+              <circle r="1.1" fill={on ? "#e3a21a" : ink} stroke="none" />
+            </g>
+          )}
+          {season === "summer" && (
+            <g transform="translate(24 21)" strokeLinecap="round">
+              <circle r="5.5" stroke="none" />
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <line key={a} x1="0" y1="-8" x2="0" y2="-10.5" strokeWidth="1.8" transform={`rotate(${a})`} />)}
+              <path d="M-13 12 q3 -3 6 0 t6 0 t6 0 t6 0" fill="none" strokeWidth="1.6" />
+            </g>
+          )}
+          {season === "autumn" && (
+            <g transform="translate(24 23)">
+              <path d="M0 -11 L2.5 -4 L9 -7 L5.5 -1 L11 3 L4 3 L4 10 L0 5 L-4 10 L-4 3 L-11 3 L-5.5 -1 L-9 -7 L-2.5 -4 Z" stroke="none" />
+              <line x1="0" y1="5" x2="0" y2="13" strokeWidth="1.4" strokeLinecap="round" />
+            </g>
+          )}
+          {season === "winter" && (
+            <g transform="translate(24 22)" fill="none" strokeWidth="1.6" strokeLinecap="round">
+              {[0, 60, 120].map((a) => (
+                <g key={a} transform={`rotate(${a})`}>
+                  <line x1="0" y1="-11" x2="0" y2="11" />
+                  <path d="M-3 -7 L0 -4 L3 -7 M-3 7 L0 4 L3 7" />
+                </g>
+              ))}
+            </g>
+          )}
+        </g>
+        <text x="24" y="42" textAnchor="middle" fontSize="7" fontWeight="700" fill={ink} opacity={on ? 0.9 : 0.6} fontFamily="'Yu Mincho', serif">{label}</text>
+      </svg>
+      {count > 1 && <span className="n">{count}</span>}
+    </span>
   );
 }

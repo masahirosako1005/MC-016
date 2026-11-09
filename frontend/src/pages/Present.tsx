@@ -1,4 +1,4 @@
-/** 発表用 1280×720。左にスマホ枠で本体（iframe）、上に場面の帯、右にプレゼンのスライド。DEMO_MODE=1 のときだけ。 */
+/** 発表用 1280×720。左にスマホ枠で本体（iframe。運営の窓もスマホ枠で見せ、PC 幅にも切り替え可）、上に場面の帯、右に 16:9 のスライド。DEMO_MODE=1 のときだけ。 */
 import { useEffect, useRef, useState } from "react";
 import { ApiError, get, post, toast } from "../api";
 import { navigate } from "../router";
@@ -10,6 +10,7 @@ type DemoState = { now: string; date: string; weekday: string; season_label: str
 type Metrics = Parameters<typeof MetricsGrid>[0]["m"];
 
 const SCENE_PATH: Record<string, string> = { pre: "/plan", trip: "/", night: "/memories", after30: "/memories", season: "/", admin: "/admin" };
+const SCREEN_NAME: Record<string, string> = { "/plan": "計画", "/": "マップ", "/memories": "思い出", "/wallet": "クーポン", "/book": "ひとめぐり帖", "/admin": "運営の窓" };
 
 export function PresentPage() {
   const [st, setSt] = useState<DemoState | null>(null);
@@ -17,6 +18,8 @@ export function PresentPage() {
   const [busy, setBusy] = useState(false);
   const [slide, setSlide] = useState(0);
   const [adminMode, setAdminMode] = useState(false);
+  const [wide, setWide] = useState(false);
+  const [screen, setScreen] = useState("/plan");
   const frame = useRef<HTMLIFrameElement>(null);
 
   const load = async () => {
@@ -44,7 +47,10 @@ export function PresentPage() {
     return () => window.removeEventListener("keydown", on);
   }, []);
 
-  const tell = (path: string) => frame.current?.contentWindow?.postMessage({ type: "hitomeguri", path }, window.location.origin);
+  const tell = (path: string) => {
+    setScreen(path);
+    frame.current?.contentWindow?.postMessage({ type: "hitomeguri", path }, window.location.origin);
+  };
   const go = async (key: string) => {
     if (!st) return;
     setBusy(true);
@@ -52,9 +58,11 @@ export function PresentPage() {
       if (key === "admin") {
         setAdminMode(true);
         setSlide(SLIDES.findIndex((s) => s.scene === "admin"));
+        tell("/admin");
         return;
       }
       setAdminMode(false);
+      setWide(false);
       if (key === "pre") await post("/demo/clock", { at: st.scenes[0].at });
       else if (key === "trip") await post("/demo/trip-day");
       else if (key === "night") await post("/demo/night");
@@ -72,15 +80,18 @@ export function PresentPage() {
   };
   if (!st) return <div className="page wide"><p className="muted">読み込み中…</p></div>;
   const cur = adminMode ? "admin" : (st.scene ?? "pre");
+  const curScene = st.scenes.find((x) => x.key === cur);
   const S = SLIDES[slide];
+  const phoneW = wide ? 760 : 340;
   return (
     <div style={{ width: 1280, height: 720, margin: "0 auto", display: "grid", gridTemplateRows: "64px 1fr", gap: 8, padding: 8, boxSizing: "border-box", background: "var(--bg)", overflow: "hidden" }}>
+      {/* 場面の帯: 選んでいる場面は濃い藍 + 山吹の下線 */}
       <div className="row" style={{ gap: 6 }}>
         <div className="serif" style={{ fontWeight: 800, fontSize: "1.1rem", marginRight: 8 }}>ひとめぐり便</div>
-        {st.scenes.map((s) => (
-          <button key={s.key} className={`btn small ${cur === s.key ? "primary" : ""}`} disabled={busy} style={{ flex: 1, flexDirection: "column", gap: 0, lineHeight: 1.1 }} onClick={() => go(s.key)} title={s.desc}>
-            <span>{s.label}</span>
-            {s.key !== "admin" && <span style={{ fontSize: "0.68rem", opacity: 0.8 }}>{s.at.slice(5, 10).replace("-", "/")} {s.at.slice(11, 16)}</span>}
+        {st.scenes.map((x) => (
+          <button key={x.key} className={`btn small ${cur === x.key ? "primary" : ""}`} disabled={busy} style={{ flex: 1, flexDirection: "column", gap: 0, lineHeight: 1.1, boxShadow: cur === x.key ? "inset 0 -4px 0 var(--yamabuki)" : undefined }} onClick={() => go(x.key)} title={x.desc}>
+            <span>{x.label}</span>
+            {x.key !== "admin" && <span style={{ fontSize: "0.68rem", opacity: 0.8 }}>{x.at.slice(5, 10).replace("-", "/")} {x.at.slice(11, 16)}</span>}
           </button>
         ))}
         <div style={{ textAlign: "right", minWidth: 150, fontSize: "0.85rem" }}>
@@ -88,38 +99,52 @@ export function PresentPage() {
           <div className="muted small">{st.season_label}・模擬の時計</div>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: adminMode ? "1fr 420px" : "380px 1fr", gap: 12, minHeight: 0 }}>
-        {adminMode ? (
-          <div style={{ border: "1px solid var(--ai-300)", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-            <iframe src="/#/admin" title="運営の窓" style={{ width: "100%", height: "100%", border: 0 }} />
+
+      <div style={{ display: "grid", gridTemplateColumns: `${phoneW + 40}px 1fr`, gap: 12, minHeight: 0, transition: "grid-template-columns .25s" }}>
+        {/* 左: スマホ枠（運営の窓もここで。PC 幅に切り替え可） */}
+        <div style={{ display: "grid", gridTemplateRows: "auto 1fr auto", gap: 6, justifyItems: "center", minHeight: 0 }}>
+          <div className="row" style={{ gap: 8, fontSize: ".85rem", alignItems: "center" }}>
+            <span className="badge strong">{curScene?.label ?? ""}</span>
+            <span><b>{SCREEN_NAME[screen] ?? "本体"}</b> の画面</span>
+            {adminMode && <button className="btn small ghost" style={{ minHeight: 30, padding: "2px 10px" }} onClick={() => setWide((w) => !w)}>{wide ? "スマホ幅で見る" : "PC 幅で見る"}</button>}
           </div>
-        ) : (
-          <div style={{ justifySelf: "center", width: 340, height: 630, border: "10px solid #1b2a44", borderRadius: 36, overflow: "hidden", background: "#000", boxShadow: "0 8px 30px #0004" }}>
+          <div style={{ width: phoneW, height: 590, border: "10px solid #1b2a44", borderRadius: wide ? 16 : 36, overflow: "hidden", background: "#000", boxShadow: "0 8px 30px #0004", transition: "width .25s" }}>
             <iframe ref={frame} src="/#/plan" title="ひとめぐり便（本体）" style={{ width: "100%", height: "100%", border: 0, background: "#fff" }} />
           </div>
-        )}
+          <div className="muted small" style={{ textAlign: "center" }}>{curScene?.desc ?? ""}</div>
+        </div>
+
+        {/* 右: 16:9 のスライド（文字は大きく、本体と同じ高さに収める） */}
         <div style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 8, minHeight: 0 }}>
-          <div className="card" style={{ position: "relative", overflow: "hidden", padding: 22, display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <div className="muted small" style={{ letterSpacing: ".2em" }}>{S.kicker}</div>
-            <h1 className="serif" style={{ fontSize: adminMode ? "1.5rem" : "1.9rem", margin: "4px 0 10px", lineHeight: 1.25 }}>{S.title}</h1>
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto", fontSize: adminMode ? ".95rem" : "1.05rem" }}>{S.body(metrics)}</div>
-            <div className="row between" style={{ marginTop: 8 }}>
-              <button className="btn ghost small" onClick={() => setSlide((s) => Math.max(0, s - 1))} disabled={slide === 0}>← 前</button>
-              <span className="muted small">{slide + 1} / {SLIDES.length}</span>
-              <button className="btn ghost small" onClick={() => setSlide((s) => Math.min(SLIDES.length - 1, s + 1))} disabled={slide === SLIDES.length - 1}>次 →</button>
+          <div style={{ display: "grid", placeItems: "center", minHeight: 0 }}>
+            <div className="card slide" style={{ position: "relative", overflow: "hidden", width: "100%", maxWidth: 860, aspectRatio: "16 / 9", padding: "26px 30px", display: "flex", flexDirection: "column", boxSizing: "border-box", borderColor: "var(--ai-900)" }}>
+              <div className="row between" style={{ alignItems: "flex-start" }}>
+                <div>
+                  <div className="muted" style={{ letterSpacing: ".25em", fontSize: ".9rem" }}>{S.kicker}</div>
+                  <h1 className="serif" style={{ fontSize: wide ? "1.5rem" : "1.9rem", margin: "4px 0 10px", lineHeight: 1.25 }}>{S.title}</h1>
+                </div>
+                <Mascot k={S.mascot ?? "lighthouse"} size={72} />
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: "auto", fontSize: wide ? "1rem" : "1.15rem", lineHeight: 1.6 }}>{S.body(metrics)}</div>
+              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 5, background: "var(--ai-100)" }}>
+                <div style={{ width: `${((slide + 1) / SLIDES.length) * 100}%`, height: "100%", background: "var(--yamabuki)" }} />
+              </div>
             </div>
-            <div style={{ position: "absolute", right: 14, top: 10, opacity: .9 }}><Mascot k={S.mascot ?? "lighthouse"} size={64} /></div>
           </div>
-          <div className="card row wrap" style={{ gap: 8, padding: 8 }}>
-            <span className="muted small">デモ操作:</span>
-            <select value={st.fixed_prize ?? ""} style={{ width: 200, minHeight: 36, padding: 4 }} onChange={async (e) => { await post("/demo/fix-lottery", { prize_id: e.target.value ? Number(e.target.value) : null }); await load(); }}>
-              <option value="">次の抽選: 通常</option>
-              {st.prizes.map((p) => <option key={p.id} value={p.id}>次の抽選を固定: {p.name}</option>)}
-            </select>
+          <div className="card row wrap" style={{ gap: 8, padding: 8, alignItems: "center" }}>
+            <button className="btn ghost small" onClick={() => setSlide((x) => Math.max(0, x - 1))} disabled={slide === 0}>← 前</button>
+            <span className="muted small" style={{ minWidth: 48, textAlign: "center" }}>{slide + 1} / {SLIDES.length}</span>
+            <button className="btn ghost small" onClick={() => setSlide((x) => Math.min(SLIDES.length - 1, x + 1))} disabled={slide === SLIDES.length - 1}>次 →</button>
+            <span style={{ width: 1, height: 24, background: "var(--ai-100)", margin: "0 4px" }} />
+            <span className="muted small">本体を:</span>
             <button className="btn small ghost" onClick={() => tell("/wallet")}>クーポン</button>
-            <button className="btn small ghost" onClick={() => tell("/book")}>ひとめぐり帖</button>
+            <button className="btn small ghost" onClick={() => tell("/book")}>帖</button>
             <button className="btn small ghost" onClick={() => tell(SCENE_PATH[cur] ?? "/")}>場面の画面へ</button>
-            <button className="btn small ghost" style={{ marginLeft: "auto", borderColor: "var(--yamabuki)", color: "#7a5300" }} onClick={async () => { if (confirm("主人公の履歴を初期化して旅前に戻します。よろしいですか？")) { await post("/demo/reset"); setAdminMode(false); await load(); tell("/plan"); setSlide(0); } }}>初期化</button>
+            <select value={st.fixed_prize ?? ""} style={{ width: 190, minHeight: 34, padding: 4, fontSize: ".85rem" }} onChange={async (e) => { await post("/demo/fix-lottery", { prize_id: e.target.value ? Number(e.target.value) : null }); await load(); }}>
+              <option value="">次の抽選: 通常</option>
+              {st.prizes.map((pz) => <option key={pz.id} value={pz.id}>抽選を固定: {pz.name}</option>)}
+            </select>
+            <button className="btn small ghost" style={{ marginLeft: "auto", borderColor: "var(--yamabuki)", color: "#7a5300" }} onClick={async () => { if (confirm("主人公の履歴を初期化して旅前に戻します。よろしいですか？")) { await post("/demo/reset"); setAdminMode(false); setWide(false); setSlide(0); await load(); tell("/plan"); } }}>初期化</button>
           </div>
         </div>
       </div>

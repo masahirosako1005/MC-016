@@ -5,6 +5,7 @@ import { del, get, post, put, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate } from "../router";
 import { GMap } from "../components/gmap";
+import { PinPopup } from "../components/pinpop";
 import { Avatar, PersonLine, Steps, TodoCard, type PersonLite } from "../components/parts";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, SettingsIcon, TopBar } from "../components/ui";
@@ -69,6 +70,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   const [title, setTitle] = useState("");
   const [help, setHelp] = useState(0);
   const [stage, setStage] = useState<"list" | "deck" | "map" | "date">("list");
+  const [mapSel, setMapSel] = useState<number | null>(null);
   const [newTitle, setNewTitle] = useState("");
 
   const load = async () => {
@@ -97,6 +99,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   if (!data || !plan || !hist) return <div className="page"><Loading /></div>;
   const count = plan.items.length;
   const leftoverIds = new Set(hist.leftovers.map((l) => l.id));
+  const mapSelPlace = data.places.find((p) => p.id === mapSel) ?? null;
   const remaining = data.places
     .filter((p) => !decided[p.id] && !p.in_plan)
     .sort((a, b) => Number(leftoverIds.has(b.id)) - Number(leftoverIds.has(a.id)));
@@ -231,16 +234,27 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
 
           {stage === "map" && (
             <>
-              <GMap
-                selectable
-                height={320}
-                pins={data.places.map((p) => ({ id: p.id, name: p.name, x: p.map_x, y: p.map_y, state: p.in_plan ? "plan" : "off", order: p.in_plan ? plan.items.findIndex((it) => it.id === p.id) + 1 : undefined }))}
-                onPick={(id) => {
-                  const pl = data.places.find((p) => p.id === id);
-                  if (pl) setPlace(pl, !pl.in_plan);
-                }}
-              />
-              <p className="muted small" style={{ margin: "6px 0 10px" }}>山吹のピンが行きたい場所。ピンをタップすると外したり、戻したりできます。</p>
+              <div style={{ position: "relative" }}>
+                <GMap
+                  height={320}
+                  selectedId={mapSel}
+                  pins={data.places.map((p) => ({ id: p.id, name: p.name, x: p.map_x, y: p.map_y, state: p.in_plan ? "plan" : "off", order: p.in_plan ? plan.items.findIndex((it) => it.id === p.id) + 1 : undefined }))}
+                  onPick={(id) => setMapSel((cur) => (cur === id ? null : id))}
+                />
+                {mapSelPlace && (
+                  <PinPopup
+                    pl={mapSelPlace}
+                    showStatus={false}
+                    note={mapSelPlace.last_visit ? `${mapSelPlace.last_visit.season_label}に行った場所（${mapSelPlace.last_visit.date.slice(5).replace("-", "/")}）` : undefined}
+                    onClose={() => setMapSel(null)}
+                    actions={[
+                      { label: mapSelPlace.in_plan ? "行きたいからはずす" : "行きたいに入れる", kind: mapSelPlace.in_plan ? "ghost" : "primary", onClick: () => { setPlace(mapSelPlace, !mapSelPlace.in_plan); } },
+                      { label: "くわしく", kind: "ghost", onClick: () => navigate(`/place/${mapSelPlace.id}`) },
+                    ]}
+                  />
+                )}
+              </div>
+              <p className="muted small" style={{ margin: "6px 0 10px" }}>山吹のピンが行きたい場所。ピンをタップすると、営業時間や住所を見ながら 行く／行かない を変えられます。</p>
               <div className="stack">
                 {plan.items.map((i) => (
                   <div key={i.id} className="card row" style={{ padding: 10 }}>

@@ -38,10 +38,10 @@ const SEEDS = [
 ] as const;
 const WEEKDAYS = "月火水木金土日";
 const SHOP_TABS = [
-  { key: "home", label: "ホーム" },
-  { key: "visits", label: "来訪・イベント" },
-  { key: "info", label: "お店の情報" },
-  { key: "letter", label: "旅行者への便り" },
+  { key: "home", label: "ホーム", icon: "⌂", desc: "次の一手と、来訪のようす（地区平均との比較）" },
+  { key: "visits", label: "来訪・イベント", icon: "◷", desc: "この場所に来る予定と、DMO からのイベントのお知らせ" },
+  { key: "info", label: "お店の情報", icon: "✎", desc: "紹介・おすすめ・写真・住所・電話・営業時間の編集" },
+  { key: "letter", label: "旅行者への便り", icon: "✉", desc: "来訪回数や種の状態で宛先を絞って、クーポン付きの便りを送る" },
 ];
 
 type EditState = {
@@ -135,7 +135,7 @@ export function ShopPanel() {
         <div className="muted small" style={{ alignSelf: "end" }}>{d.shop.area}・{d.shop.category}・還元 {d.shop.rate_percent}%</div>
       </div>
 
-      <SubNav items={SHOP_TABS} value={tab} onChange={pick} />
+      <SubNav items={SHOP_TABS} value={tab} onChange={pick} crumb="運営の窓 › お店・施設" />
       {tab === "home" && (
         <>
       <h2>次の一手</h2>

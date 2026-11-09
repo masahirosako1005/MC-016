@@ -75,16 +75,23 @@ export function AdminPage() {
   };
   return (
     <div className="page wide" style={{ maxWidth: 1100 }}>
-      <div className="row between adminhead" style={{ marginBottom: 8, gap: 8 }}>
-        <h1 style={{ margin: 0 }}>運営の窓</h1>
-        <div className="row">
-          <div className="segment" style={{ margin: 0, width: 260 }}>
-            <button className={role === "dmo" ? "on" : ""} onClick={() => pick("dmo")}>地域（DMO）</button>
-            <button className={role === "shop" ? "on" : ""} onClick={() => pick("shop")}>お店・施設</button>
+      <header className="adminhead">
+        <div className="row between" style={{ gap: 8 }}>
+          <div>
+            <h1 style={{ margin: 0 }}>運営の窓</h1>
+            <div className="muted small">立場をえらぶ → 下のタブで機能をえらぶ</div>
           </div>
           <button className="btn small ghost" onClick={() => navigate("/")}>本体へ</button>
         </div>
-      </div>
+        <div className="roletabs" role="tablist" aria-label="立場">
+          <button role="tab" aria-selected={role === "dmo"} className={role === "dmo" ? "on" : ""} onClick={() => pick("dmo")}>
+            <b>地域（DMO）</b><span className="small">島全体の指標・イベント・補填</span>
+          </button>
+          <button role="tab" aria-selected={role === "shop"} className={role === "shop" ? "on" : ""} onClick={() => pick("shop")}>
+            <b>お店・施設</b><span className="small">自分の店の編集・来訪・便り</span>
+          </button>
+        </div>
+      </header>
       {role === "dmo" ? <DmoPanel onShop={() => pick("shop")} /> : <ShopPanel />}
     </div>
   );
@@ -173,11 +180,11 @@ function EventsPanel({ editable }: { editable: boolean }) {
 }
 
 const DMO_TABS = [
-  { key: "home", label: "ホーム" },
-  { key: "events", label: "イベント・来訪予定" },
-  { key: "metrics", label: "指標・補填" },
-  { key: "settings", label: "還元率・商品・取り込み" },
-  { key: "records", label: "レシート・履歴" },
+  { key: "home", label: "ホーム", icon: "⌂", desc: "次の一手と、観光消費・来訪者の推移" },
+  { key: "events", label: "イベント・来訪予定", icon: "◷", desc: "外部イベントをお店へ知らせる／計画の日ごとの来訪予定" },
+  { key: "metrics", label: "指標・補填", icon: "▦", desc: "再訪率などの指標と、使われたクーポンの補填額" },
+  { key: "settings", label: "還元率・商品・取り込み", icon: "⚙", desc: "店の還元率、抽選の商品、CSV の取り込み" },
+  { key: "records", label: "レシート・履歴", icon: "≡", desc: "直近のレシートと変更履歴" },
 ];
 
 function DmoPanel({ onShop }: { onShop: () => void }) {
@@ -209,7 +216,7 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
     <div>
       <p className="muted" style={{ marginTop: 0 }}>{m.as_of.replace("T", " ")} 時点。{m.note} 店や人の格付け・順位は作りません。</p>
 
-      <SubNav items={DMO_TABS} value={tab} onChange={pick} />
+      <SubNav items={DMO_TABS} value={tab} onChange={pick} crumb="運営の窓 › 地域（DMO）" />
       {tab === "home" && (
         <>
       <h2>次の一手</h2>

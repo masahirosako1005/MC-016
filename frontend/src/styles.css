@@ -287,14 +287,29 @@ details.fold[open] > summary::after { content: "－"; }
 .hscroll { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
 .hscroll > * { flex: none; white-space: nowrap; }
 
-/* 運営の窓のサブナビ */
-.subnav { display: flex; gap: 6px; overflow-x: auto; padding: 6px 0 10px; position: sticky; top: 0; z-index: 8; background: var(--paper); scrollbar-width: none; }
-.subnav::-webkit-scrollbar { display: none; }
-.subnav button { flex: none; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--ai-700); font-weight: 600; cursor: pointer; white-space: nowrap; }
-.subnav button.on { background: var(--ai-900); color: var(--paper); border-color: var(--ai-900); }
+/* 運営の窓: 見出し（立場のタブ）と機能のタブ */
+.adminhead { position: sticky; top: 0; z-index: 9; background: var(--paper); padding: 4px 0 8px; margin-bottom: 4px; }
+.roletabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.roletabs button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: 8px 12px; border: 1.5px solid var(--ai-300); border-radius: var(--radius); background: var(--card); color: var(--ai-700); cursor: pointer; text-align: left; }
+.roletabs button .small { font-weight: 400; color: var(--muted); }
+.roletabs button.on { background: var(--ai-900); border-color: var(--ai-900); color: var(--paper); }
+.roletabs button.on .small { color: var(--ai-300); }
+.tabwrap { position: sticky; top: 118px; z-index: 8; background: var(--paper); }
+.fntabs { display: flex; gap: 0; overflow-x: auto; border-bottom: 2px solid var(--ai-100); scrollbar-width: none; }
+.fntabs::-webkit-scrollbar { display: none; }
+.fntabs button { flex: 1 0 auto; min-height: 46px; padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; background: none; color: var(--muted); font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.fntabs button .ico { font-size: 1rem; opacity: .8; }
+.fntabs button:hover { color: var(--ai-700); background: var(--ai-050); }
+.fntabs button.on { color: var(--ai-900); font-weight: 800; border-bottom-color: var(--yamabuki); }
+.crumb { padding: 8px 2px 6px; border-bottom: 1px dashed var(--ai-100); }
 
 /* 帖の季節スタンプ */
-.sstamps { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+.sstamps { display: flex; gap: 4px; justify-content: center; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.sstamp2 { position: relative; display: inline-block; width: 40px; height: 40px; opacity: .55; filter: grayscale(1); }
+.sstamp2.on { opacity: 1; filter: none; animation: stamp-in .5s cubic-bezier(.2,1.4,.4,1); }
+.sstamp2 .n { position: absolute; right: -3px; top: -3px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--yamabuki); color: #fff; font-size: .62rem; font-weight: 800; display: grid; place-items: center; padding: 0 3px; }
+.sstamp-all { width: 100%; text-align: center; margin-top: 2px; }
+@keyframes stamp-in { from { transform: scale(1.6) rotate(0deg); opacity: 0; } to { opacity: 1; } }
 .sstamp { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; line-height: 1; font-weight: 700; border: 1.5px dashed var(--ai-300); color: var(--ai-300); position: relative; }
 .sstamp.on { border: 2px solid var(--ai-900); color: var(--ai-900); background: var(--ai-050); transform: rotate(-8deg); font-family: var(--font-head); }
 .sstamp.on .n { position: absolute; right: -4px; top: -4px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--yamabuki); color: #fff; font-size: .62rem; display: grid; place-items: center; padding: 0 3px; transform: rotate(8deg); }
@@ -321,6 +336,7 @@ details.fold[open] > summary::after { content: "－"; }
   .advice-item .btn { grid-column: 1 / -1; width: 100%; }
   .page.wide .grid2, .page.wide .grid3 { grid-template-columns: 1fr; }
   .page.wide table.tbl { display: block; overflow-x: auto; }
-  .page.wide .adminhead { flex-wrap: wrap; }
-  .page.wide .adminhead .segment { width: 100% !important; }
+  .roletabs button { min-height: 52px; padding: 6px 10px; }
+  .roletabs button .small { display: none; }
+  .tabwrap { top: 110px; }
 }

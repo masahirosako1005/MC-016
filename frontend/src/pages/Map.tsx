@@ -4,6 +4,7 @@ import { get, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate } from "../router";
 import { GMap } from "../components/gmap";
+import { PinPopup } from "../components/pinpop";
 import { Avatar, TodoCard, type Todo } from "../components/parts";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, SettingsIcon, TopBar } from "../components/ui";
@@ -62,7 +63,9 @@ export function MapPage({ data }: { data: TodayView | null; reload: () => Promis
       <TodoCard todo={data.todo} onButton={() => (data.todo.path ? navigate(data.todo.path) : data.todo.place_id && navigate(`/place/${data.todo.place_id}`))} />
       <div style={{ position: "relative" }}>
         <GMap pins={pins} me={me} height={340} selectedId={sel} onPick={(id) => setSel((cur) => (cur === id ? null : id))} />
-        {selected && <PinPopup pl={selected} onClose={() => setSel(null)} />}
+        {selected && (
+          <PinPopup pl={selected} onClose={() => setSel(null)} actions={[{ label: selected.met_today || selected.status === "open" ? "この場所で 会えた・AR・レシート" : "この場所をくわしく", onClick: () => navigate(`/place/${selected.id}`) }]} />
+        )}
       </div>
       {!selected && <p className="muted small" style={{ margin: "4px 0 0" }}>ピンをタップすると、営業時間・住所・電話がその場で見られます。</p>}
       <div className="row wrap small muted" style={{ gap: 10, margin: "6px 0 0" }}>
@@ -111,31 +114,3 @@ function PlaceRow({ pl, order }: { pl: PlaceCard; order?: number }) {
   );
 }
 
-
-/** ピンのポップアップ: 画面を移らずに、必要最低限（状態・営業・住所・電話・いる人）だけ。くわしくは場所の画面へ。 */
-function PinPopup({ pl, onClose }: { pl: PlaceCard; onClose: () => void }) {
-  return (
-    <div className="mappop" role="dialog" aria-label={pl.name}>
-      <div className="row" style={{ alignItems: "flex-start", gap: 10 }}>
-        <img src={pl.image} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, flex: "none" }} />
-        <div className="grow" style={{ minWidth: 0 }}>
-          <div className="row wrap" style={{ gap: 6 }}>
-            <span className="serif" style={{ fontSize: "1.05rem", fontWeight: 700 }}>{pl.name}</span>
-            {pl.met_today ? <Badge strong>会えた</Badge> : <Badge soft={pl.status !== "open"} strong={pl.status === "open"}>{pl.status_label}</Badge>}
-          </div>
-          <div className="small" style={{ marginTop: 2 }}>{pl.area}{pl.hours ? `・${pl.hours}` : ""}{pl.closed ? `・${pl.closed}` : ""}</div>
-          {pl.address && <div className="small muted">{pl.address}</div>}
-          {pl.phone && <div className="small"><a href={`tel:${pl.phone.replace(/-/g, "")}`} style={{ color: "var(--ai-700)" }}>☎ {pl.phone}</a></div>}
-          <div className="row" style={{ gap: 4, marginTop: 4 }}>
-            {pl.people.map((p) => <Avatar key={p.id} p={p} size="sm" met={p.met_today} dim={!p.met_today && !(p.forecast.status === "open" || p.forecast.status === "closing_soon")} />)}
-            <span className="muted small">{pl.people.map((p) => `${p.name}（${p.role}）`).join("・")}</span>
-          </div>
-        </div>
-        <button className="iconbtn" aria-label="とじる" onClick={onClose} style={{ flex: "none" }}>×</button>
-      </div>
-      <div className="row" style={{ marginTop: 8 }}>
-        <button className="btn primary grow mark small" onClick={() => navigate(`/place/${pl.id}`)}>{pl.met_today || pl.status === "open" ? "この場所で 会えた・AR・レシート" : "この場所をくわしく"}</button>
-      </div>
-    </div>
-  );
-}
