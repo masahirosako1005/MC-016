@@ -26,6 +26,7 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
   const presetShop = Number(route.query.get("shop") || 0);
   const [result, setResult] = useState<{ hit: boolean; prize: { name: string; category: string }; balance: number } | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [pending, setPending] = useState<{ hit: boolean; prize: { name: string; category: string }; balance: number } | null>(null);
   const [help, setHelp] = useState(0);
   const drawRef = useRef<HTMLDivElement>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -40,17 +41,24 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
     setDrawing(true);
     setResult(null);
     try {
-      const r = await post<{ hit: boolean; prize: { name: string; category: string }; balance: number }>("/draws");
-      setTimeout(() => {
-        setResult(r);
-        setDrawing(false);
-        load();
-        onChanged?.();
-      }, 900);
+      const [r] = await Promise.all([
+        post<{ hit: boolean; prize: { name: string; category: string }; balance: number }>("/draws"),
+        new Promise((res) => setTimeout(res, 450)),
+      ]);
+      // 結果は先に決まっている。スロットが止まってから見せる
+      setPending(r);
     } catch (e) {
       setDrawing(false);
       toast((e as Error).message, "error");
     }
+  };
+  const settle = () => {
+    if (!pending) return;
+    setResult(pending);
+    setPending(null);
+    setDrawing(false);
+    load();
+    onChanged?.();
   };
   const todo = usable.length > 0
     ? { kind: "use", text: `使えるクーポンが ${usable.length} 枚。${usable[0].category}のお店で、お店の人の前で長押しして使います。`, button: null, path: null }
@@ -109,14 +117,16 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
             ))}
           </tbody>
         </table>
+        <Slot prizes={w.prizes} target={pending?.prize.category ?? null} spinning={drawing} onDone={settle} />
         <button className={`btn block ${canDraw ? "primary mark" : "ghost"}`} style={{ marginTop: 10 }} disabled={!canDraw || drawing} onClick={draw}>
-          {drawing ? "抽選中…" : canDraw ? `${t("draw")}（${w.points_per_draw} pt）` : `あと ${w.points_per_draw - w.balance} pt で抽選できます`}
+          {drawing ? "ドキドキ…" : canDraw ? `${t("draw")}（${w.points_per_draw} pt）` : `あと ${w.points_per_draw - w.balance} pt で抽選できます`}
         </button>
         {result && (
-          <div className="card letter" style={{ marginTop: 10, textAlign: "center" }}>
-            <div className="title" style={{ fontSize: "1.4rem" }}>{result.hit ? "あたり" : "はずれ"}</div>
+          <div className="card letter slot-result" style={{ marginTop: 10 }}>
+            <img src={`/img/mascot/ui/hoshimaru_${result.hit ? "cheer" : "sorry"}.png`} alt="" width={72} height={72} style={{ display: "block", margin: "0 auto 4px" }} />
+            <div className="title" style={{ fontSize: "1.5rem" }}>{result.hit ? "あたり！" : "ざんねん…"}</div>
             <div>{result.prize.name}</div>
-            {result.hit && <div className="muted small">次の旅（明日以降）からクーポンとして使えます</div>}
+            {result.hit ? <div className="muted small">次の旅（明日以降）からクーポンとして使えます</div> : <div className="muted small">ポイントがたまったら、またどうぞ</div>}
           </div>
         )}
       </div>
@@ -222,6 +232,66 @@ function ReceiptForm({ shops, preset, onDone, onCancel }: { shops: Wallet["shops
         <button className="btn ghost grow" onClick={onCancel}>やめる</button>
         <button className="btn primary grow mark" disabled={busy} onClick={submit}>登録する</button>
       </div>
+    </div>
+  );
+}
+
+
+/** スロット演出。3 つのリールが順に止まり、全部そろった目が結果。目はクーポンのカテゴリ（飲食・宿泊・体験・物販）と はずれ。 */
+function Slot({ prizes, target, spinning, onDone }: { prizes: Prize[]; target: string | null; spinning: boolean; onDone: () => void }) {
+  const syms = Array.from(new Map(prizes.map((p) => [p.category, p.category === "miss" ? "はずれ" : p.category])).entries());
+  const [offsets, setOffsets] = useState<number[]>([0, 0, 0]);
+  const [idle, setIdle] = useState(true);
+  const [anim, setAnim] = useState(true);
+  const doneRef = useRef(0);
+  const H = 72;
+  const REP = 7;
+  const n = Math.max(1, syms.length);
+  useEffect(() => {
+    if (!spinning) return;
+    setIdle(false);
+    doneRef.current = 0;
+    // いったん先頭に戻してから（アニメなし）、結果が来たら回す
+    setAnim(false);
+    setOffsets([0, 0, 0]);
+    const t0 = setTimeout(() => setAnim(true), 30);
+    return () => clearTimeout(t0);
+  }, [spinning, n]);
+  useEffect(() => {
+    if (!target) return;
+    const idx = Math.max(0, syms.findIndex(([k]) => k === target));
+    // 結果の目で止める（3 つとも同じ目。順に 1.3s / 1.9s / 2.5s）
+    const stopAt = -((REP - 2) * n + idx) * H;
+    setOffsets([stopAt, stopAt, stopAt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
+  if (idle && !target) {
+    return (
+      <div className="slot" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="reel"><div className="strip"><div className="sym" style={{ color: "var(--ai-300)" }}>？</div></div></div>
+        ))}
+      </div>
+    );
+  }
+  const durations = [1.3, 1.9, 2.5];
+  return (
+    <div className="slot" role="img" aria-label={target ? "抽選の結果" : "抽選中"}>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="reel">
+          <div
+            className="strip"
+            style={{ transform: `translateY(${offsets[i]}px)`, transition: anim ? `transform ${durations[i]}s cubic-bezier(.15,.85,.25,1)` : "none" }}
+            onTransitionEnd={() => {
+              if (!target) return;
+              doneRef.current += 1;
+              if (doneRef.current === 3) onDone();
+            }}
+          >
+            {Array.from({ length: REP }).flatMap((_, r) => syms.map(([k, label]) => <div key={`${r}-${k}`} className={`sym ${k === "miss" ? "miss" : ""}`}>{label}</div>))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

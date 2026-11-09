@@ -44,13 +44,13 @@ export function AdvicePanel({ path, onAction, deps = [] }: { path: string; onAct
         {items === null && <div className="muted small">考え中…</div>}
         {items?.length === 0 && <div className="muted small">いまは特にありません。</div>}
         {items?.map((a, i) => (
-          <div key={i} className="row" style={{ alignItems: "flex-start", gap: 10, padding: "8px 0", borderTop: i ? "1px solid var(--ai-100)" : undefined }}>
-            <span className={`badge ${a.priority === "high" ? "flower" : a.priority === "mid" ? "" : "soft"}`} style={{ flex: "none", minWidth: 74, textAlign: "center" }}>{PRIO[a.priority]}</span>
-            <div className="grow">
+          <div key={i} className="advice-item" style={{ borderTop: i ? "1px solid var(--ai-100)" : undefined }}>
+            <span className={`badge ${a.priority === "high" ? "flower" : a.priority === "mid" ? "" : "soft"}`} style={{ minWidth: 74, textAlign: "center", alignSelf: "start" }}>{PRIO[a.priority]}</span>
+            <div>
               <div style={{ fontWeight: 700 }}>{a.title}</div>
               <div className="muted small">{a.why}</div>
             </div>
-            <button className="btn small" style={{ flex: "none" }} onClick={() => onAction(a.action)}>{a.action.label}</button>
+            <button className="btn small" onClick={() => onAction(a.action)}>{a.action.label}</button>
           </div>
         ))}
       </div>

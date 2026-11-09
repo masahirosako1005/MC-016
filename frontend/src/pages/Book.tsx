@@ -25,6 +25,7 @@ export function BookPage() {
   if (!b) return <div className="page"><Loading /></div>;
   const met = b.people.filter((p) => p.relationship.days > 0);
   const flowers = b.people.reduce((n, p) => n + p.fulfilled.length, 0);
+  const stamps = b.people.reduce((n, p) => n + new Set(p.met_days.map(seasonOf)).size, 0);
   const sorted = [...b.people].sort((x, y) => Number(y.relationship.days > 0) - Number(x.relationship.days > 0) || x.id - y.id);
   return (
     <div className="page">
@@ -37,13 +38,15 @@ export function BookPage() {
             <div className="title" style={{ fontSize: "2rem", lineHeight: 1.1 }}>{met.length} <span style={{ fontSize: "1rem" }}>/ {b.people.length} 人</span></div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div className="muted small">咲いた花</div>
-            <div className="title" style={{ fontSize: "2rem", lineHeight: 1.1 }}>{flowers}</div>
+            <div className="muted small">季節のスタンプ</div>
+            <div className="title" style={{ fontSize: "2rem", lineHeight: 1.1 }}>{stamps} <span style={{ fontSize: "1rem" }}>/ {b.people.length * 4}</span></div>
+            <div className="muted small">果たした約束（花） {flowers}</div>
           </div>
         </div>
         <div className="progress" style={{ marginTop: 10 }}><i style={{ width: `${(met.length / b.people.length) * 100}%` }} /></div>
         <div className="muted small" style={{ marginTop: 6 }}>
           {met.length === b.people.length ? "島の全員に会えました。おかえりなさい。" : `あと ${b.people.length - met.length} 人で、星凪諸島の人たち全員に会えます。`}
+          <br />会えた季節にスタンプが押されます（数字は会えた回数）。春夏秋冬の 4 つがそろうと、その人と一年をめぐったしるし。
         </div>
       </div>
 
@@ -63,6 +66,7 @@ export function BookPage() {
               <div style={{ marginTop: 4 }}>
                 {isMet ? <Badge strong>{p.relationship.label}</Badge> : <Badge soft>まだ会っていない</Badge>}
               </div>
+              <SeasonStamps days={p.met_days} />
               {p.seed && (
                 <div className="row small" style={{ gap: 4, justifyContent: "center", marginTop: 4 }}>
                   <SeedIcon state={p.seed.state} size={16} />
@@ -102,6 +106,28 @@ export function BookPage() {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+const SEASONS = [["spring", "春"], ["summer", "夏"], ["autumn", "秋"], ["winter", "冬"]] as const;
+function seasonOf(day: string): string {
+  const m = Number(day.slice(5, 7));
+  return m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
+}
+/** 春夏秋冬のスタンプ。会えた季節は押され、会えた回数を数字で添える。 */
+function SeasonStamps({ days }: { days: string[] }) {
+  const counts: Record<string, number> = {};
+  for (const d of days) counts[seasonOf(d)] = (counts[seasonOf(d)] ?? 0) + 1;
+  return (
+    <div className="sstamps" aria-label="季節のスタンプ">
+      {SEASONS.map(([k, label]) => (
+        <span key={k} className={`sstamp ${counts[k] ? "on" : ""}`} title={counts[k] ? `${label}に ${counts[k]} 回` : `${label}はまだ`}>
+          {label}
+          {counts[k] > 1 && <span className="n">{counts[k]}</span>}
+        </span>
+      ))}
     </div>
   );
 }

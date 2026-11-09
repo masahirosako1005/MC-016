@@ -23,8 +23,8 @@ const AREAS: { name: string; x: number; y: number; anchor?: "start" | "middle" |
 ];
 
 export function GMap({
-  pins, me, onPick, height = 300, children, selectable,
-}: { pins: GPin[]; me?: { x: number; y: number; label?: string } | null; onPick?: (id: number) => void; height?: number; children?: ReactNode; selectable?: boolean }) {
+  pins, me, onPick, height = 300, children, selectable, selectedId,
+}: { pins: GPin[]; me?: { x: number; y: number; label?: string } | null; onPick?: (id: number) => void; height?: number; children?: ReactNode; selectable?: boolean; selectedId?: number | null }) {
   return (
     <svg viewBox="0 0 400 300" className="gmap" style={{ maxHeight: height }} role="img" aria-label="星凪諸島の地図">
       <defs>
@@ -37,7 +37,7 @@ export function GMap({
       ))}
       {children}
       {[...pins].sort((a, b) => (a.state === "plan" ? 1 : 0) - (b.state === "plan" ? 1 : 0)).map((p) => (
-        <Pin key={p.id} p={p} onPick={onPick} selectable={selectable} />
+        <Pin key={p.id} p={p} onPick={onPick} selectable={selectable} selected={selectedId === p.id} />
       ))}
       {me && (
         <g transform={`translate(${me.x} ${me.y})`}>
@@ -50,7 +50,7 @@ export function GMap({
   );
 }
 
-function Pin({ p, onPick, selectable }: { p: GPin; onPick?: (id: number) => void; selectable?: boolean }) {
+function Pin({ p, onPick, selectable, selected }: { p: GPin; onPick?: (id: number) => void; selectable?: boolean; selected?: boolean }) {
   const plan = p.state === "plan";
   const visited = p.state === "visited";
   const off = p.state === "off";
@@ -58,6 +58,7 @@ function Pin({ p, onPick, selectable }: { p: GPin; onPick?: (id: number) => void
   const scale = plan ? 1.2 : 0.95;
   return (
     <g transform={`translate(${p.x} ${p.y})`} style={{ cursor: onPick ? "pointer" : "default" }} onClick={() => onPick?.(p.id)} role={onPick ? "button" : undefined} aria-label={p.name} opacity={off ? 0.85 : 1}>
+      {selected && <circle cy="-20" r="20" fill="none" stroke={YAMA} strokeWidth="2" opacity=".9"><animate attributeName="r" values="16;21;16" dur="1.6s" repeatCount="indefinite" /></circle>}
       <g transform={`scale(${scale})`} filter="url(#g-shadow)">
         <path d="M0 0 c-7 -9 -11 -14 -11 -20 a11 11 0 1 1 22 0 c0 6 -4 11 -11 20z" fill={color} stroke={plan || visited ? "#fff" : AI} strokeWidth="1.5" />
         {plan && p.order !== undefined && <text y="-16" textAnchor="middle" fontSize="11" fill="#fff" fontWeight="800">{p.order}</text>}

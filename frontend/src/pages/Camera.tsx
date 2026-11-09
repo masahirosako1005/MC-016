@@ -183,23 +183,28 @@ export function CameraPage({ kind, id }: { kind: string; id: number }) {
         <Overlay ref={overlayRef} frame={frame} compact={useFrame} />
         {source === null && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#fff", background: "#0006" }}>カメラを準備中…</div>}
       </div>
-      <div className="row wrap" style={{ gap: 6, margin: "8px 0 4px" }}>
+      {/* シャッターは映像のすぐ下。フレームはその下に横スクロールで */}
+      <div className="row" style={{ marginTop: 8, alignItems: "stretch" }}>
+        <button className="btn ghost small" style={{ flex: "none" }} onClick={() => fileRef.current?.click()} aria-label="写真を選ぶ">写真を<br />選ぶ</button>
+        <button className="btn primary grow mark" style={{ minHeight: 56, fontSize: "1.1rem" }} disabled={busy || source === null} onClick={capture}>{busy ? "保存中…" : "● 撮る"}</button>
+        {source !== "camera" ? (
+          <button className="btn ghost small" style={{ flex: "none" }} onClick={startCamera}>カメラ</button>
+        ) : (
+          <button className="btn ghost small" style={{ flex: "none" }} onClick={() => { stopCamera(); setSource("scene"); }}>風景で<br />撮る</button>
+        )}
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; stopCamera(); setFileUrl(URL.createObjectURL(f)); setSource("file"); }} />
+      <div className="muted small" style={{ margin: "10px 0 2px" }}>フレームをえらぶ（★はこの場所だけ）</div>
+      <div className="hscroll">
         {frame.frames.map((f) => (
           <button key={f.key} className={`chip ${frameKey === f.key ? "on" : ""}`} onClick={() => setFrameKey(f.key)}>{f.spot ? "★ " : ""}{f.label}</button>
         ))}
+        {!useFrame && <button className="chip" onClick={() => setBig((b) => !b)}>{big ? "ほしまるを小さく" : "ほしまるを大きく"}</button>}
       </div>
       <p className="muted small" style={{ margin: "4px 0 8px" }}>
-        {useFrame ? `${sel?.label}。この場所でしか選べない★フレームもあります。` : mascot ? `${mascot.name} — ${mascot.about} ドラッグで動かせます。` : ""}
+        {useFrame ? `${sel?.label}。` : mascot ? `${mascot.name} — ${mascot.about} ドラッグで動かせます。` : ""}
         {source === "scene" ? `いまは${frame.place_name}の風景写真に合成しています。` : ""}
       </p>
-      <div className="row" style={{ marginBottom: 8 }}>
-        {!useFrame && <button className="btn small ghost grow" onClick={() => setBig((b) => !b)}>{big ? "小さく" : "大きく"}</button>}
-        <button className="btn small ghost grow" onClick={() => fileRef.current?.click()}>写真を選ぶ</button>
-        <button className="btn small ghost grow" onClick={() => { stopCamera(); setSource("scene"); }}>風景で撮る</button>
-        {source !== "camera" && <button className="btn small ghost grow" onClick={startCamera}>カメラ</button>}
-      </div>
-      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; stopCamera(); setFileUrl(URL.createObjectURL(f)); setSource("file"); }} />
-      <button className="btn primary block mark" disabled={busy || source === null} onClick={capture}>{busy ? "保存中…" : "撮る"}</button>
       <button className="btn ghost block small" style={{ marginTop: 8 }} onClick={() => { stopCamera(); navigate(backPath); }}>{frame.place_name}にもどる</button>
     </div>
   );

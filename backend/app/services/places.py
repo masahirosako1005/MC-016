@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime
 
 from ..config import settings
 from ..repositories import master
@@ -83,6 +83,18 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
         status = "closed"
         status_label = "きょうはお休み"
     shop_photo = next((sh["id"] for sh in master.shops(conn) if sh["spot_id"] == s["id"] and sh.get("photo_path")), None)
+    # 前回この場所に行った日（きょうより前に、ここの人に会えた最後の日）。計画カードの「前回○に行った」に使う
+    today = now.date().isoformat()
+    season = season_of(now.date())
+    last = conn.execute(
+        "SELECT MAX(m.met_on) FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops sh ON sh.id = p.shop_id WHERE m.user_id = ? AND sh.spot_id = ? AND m.met_on < ?",
+        (uid, s["id"], today),
+    ).fetchone()[0]
+    last_visit = None
+    if last:
+        d = date.fromisoformat(last)
+        last_visit = {"date": last, "season": season_of(d), "season_label": LABEL[season_of(d)], "same_season": season_of(d) == season}
+    main_shop = next((sh for sh in master.shops(conn) if sh["spot_id"] == s["id"]), None)
     card = {
         "id": s["id"], "name": s["name"].split("（")[0], "full_name": s["name"], "area": s["area"], "svg_key": s["svg_key"],
         "image": f"/api/shops/{shop_photo}/photo" if shop_photo else f"/img/places/{s['svg_key']}.jpg",
@@ -91,6 +103,12 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
         "best_season": s["best_season"], "best_season_label": LABEL[s["best_season"]],
         "map_x": s["map_x"], "map_y": s["map_y"],
         "in_plan": s["id"] in plan_ids,
+        "last_visit": last_visit,
+        # 地図のポップアップ用の軽い情報
+        "hours": f"{main_shop['open_time']}〜{main_shop['close_time']}" if main_shop else "",
+        "closed": (("月火水木金土日"[main_shop["closed_weekday"]] + "曜定休") if main_shop.get("closed_weekday") is not None else "無休") if main_shop else "",
+        "address": main_shop.get("address") if main_shop else None,
+        "phone": main_shop.get("phone") if main_shop else None,
         "people": people,
         "status": status, "status_label": status_label,
         "met_today": any(p["met_today"] for p in people),

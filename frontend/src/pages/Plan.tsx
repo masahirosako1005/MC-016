@@ -23,6 +23,8 @@ export type PersonFull = Omit<PersonLite, "forecast" | "met_today" | "shop"> & {
 export type PlaceCard = {
   id: number; name: string; full_name: string; area: string; svg_key: string; image: string; description: string; access: string;
   best_season: string; best_season_label: string; map_x: number; map_y: number; in_plan: boolean; recommend?: string | null;
+  last_visit?: { date: string; season: string; season_label: string; same_season: boolean } | null;
+  hours?: string; closed?: string; address?: string | null; phone?: string | null;
   people: PersonFull[];
   status: "open" | "not_yet" | "closed"; status_label: string; met_today: boolean;
   voices?: { id: number; season_label: string; author: string; text: string; hashtags: string }[];
@@ -211,7 +213,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
             <>
               <div className="progress" style={{ marginBottom: 10 }}><i style={{ width: `${((data.places.length - remaining.length) / data.places.length) * 100}%` }} /></div>
               {remaining.length > 0 ? (
-                <Deck cards={remaining.slice(0, 2)} total={remaining.length} leftoverIds={leftoverIds} onDecide={decide} />
+                <Deck cards={remaining.slice(0, 2)} total={remaining.length} leftoverIds={leftoverIds} onDecide={decide} season_label={data.season_label} />
               ) : (
                 <div className="card">
                   <p>すべてのカードを見ました。</p>
@@ -346,7 +348,7 @@ function nextDay(iso: string): string {
 }
 
 /** スワイプの山札。右=行く、左=行かない。 */
-function Deck({ cards, total, leftoverIds, onDecide }: { cards: PlaceCard[]; total: number; leftoverIds: Set<number>; onDecide: (pl: PlaceCard, d: "go" | "skip") => void }) {
+function Deck({ cards, total, leftoverIds, onDecide, season_label }: { cards: PlaceCard[]; total: number; leftoverIds: Set<number>; onDecide: (pl: PlaceCard, d: "go" | "skip") => void; season_label: string }) {
   const t = useT();
   const [dx, setDx] = useState(0);
   const start = useRef<number | null>(null);
@@ -390,7 +392,13 @@ function Deck({ cards, total, leftoverIds, onDecide }: { cards: PlaceCard[]; tot
           <div style={{ position: "relative" }}>
             <img src={top.image} alt={top.name} style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} draggable={false} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(27,42,68,.05), rgba(27,42,68,.55))" }} />
-            {leftoverIds.has(top.id) && <span className="badge flower" style={{ position: "absolute", top: 10, left: 10 }}>前回行けなかった場所</span>}
+            {leftoverIds.has(top.id) ? (
+              <span className="badge flower" style={{ position: "absolute", top: 10, left: 10 }}>前回行けなかった場所</span>
+            ) : top.last_visit ? (
+              <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(251,252,253,.92)", color: "var(--ai-900)" }}>
+                {top.last_visit.season_label}に行った（{top.last_visit.date.slice(5).replace("-", "/")}）{!top.last_visit.same_season && <>　→ {season_label}はどう？</>}
+              </span>
+            ) : null}
             <div style={{ position: "absolute", left: 14, bottom: 12, color: "#fbfcfd" }}>
               <div className="serif" style={{ fontSize: "1.5rem" }}>{top.name}</div>
               <div className="small">{top.area}・{top.best_season_label}が見ごろ</div>

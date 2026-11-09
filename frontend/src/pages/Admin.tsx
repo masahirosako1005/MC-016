@@ -4,6 +4,7 @@ import { get, post, put, sendForm, toast } from "../api";
 import { navigate } from "../router";
 import { BarChart, LineChart, Stat } from "../components/charts";
 import { AdvicePanel, scrollToId, type Advice } from "../components/advice";
+import { SubNav, useSubTab } from "../components/subnav";
 import { ShopPanel } from "./AdminShop";
 
 type MetricVal = { value: number | null; n: number; dummy_n: number; unit: string; suppressed: boolean };
@@ -74,7 +75,7 @@ export function AdminPage() {
   };
   return (
     <div className="page wide" style={{ maxWidth: 1100 }}>
-      <div className="row between" style={{ marginBottom: 8 }}>
+      <div className="row between adminhead" style={{ marginBottom: 8, gap: 8 }}>
         <h1 style={{ margin: 0 }}>運営の窓</h1>
         <div className="row">
           <div className="segment" style={{ margin: 0, width: 260 }}>
@@ -171,7 +172,20 @@ function EventsPanel({ editable }: { editable: boolean }) {
   );
 }
 
+const DMO_TABS = [
+  { key: "home", label: "ホーム" },
+  { key: "events", label: "イベント・来訪予定" },
+  { key: "metrics", label: "指標・補填" },
+  { key: "settings", label: "還元率・商品・取り込み" },
+  { key: "records", label: "レシート・履歴" },
+];
+
 function DmoPanel({ onShop }: { onShop: () => void }) {
+  const [tab, pick] = useSubTab("hitomeguri.admin.dmo.tab", "home");
+  const go = (t: string, id: string) => {
+    pick(t);
+    setTimeout(() => scrollToId(id), 80);
+  };
   const [m, setM] = useState<Metrics | null>(null);
   const [ov, setOv] = useState<Overview | null>(null);
   const [preview, setPreview] = useState<ImportResult[] | null>(null);
@@ -195,6 +209,9 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
     <div>
       <p className="muted" style={{ marginTop: 0 }}>{m.as_of.replace("T", " ")} 時点。{m.note} 店や人の格付け・順位は作りません。</p>
 
+      <SubNav items={DMO_TABS} value={tab} onChange={pick} />
+      {tab === "home" && (
+        <>
       <h2>次の一手</h2>
       <AdvicePanel
         path="/admin/advice"
@@ -203,18 +220,29 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
           if (a.kind === "notice" || a.kind === "shops_recommend") {
             toast(a.kind === "notice" ? "お店の窓で「便り」を送れます" : "お店の窓で「紹介を編集」できます");
             onShop();
-          } else if (a.kind === "prizes") scrollToId("dmo-prizes");
-          else if (a.kind === "events") scrollToId("dmo-events");
-          else scrollToId("dmo-visits");
+          } else if (a.kind === "prizes") go("settings", "dmo-prizes");
+          else if (a.kind === "events") go("events", "dmo-events");
+          else go("events", "dmo-visits");
         }}
       />
 
       <h2>ダッシュボード（観光消費・来訪者の推移）</h2>
       <DmoDashboard />
 
+        </>
+      )}
+      {tab === "events" && (
+        <>
       <h2 id="dmo-events">イベントのお知らせ（お店へ）</h2>
       <EventsPanel editable />
 
+      <h2 id="dmo-visits">来訪予定（いつ、だれが来るか）</h2>
+      <VisitsTable />
+
+        </>
+      )}
+      {tab === "metrics" && (
+        <>
       <h2>指標</h2>
       <MetricsGrid m={m} />
       <div className="card" style={{ marginTop: 10 }}>
@@ -234,9 +262,30 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
         </div>
       </div>
 
-      <h2 id="dmo-visits">来訪予定（いつ、だれが来るか）</h2>
-      <VisitsTable />
+      <h2>補填（使われたクーポン）</h2>
+      <div className="card">
+        <label className="field" style={{ maxWidth: 220 }}>
+          <span>月</span>
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+        </label>
+        {reimb && (
+          <table className="tbl">
+            <thead><tr><th>店</th><th>地区</th><th>区分</th><th className="num">使用枚数</th><th className="num">補填額</th></tr></thead>
+            <tbody>
+              {reimb.rows.filter((r) => r.used_count > 0).map((r) => (
+                <tr key={r.shop_id}><td>{r.shop_name}</td><td>{r.area}</td><td>{r.category}</td><td className="num">{r.used_count}</td><td className="num">{r.amount.toLocaleString()} 円</td></tr>
+              ))}
+              <tr><th>合計</th><td></td><td></td><th className="num">{reimb.total_count}</th><th className="num">{reimb.total_amount.toLocaleString()} 円</th></tr>
+            </tbody>
+          </table>
+        )}
+        <div className="muted" style={{ marginTop: 6 }}>額面の合計を、事業者から店へ補填する金額として示します。支払い状態の管理は行いません。</div>
+      </div>
 
+        </>
+      )}
+      {tab === "settings" && (
+        <>
       <h2>CSV 取り込み</h2>
       <div className="card">
         <div className="muted">取り込み元: {ov.sample_dir}（{ov.sample_files.length} ファイル: {ov.sample_files.join(", ")}）。列名から種類を判定し、行ごとに検証。2 回取り込んでも増えません。</div>
@@ -301,26 +350,10 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
         </div>
       </div>
 
-      <h2>補填（使われたクーポン）</h2>
-      <div className="card">
-        <label className="field" style={{ maxWidth: 220 }}>
-          <span>月</span>
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-        </label>
-        {reimb && (
-          <table className="tbl">
-            <thead><tr><th>店</th><th>地区</th><th>区分</th><th className="num">使用枚数</th><th className="num">補填額</th></tr></thead>
-            <tbody>
-              {reimb.rows.filter((r) => r.used_count > 0).map((r) => (
-                <tr key={r.shop_id}><td>{r.shop_name}</td><td>{r.area}</td><td>{r.category}</td><td className="num">{r.used_count}</td><td className="num">{r.amount.toLocaleString()} 円</td></tr>
-              ))}
-              <tr><th>合計</th><td></td><td></td><th className="num">{reimb.total_count}</th><th className="num">{reimb.total_amount.toLocaleString()} 円</th></tr>
-            </tbody>
-          </table>
-        )}
-        <div className="muted" style={{ marginTop: 6 }}>額面の合計を、事業者から店へ補填する金額として示します。支払い状態の管理は行いません。</div>
-      </div>
-
+        </>
+      )}
+      {tab === "records" && (
+        <>
       <h2>直近のレシート（画像は 7 日で削除）</h2>
       <div className="card">
         <table className="tbl">
@@ -349,6 +382,8 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }
