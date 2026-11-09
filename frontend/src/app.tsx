@@ -8,6 +8,7 @@ import { ShopPage } from "./pages/Shop";
 import { WalletPage } from "./pages/Wallet";
 import { CameraPage } from "./pages/Camera";
 import { PhotoPage, PrintPage } from "./pages/Photo";
+import { MemoriesPage } from "./pages/Memories";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -59,7 +60,7 @@ export function App() {
       break;
     case "memories":
       tab = "memories";
-      page = <Placeholder name="おもいで" />;
+      page = <MemoriesPage sub={route.parts[1] ?? "letters"} day={route.parts[2]} onChanged={today.reload} />;
       break;
     case "wallet":
       tab = "wallet";
