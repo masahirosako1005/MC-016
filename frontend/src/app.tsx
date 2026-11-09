@@ -9,6 +9,7 @@ import { WalletPage } from "./pages/Wallet";
 import { CameraPage } from "./pages/Camera";
 import { PhotoPage, PrintPage } from "./pages/Photo";
 import { MemoriesPage } from "./pages/Memories";
+import { AdminPage } from "./pages/Admin";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -66,6 +67,13 @@ export function App() {
       tab = "wallet";
       page = <WalletPage onChanged={today.reload} />;
       break;
+    case "admin":
+      return (
+        <div className="app">
+          <AdminPage />
+          <Toasts />
+        </div>
+      );
     default:
       page = <Placeholder name={head} />;
   }
