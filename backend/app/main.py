@@ -1,0 +1,71 @@
+"""アプリ本体。画面(frontend/dist)と /api を同じポートで配る。"""
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from . import db as dbmod
+from .config import settings
+from .errors import install_error_handlers
+from .security import install_security_headers
+from .seed.master import seed_master
+from .services.cleanup import purge_old_receipt_images
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+log = logging.getLogger("hitomeguri")
+
+
+def create_app(db_path: str | Path | None = None) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        conn = dbmod.connect(db_path or settings.db_path)
+        dbmod.init_schema(conn)
+        seed_master(conn)
+        app.state.conn = conn
+        settings.uploads_dir.mkdir(parents=True, exist_ok=True)
+        settings.photos_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            n = purge_old_receipt_images(conn)
+            if n:
+                log.info("古いレシート画像を %d 件削除", n)
+        except Exception:
+            log.exception("画像の削除に失敗")
+        log.info("起動 DEMO_MODE=%s db=%s", settings.demo_mode, db_path or settings.db_path)
+        yield
+        conn.close()
+
+    app = FastAPI(title="ひとめぐり便", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+    install_security_headers(app)
+    install_error_handlers(app)
+
+    from .api import router as api_router
+
+    app.include_router(api_router, prefix="/api")
+
+    @app.api_route("/api/{rest:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+    async def api_not_found(request: Request, rest: str):
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "見つかりません", "code": "not_found", "request_id": getattr(request.state, "request_id", "")},
+        )
+
+    dist = settings.frontend_dist
+    if dist.exists():
+        app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def spa(full_path: str):
+            candidate = dist / full_path
+            if full_path and candidate.is_file():
+                return FileResponse(candidate)
+            return FileResponse(dist / "index.html")
+
+    return app
+
+
+app = create_app()
