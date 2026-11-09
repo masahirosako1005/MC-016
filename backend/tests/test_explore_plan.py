@@ -62,3 +62,30 @@ def test_plan_flow_with_places(client):
     # 旧 API は消えている
     assert client.get("/api/explore").status_code == 404
     assert client.post("/api/checkins", json={"spot_id": 1}).status_code == 404
+
+
+def test_plan_history_and_leftovers(client):
+    from datetime import datetime
+    from app import clock
+
+    conn = client.app.state.conn
+    client.post("/api/plan/items", json={"kind": "spot", "target_id": 4})
+    client.post("/api/plan/items", json={"kind": "spot", "target_id": 7})
+    client.put("/api/plan", json={"target_date": "2026-10-24", "title": "秋の旅"})
+    h = client.get("/api/plan/history").json()
+    assert h["active"]["title"] == "秋の旅" and len(h["active"]["items"]) == 2 and h["leftovers"] == []
+    # 旅の日: 瑠衣さん（場所 4）にだけ会う
+    clock.set_demo_clock(conn, datetime(2026, 10, 24, 11, 0))
+    client.post("/api/meetings", json={"person_id": 2})
+    # 旅が終わると計画は閉じ、行けなかった場所（7）が残る
+    clock.set_demo_clock(conn, datetime(2026, 11, 23, 10, 0))
+    h = client.get("/api/plan/history").json()
+    assert h["active"] is None
+    done = h["plans"][0]
+    assert done["archived"] is True and {i["id"]: i["visited"] for i in done["items"]} == {4: True, 7: False}
+    assert [l["id"] for l in h["leftovers"]] == [7] and h["leftovers"][0]["from_title"] == "秋の旅"
+    # 新しい旅をつくると、いまの計画が空で始まる
+    r = client.post("/api/plan/new", json={"title": "冬の旅"})
+    assert r.status_code == 200 and r.json()["title"] == "冬の旅" and r.json()["items"] == []
+    client.post("/api/plan/items", json={"kind": "spot", "target_id": 7})
+    assert client.get("/api/plan/history").json()["leftovers"] == []

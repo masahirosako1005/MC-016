@@ -1,0 +1,110 @@
+[
+ {
+  "key": "ai",
+  "label": "藍の縁（手をふるほしまる）",
+  "spot": null,
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_ai.svg",
+  "png": "/img/frames/frame_ai.png"
+ },
+ {
+  "key": "hoshizora",
+  "label": "星空（夜・見上げるほしまる）",
+  "spot": null,
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_hoshizora.svg",
+  "png": "/img/frames/frame_hoshizora.png"
+ },
+ {
+  "key": "hagaki",
+  "label": "おもいで便の切手（手紙を持つほしまる）",
+  "spot": null,
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_hagaki.svg",
+  "png": "/img/frames/frame_hagaki.png"
+ },
+ {
+  "key": "cheki",
+  "label": "和紙のチェキ（日付を書ける・ばんざい）",
+  "spot": null,
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_cheki.svg",
+  "png": "/img/frames/frame_cheki.png"
+ },
+ {
+  "key": "hyokkori",
+  "label": "ひょっこり（枠なし・角に青海波）",
+  "spot": null,
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_hyokkori.svg",
+  "png": "/img/frames/frame_hyokkori.png"
+ },
+ {
+  "key": "spot_lighthouse",
+  "label": "風詠みの灯台（マリンの縁・灯台とかもめ）",
+  "spot": "lighthouse",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_lighthouse.svg",
+  "png": "/img/frames/frame_spot_lighthouse.png"
+ },
+ {
+  "key": "spot_cape",
+  "label": "星綾の潮見台（星空と星の岩）",
+  "spot": "cape",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_cape.svg",
+  "png": "/img/frames/frame_spot_cape.png"
+ },
+ {
+  "key": "spot_market",
+  "label": "虹灯りの夜市（提灯の灯り）",
+  "spot": "market",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_market.svg",
+  "png": "/img/frames/frame_spot_market.png"
+ },
+ {
+  "key": "spot_lake",
+  "label": "瑠璃凪の水鏡湖（もみじと湖面）",
+  "spot": "lake",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_lake.svg",
+  "png": "/img/frames/frame_spot_lake.png"
+ },
+ {
+  "key": "spot_windmill",
+  "label": "月花の風車丘（菜の花と風車）",
+  "spot": "windmill",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_windmill.svg",
+  "png": "/img/frames/frame_spot_windmill.png"
+ },
+ {
+  "key": "spot_street",
+  "label": "灯雲の石畳通り（家々の灯りと雪）",
+  "spot": "street",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_street.svg",
+  "png": "/img/frames/frame_spot_street.png"
+ },
+ {
+  "key": "spot_hall",
+  "label": "雪雫の音楽堂（雪と音符）",
+  "spot": "hall",
+  "width": 900,
+  "height": 1200,
+  "svg": "/img/frames/frame_spot_hall.svg",
+  "png": "/img/frames/frame_spot_hall.png"
+ }
+]

@@ -15,6 +15,28 @@ router = APIRouter()
 
 class TargetIn(BaseModel):
     target_date: str | None = Field(default=None, max_length=10)
+    title: str | None = Field(default=None, max_length=30)
+
+
+class NewPlanIn(BaseModel):
+    title: str | None = Field(default=None, max_length=30)
+
+
+@router.get("/plan/history")
+def get_history(conn=Depends(get_conn)):
+    now = clock.now(conn)
+    with write_tx(conn):
+        return plan_svc.plan_history(conn, settings.hero_user_id, now)
+
+
+@router.post("/plan/new")
+def post_new_plan(body: NewPlanIn, conn=Depends(get_conn)):
+    now = clock.now(conn)
+    with write_tx(conn):
+        pid = plan_svc.new_plan(conn, settings.hero_user_id, now, body.title)
+    v = plan_svc.plan_view(conn, settings.hero_user_id, now)
+    v["created_id"] = pid
+    return v
 
 
 class ItemIn(BaseModel):
@@ -31,7 +53,10 @@ def get_plan(conn=Depends(get_conn)):
 def put_plan(body: TargetIn, conn=Depends(get_conn)):
     now = clock.now(conn)
     with write_tx(conn):
-        plan_svc.set_target(conn, settings.hero_user_id, now, body.target_date or None)
+        if body.target_date is not None or body.title is None:
+            plan_svc.set_target(conn, settings.hero_user_id, now, body.target_date or None)
+        if body.title is not None:
+            plan_svc.set_title(conn, settings.hero_user_id, now, body.title)
     return plan_svc.plan_view(conn, settings.hero_user_id, now)
 
 

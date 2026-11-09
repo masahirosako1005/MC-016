@@ -81,9 +81,11 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
     else:
         status = "closed"
         status_label = "きょうはお休み"
+    shop_photo = next((sh["id"] for sh in master.shops(conn) if sh["spot_id"] == s["id"] and sh.get("photo_path")), None)
     card = {
         "id": s["id"], "name": s["name"].split("（")[0], "full_name": s["name"], "area": s["area"], "svg_key": s["svg_key"],
-        "image": f"/img/places/{s['svg_key']}.jpg",
+        "image": f"/api/shops/{shop_photo}/photo" if shop_photo else f"/img/places/{s['svg_key']}.jpg",
+        "recommend": next((sh["recommend"] for sh in master.shops(conn) if sh["spot_id"] == s["id"] and sh.get("recommend")), None),
         "description": s["description"], "access": s["access"],
         "best_season": s["best_season"], "best_season_label": LABEL[s["best_season"]],
         "map_x": s["map_x"], "map_y": s["map_y"],

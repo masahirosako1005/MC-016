@@ -36,8 +36,8 @@ export function MemoriesPage({ sub, day, onChanged }: { sub: string; day?: strin
   return (
     <div className="page">
       <Tutorial id="memories" steps={TIPS.memories} trigger={help} />
-      <TopBar title={t("tab_memories")} backTo={day || sub === "reminder" ? "/memories" : undefined} right={<HelpButton onClick={() => setHelp((n) => n + 1)} />} />
-      {sub === "reminder" && day ? <ReminderDetail date={day} /> : day ? <LetterDetail day={day} onChanged={onChanged} /> : <LetterList />}
+      <TopBar title={t("tab_memories")} backTo={day || sub === "reminder" || sub === "message" ? "/memories" : undefined} right={<HelpButton onClick={() => setHelp((n) => n + 1)} />} />
+      {sub === "reminder" && day ? <ReminderDetail date={day} /> : sub === "message" && day ? <MessageDetail id={Number(day)} /> : day ? <LetterDetail day={day} onChanged={onChanged} /> : <LetterList />}
     </div>
   );
 }
@@ -46,14 +46,38 @@ function fmt(d: string) {
   return `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
 }
 
+type ShopMessage = {
+  id: number; shop_id: number; shop_name: string; spot_id: number; person_id: number | null; person_name: string | null; person_image: string | null;
+  title: string; body: string; coupon_face_value: number | null; coupon_days: number | null; created_at: string; date: string; read: boolean;
+};
+
 function LetterList() {
   const [idx, setIdx] = useState<LetterIndex | null>(null);
+  const [msgs, setMsgs] = useState<ShopMessage[]>([]);
   useEffect(() => {
     get<LetterIndex>("/letters").then(setIdx).catch((e) => toast((e as Error).message, "error"));
+    get<{ messages: ShopMessage[] }>("/messages").then((r) => setMsgs(r.messages)).catch(() => undefined);
   }, []);
   if (!idx) return <Loading />;
-  type Item = { kind: "memory" | "reminder"; date: string; node: JSX.Element };
+  type Item = { kind: "memory" | "reminder" | "message"; date: string; node: JSX.Element };
   const items: Item[] = [
+    ...msgs.map((m) => ({
+      kind: "message" as const, date: m.date,
+      node: (
+        <button key={`m${m.id}`} className="card letter" style={{ textAlign: "left", cursor: "pointer" }} onClick={() => navigate(`/memories/message/${m.id}`)}>
+          <div className="row">
+            {m.person_image && <Avatar p={{ image: m.person_image, name: m.person_name ?? "" }} size="sm" />}
+            <div className="grow">
+              <div className="row between">
+                <span className="title" style={{ fontSize: "1rem" }}>{m.person_name ?? m.shop_name}からの便り</span>
+                {!m.read && <Badge flower>新着</Badge>}
+              </div>
+              <div className="muted small">{fmt(m.date)}・{m.title}{m.coupon_face_value ? `・クーポン ${m.coupon_face_value} 円引きつき` : ""}</div>
+            </div>
+          </div>
+        </button>
+      ),
+    })),
     ...idx.reminders.map((r) => ({
       kind: "reminder" as const, date: r.date,
       node: (
@@ -87,6 +111,46 @@ function LetterList() {
       {idx.pending_today && <div className="card muted">きょうの思い出は {idx.open_hour}:00 に届きます。</div>}
       {items.length === 0 && !idx.pending_today && <p className="muted">まだ思い出はありません。旅に出て人に会うと、その夜に届きます。</p>}
       {items.map((i) => i.node)}
+    </div>
+  );
+}
+
+function MessageDetail({ id }: { id: number }) {
+  const [m, setM] = useState<ShopMessage | null>(null);
+  useEffect(() => {
+    get<{ messages: ShopMessage[] }>("/messages")
+      .then((r) => {
+        const found = r.messages.find((x) => x.id === id) ?? null;
+        setM(found);
+        if (found && !found.read) post(`/messages/${id}/read`).catch(() => undefined);
+      })
+      .catch((e) => toast((e as Error).message, "error"));
+  }, [id]);
+  if (!m) return <Loading />;
+  return (
+    <div className="stack">
+      <div className="card letter">
+        <div className="row">
+          {m.person_image && <Avatar p={{ image: m.person_image, name: m.person_name ?? "" }} />}
+          <div className="grow">
+            <div className="muted small">{m.date.replace(/-/g, "/")}・{m.shop_name}</div>
+            <div className="title" style={{ fontSize: "1.2rem" }}>{m.title}</div>
+          </div>
+        </div>
+        <p style={{ whiteSpace: "pre-wrap", margin: "10px 0 0" }}>{m.body}</p>
+        <div className="muted small" style={{ marginTop: 8 }}>— {m.person_name ?? m.shop_name}</div>
+      </div>
+      {m.coupon_face_value && (
+        <div className="card" style={{ borderColor: "var(--yamabuki)" }}>
+          <div className="title" style={{ fontSize: "1rem" }}>クーポンが届いています</div>
+          <div className="small">{m.shop_name}で使える {m.coupon_face_value} 円引き（{m.coupon_days} 日間）。「クーポン」タブに入っています。</div>
+          <button className="btn small block" style={{ marginTop: 8 }} onClick={() => navigate("/wallet")}>クーポンを見る</button>
+        </div>
+      )}
+      <div className="row">
+        <button className="btn ghost grow" onClick={() => navigate(`/place/${m.spot_id}`)}>その場所を見る</button>
+        <button className="btn primary grow" onClick={() => navigate("/plan")}>また会いに行く計画を立てる</button>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,8 @@ def today_view(conn: sqlite3.Connection, now: datetime) -> dict:
     today = now.date()
     day = today.isoformat()
     season = season_of(today)
+    from .plan import archive_if_done
+    archive_if_done(conn, uid, now)
     plan_ids = plan_spot_ids(conn, uid)
     plan = conn.execute("SELECT target_date FROM plans WHERE user_id = ? AND archived = 0 ORDER BY id DESC LIMIT 1", (uid,)).fetchone()
     plan_today = bool(plan and plan["target_date"] == day)

@@ -346,3 +346,50 @@ export const TIPS = {
     },
   ],
 } satisfies Record<string, TipStep[]>;
+
+/** 初回ガイド用の図解（3 枚）。 */
+export function GuideFigure({ n }: { n: 0 | 1 | 2 }) {
+  if (n === 0) {
+    return (
+      <Frame>
+        <ellipse cx="160" cy="80" rx="130" ry="50" fill={ai1} />
+        {[[80, 70], [160, 55], [240, 80]].map(([x, y], i) => (
+          <g key={i} transform={`translate(${x} ${y})`}>
+            <path d="M0 0 l-9 -16 a9 9 0 1 1 18 0z" fill={yama} />
+            <Person x={22} y={-14} />
+          </g>
+        ))}
+        <Label x={90} y={135}>場所を選ぶと、そこにいる人が分かる</Label>
+      </Frame>
+    );
+  }
+  if (n === 1) {
+    return (
+      <Frame>
+        <Person x={60} y={70} />
+        <Arrow x1={85} y1={70} x2={120} y2={70} />
+        <Person x={150} y={70} met />
+        <Arrow x1={175} y1={70} x2={210} y2={70} />
+        <circle cx="250" cy="70" r="22" fill={paper} stroke={ai} strokeWidth="2" />
+        <circle cx="242" cy="66" r="2.5" fill={ai} /><circle cx="258" cy="66" r="2.5" fill={ai} />
+        <path d="M244 76 q6 5 12 0" stroke={ai} strokeWidth="2" fill="none" />
+        <polygon points="250,40 253,46 259,46 254,50 256,56 250,52 244,56 246,50 241,46 247,46" fill={yama} />
+        <Label x={30} y={120}>会う</Label>
+        <Label x={125} y={120}>会えた</Label>
+        <Label x={215} y={120}>ほしまると AR</Label>
+      </Frame>
+    );
+  }
+  return (
+    <Frame>
+      <g transform="translate(70 75)"><path d="M0 14 V-2" stroke="#3b7d3a" strokeWidth="2" /><ellipse cy="-6" rx="4" ry="5.5" fill="#8a6d3b" /></g>
+      <Arrow x1={90} y1={75} x2={125} y2={75} />
+      <g transform="translate(160 75)"><path d="M0 16 V0" stroke="#3b7d3a" strokeWidth="2" /><ellipse cy="-4" rx="6" ry="9" fill="#8bc34a" /></g>
+      <Arrow x1={185} y1={75} x2={220} y2={75} />
+      <g transform="translate(260 72)">{[0, 60, 120, 180, 240, 300].map((a) => <ellipse key={a} cy="-9" rx="5" ry="9" fill={yama} transform={`rotate(${a})`} />)}<circle r="5" fill={paper} stroke={ai} strokeWidth="2" /></g>
+      <Label x={50} y={120}>種</Label>
+      <Label x={140} y={120}>つぼみ</Label>
+      <Label x={230} y={120}>次の季節に花</Label>
+    </Frame>
+  );
+}

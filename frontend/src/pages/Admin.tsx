@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { get, post, put, sendForm, toast } from "../api";
 import { navigate } from "../router";
+import { BarChart, LineChart, Stat } from "../components/charts";
+import { ShopPanel } from "./AdminShop";
 
 type MetricVal = { value: number | null; n: number; dummy_n: number; unit: string; suppressed: boolean };
 type Metrics = {
@@ -52,7 +54,123 @@ export function MetricsGrid({ m, compact }: { m: Metrics; compact?: boolean }) {
   );
 }
 
+/** 運営の窓は 2 つの立場で使う: 地域 DMO と、お店・施設の人。 */
 export function AdminPage() {
+  const [role, setRole] = useState<"dmo" | "shop">(() => {
+    try {
+      return (localStorage.getItem("hitomeguri.admin.role") as "dmo" | "shop") || "dmo";
+    } catch {
+      return "dmo";
+    }
+  });
+  const pick = (r: "dmo" | "shop") => {
+    setRole(r);
+    try {
+      localStorage.setItem("hitomeguri.admin.role", r);
+    } catch {
+      /* ignore */
+    }
+  };
+  return (
+    <div className="page wide" style={{ maxWidth: 1100 }}>
+      <div className="row between" style={{ marginBottom: 8 }}>
+        <h1 style={{ margin: 0 }}>運営の窓</h1>
+        <div className="row">
+          <div className="segment" style={{ margin: 0, width: 260 }}>
+            <button className={role === "dmo" ? "on" : ""} onClick={() => pick("dmo")}>地域（DMO）</button>
+            <button className={role === "shop" ? "on" : ""} onClick={() => pick("shop")}>お店・施設</button>
+          </div>
+          <button className="btn small ghost" onClick={() => navigate("/")}>本体へ</button>
+        </div>
+      </div>
+      {role === "dmo" ? <DmoPanel /> : <ShopPanel />}
+    </div>
+  );
+}
+
+type Dash = {
+  months: string[];
+  series: { month: string; spend: number; spend_dummy: number; visitors: number; meetings: number; receipts: number }[];
+  by_area: { area: string; total: number }[];
+  by_category: { category: string; total: number }[];
+  summary: { spend_this_month: number; spend_prev_month: number; visitors_this_month: number; visitors_prev_month: number; meetings_this_month: number };
+  note: string;
+};
+type Ev = { id: number; date: string; title: string; kind: string; expected: number | null; note: string | null; source: string };
+
+function pct(a: number, b: number) {
+  if (!b) return "—";
+  const p = ((a - b) / b) * 100;
+  return `${p >= 0 ? "+" : ""}${p.toFixed(0)}% 前月比`;
+}
+
+function DmoDashboard() {
+  const [d, setD] = useState<Dash | null>(null);
+  useEffect(() => {
+    get<Dash>("/admin/dashboard").then(setD).catch((e) => toast((e as Error).message, "error"));
+  }, []);
+  if (!d) return <p className="muted">読み込み中…</p>;
+  const labels = d.series.map((s) => s.month);
+  return (
+    <>
+      <div className="grid3" style={{ marginBottom: 10 }}>
+        <Stat label="今月の観光消費額" value={`${d.summary.spend_this_month.toLocaleString()} 円`} sub={pct(d.summary.spend_this_month, d.summary.spend_prev_month)} accent />
+        <Stat label="今月の来訪者数" value={`${d.summary.visitors_this_month} 人`} sub={pct(d.summary.visitors_this_month, d.summary.visitors_prev_month)} />
+        <Stat label="今月の「会えた」" value={`${d.summary.meetings_this_month} 回`} sub="人に会った回数" />
+      </div>
+      <div className="grid2">
+        <div className="card"><LineChart title="観光消費額の推移（月）" labels={labels} values={d.series.map((s) => s.spend)} unit="円" /></div>
+        <div className="card"><BarChart title="来訪者数の推移（月）" labels={labels} values={d.series.map((s) => s.visitors)} unit="人" /></div>
+        <div className="card"><BarChart title="「会えた」の推移（月）" labels={labels} values={d.series.map((s) => s.meetings)} unit="回" /></div>
+        <div className="card">
+          <div className="small" style={{ fontWeight: 700 }}>消費の内訳</div>
+          <table className="tbl" style={{ marginTop: 6 }}>
+            <tbody>
+              {d.by_area.map((a) => <tr key={a.area}><td>{a.area}</td><td className="num">{a.total.toLocaleString()} 円</td></tr>)}
+              {d.by_category.map((c) => <tr key={c.category}><td className="muted">{c.category}</td><td className="num muted">{c.total.toLocaleString()} 円</td></tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p className="muted small">{d.note}</p>
+    </>
+  );
+}
+
+function EventsPanel({ editable }: { editable: boolean }) {
+  const [evs, setEvs] = useState<Ev[] | null>(null);
+  const [f, setF] = useState({ date: "", title: "", kind: "スポーツ", expected: "", note: "" });
+  const load = async () => setEvs((await get<{ events: Ev[] }>("/admin/events")).events);
+  useEffect(() => {
+    load().catch(() => setEvs([]));
+  }, []);
+  return (
+    <div className="card stack">
+      <div className="muted small">地域起因ではないイベント（スポーツの試合、コンサートなど）を DMO が登録し、お店に知らせます。仕入れや人手の準備に。</div>
+      {editable && (
+        <div className="grid3" style={{ alignItems: "end" }}>
+          <label className="field" style={{ margin: 0 }}><span>日付</span><input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></label>
+          <label className="field" style={{ margin: 0 }}><span>イベント名</span><input type="text" value={f.title} maxLength={60} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="例: J1 ホームゲーム" /></label>
+          <label className="field" style={{ margin: 0 }}><span>種類</span><select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["スポーツ", "音楽", "学会・大会", "連休", "その他"].map((k) => <option key={k}>{k}</option>)}</select></label>
+          <label className="field" style={{ margin: 0 }}><span>見込み人数</span><input type="number" min={0} value={f.expected} onChange={(e) => setF({ ...f, expected: e.target.value })} placeholder="15000" /></label>
+          <label className="field" style={{ margin: 0 }}><span>メモ</span><input type="text" value={f.note} maxLength={200} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="16 時キックオフ、島への便が増える" /></label>
+          <button className="btn primary" disabled={!f.date || !f.title} onClick={async () => { try { await post("/admin/events", { date: f.date, title: f.title, kind: f.kind, expected: f.expected ? Number(f.expected) : null, note: f.note || null }); setF({ date: "", title: "", kind: "スポーツ", expected: "", note: "" }); await load(); toast("お知らせを登録しました"); } catch (e) { toast((e as Error).message, "error"); } }}>お店に知らせる</button>
+        </div>
+      )}
+      <table className="tbl">
+        <thead><tr><th>日付</th><th>イベント</th><th>種類</th><th className="num">見込み人数</th><th>メモ</th>{editable && <th></th>}</tr></thead>
+        <tbody>
+          {(evs ?? []).map((e) => (
+            <tr key={e.id}><td>{e.date.replace(/-/g, "/")}</td><td>{e.title}</td><td>{e.kind}</td><td className="num">{e.expected?.toLocaleString() ?? "—"}</td><td className="muted small">{e.note}</td>{editable && <td><button className="btn small ghost" onClick={async () => { await import("../api").then((a) => a.del(`/admin/events/${e.id}`)); await load(); }}>削除</button></td>}</tr>
+          ))}
+          {evs && evs.length === 0 && <tr><td colSpan={6} className="muted">登録されたイベントはありません</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DmoPanel() {
   const [m, setM] = useState<Metrics | null>(null);
   const [ov, setOv] = useState<Overview | null>(null);
   const [preview, setPreview] = useState<ImportResult[] | null>(null);
@@ -71,17 +189,16 @@ export function AdminPage() {
   useEffect(() => {
     get<typeof reimb>(`/admin/reimbursement?month=${month}`).then(setReimb).catch(() => setReimb(null));
   }, [month, imported]);
-  if (!m || !ov) return <div className="page wide"><p className="muted">読み込み中…</p></div>;
+  if (!m || !ov) return <p className="muted">読み込み中…</p>;
   return (
-    <div className="page wide" style={{ maxWidth: 1100 }}>
-      <div className="row between" style={{ marginBottom: 8 }}>
-        <h1 style={{ margin: 0 }}>運営の窓</h1>
-        <div className="row">
-          <span className="muted">{m.as_of.replace("T", " ")} 時点</span>
-          <button className="btn small ghost" onClick={() => navigate("/")}>本体へ</button>
-        </div>
-      </div>
-      <p className="muted" style={{ marginTop: 0 }}>{m.note} 店や人の格付け・順位は作りません。</p>
+    <div>
+      <p className="muted" style={{ marginTop: 0 }}>{m.as_of.replace("T", " ")} 時点。{m.note} 店や人の格付け・順位は作りません。</p>
+
+      <h2>ダッシュボード（観光消費・来訪者の推移）</h2>
+      <DmoDashboard />
+
+      <h2>イベントのお知らせ（お店へ）</h2>
+      <EventsPanel editable />
 
       <h2>指標</h2>
       <MetricsGrid m={m} />

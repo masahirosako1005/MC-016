@@ -1,10 +1,11 @@
 /** 場所の画面。旅前は紹介と「行きたい」。旅中はここで 会えた → AR フォト → レシート → クーポン をまとめて行う。 */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError, del, get, post, sendForm, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate } from "../router";
 import type { Seed } from "../types";
 import { Avatar, PersonLine, Photo } from "../components/parts";
+import { CameraCapture } from "../components/capture";
 import { Mascot } from "../components/mascots";
 import { SeedIcon } from "../components/art";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
@@ -50,6 +51,7 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
       {!onTrip && (
         <>
           <p style={{ marginTop: 12 }}>{pl.description}</p>
+          {pl.recommend && <p className="small" style={{ color: "#7a5300" }}>★ お店からのおすすめ: {pl.recommend}</p>}
           <p className="muted small">アクセス: {pl.access}</p>
           <button className={`btn block ${pl.in_plan ? "done" : "primary mark"}`} onClick={toggle}>{pl.in_plan ? `${t("want_done")}（はずす）` : t("want_button")}</button>
         </>
@@ -203,20 +205,19 @@ export function PersonAction({ p, placeId, onChange, onBloom }: { p: PlaceCard["
 function ReceiptCapture({ shops, onDone }: { shops: PlaceCard["people"][number]["shop"][]; onDone: () => Promise<void> }) {
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"idle" | "scan" | "confirm" | "saving">("idle");
+  const [phase, setPhase] = useState<"idle" | "camera" | "scan" | "confirm" | "saving">("idle");
   const [shopId, setShopId] = useState(shops[0]?.id ?? 0);
   const [amount, setAmount] = useState("");
   const [demo, setDemo] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     get<{ demo_mode: boolean }>("/health").then((h) => setDemo(h.demo_mode)).catch(() => undefined);
   }, []);
   const shop = shops.find((s) => s.id === shopId) ?? shops[0];
   const amt = Number(amount);
   const pts = shop && amt > 0 ? Math.floor((amt * 10) / 100) : 0;
-  const onFile = (f: File) => {
+  const onFile = (f: File, objectUrl?: string) => {
     setFile(f);
-    setUrl(URL.createObjectURL(f));
+    setUrl(objectUrl ?? URL.createObjectURL(f));
     setPhase("scan");
     setTimeout(() => {
       // デモ: 読み取り結果として店と金額の候補を出す（本番は AI-OCR の結果が入る）
@@ -250,14 +251,14 @@ function ReceiptCapture({ shops, onDone }: { shops: PlaceCard["people"][number][
   };
   return (
     <div className="card stack">
-      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
       {phase === "idle" && (
         <>
-          <button className="btn primary block" onClick={() => fileRef.current?.click()}>レシートを撮る</button>
+          <button className="btn primary block" onClick={() => setPhase("camera")}>レシートを撮る</button>
           <p className="muted small" style={{ margin: 0 }}>撮るだけで店名と金額を読み取ります（AI-OCR）。確認して登録するとポイントに。画像は 7 日で削除されます。</p>
         </>
       )}
-      {url && phase !== "idle" && (
+      {phase === "camera" && <CameraCapture hint="レシート全体を枠に入れて、シャッターを押してください" onCapture={(f, u) => onFile(f, u)} onCancel={() => setPhase("idle")} />}
+      {url && phase !== "idle" && phase !== "camera" && (
         <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: "#000" }}>
           <img src={url} alt="レシート" style={{ width: "100%", maxHeight: 260, objectFit: "contain", display: "block", opacity: phase === "scan" ? 0.8 : 1 }} />
           {phase === "scan" && (

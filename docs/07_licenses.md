@@ -58,3 +58,10 @@ calendar（12549）, pin（00020）, map（10163）, letter（00024）, ticket�
 | mascot/hoshimaru.svg | 星凪諸島のゆるキャラ（ごまふアザラシの子、頭に山吹の星、藍染のスカーフ、おもいで便の手紙）。このリポジトリで自作した SVG |
 | mascot/hoshimaru.png | 上の SVG を Edge headless で 800×800 に書き出したもの |
 | mascot/hoshimaru_<svg_key>.svg / .png | スポット別のほしまる 7 枚（svg_key は spots マスタと同じ: lighthouse・cape・market・lake・windmill・street・hall）。`scripts/mascot/gen_hoshimaru.py` で生成した自作 SVG と 800×800 PNG |
+
+### 地図の背景（衛星写真風）— Unsplash
+| ファイル | 写真 |
+|---|---|
+| map/island.jpg | https://unsplash.com/photos/Cgt8qnrgz4s （島々の空撮。星凪諸島の地図の背景に使用。ピン・航路・地名は自前の SVG） |
+| mascot/ui/hoshimaru_<pose>.svg / .png | UI 用のポーズ差分 10 種（背景透過、PNG 720×720）。wave・cheer・point・letter・think・sleep・sorry・thanks・camera・coupon。一覧は mascot/ui/poses.json。`scripts/mascot/gen_hoshimaru_ui.py` で生成した自作素材 |
+| frames/frame_<key>.svg / .png | AR フォト用フレーム 5 種（900×1200、写真の部分は透明）。ai・hoshizora・hagaki・cheki・hyokkori。一覧は frames/frames.json。同じスクリプトで生成した自作素材 |

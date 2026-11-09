@@ -275,6 +275,44 @@ def init_schema(conn: sqlite3.Connection) -> None:
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(people)")}
     if "role" not in cols:
         conn.execute("ALTER TABLE people ADD COLUMN role TEXT NOT NULL DEFAULT '店主'")
+    pcols = {r["name"] for r in conn.execute("PRAGMA table_info(plans)")}
+    if "title" not in pcols:
+        conn.execute("ALTER TABLE plans ADD COLUMN title TEXT")
+    scols = {r["name"] for r in conn.execute("PRAGMA table_info(shops)")}
+    if "recommend" not in scols:
+        conn.execute("ALTER TABLE shops ADD COLUMN recommend TEXT")
+    if "photo_path" not in scols:
+        conn.execute("ALTER TABLE shops ADD COLUMN photo_path TEXT")
+    conn.executescript(
+        """
+CREATE TABLE IF NOT EXISTS events(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  title TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT '外部',
+  expected INTEGER,
+  note TEXT,
+  source TEXT NOT NULL DEFAULT 'DMO',
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS messages(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  shop_id INTEGER NOT NULL REFERENCES shops(id),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  coupon_face_value INTEGER,
+  coupon_days INTEGER,
+  created_at TEXT NOT NULL,
+  sent_to INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS message_reads(
+  message_id INTEGER NOT NULL REFERENCES messages(id),
+  user_id INTEGER NOT NULL,
+  read_at TEXT NOT NULL,
+  PRIMARY KEY(message_id, user_id)
+);
+"""
+    )
 
 
 @contextmanager

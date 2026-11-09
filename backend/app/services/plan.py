@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from ..errors import AppError
 from ..repositories import master
@@ -23,7 +23,7 @@ def plan_view(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
     pid = active_plan_id(conn, uid, False, now)
     today = now.date()
     if pid is None:
-        return {"exists": False, "target_date": None, "weekday": None, "days_until": None, "items": [], "people_that_day": [], "seeds_in_season": [], "coupons_usable": [], "season_label": None}
+        return {"exists": False, "title": None, "target_date": None, "weekday": None, "days_until": None, "items": [], "people_that_day": [], "seeds_in_season": [], "coupons_usable": [], "season_label": None}
     plan = conn.execute("SELECT * FROM plans WHERE id = ?", (pid,)).fetchone()
     items = []
     people_all = master.people(conn)
@@ -71,6 +71,7 @@ def plan_view(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
     return {
         "exists": True,
         "id": pid,
+        "title": plan["title"],
         "target_date": plan["target_date"],
         "weekday": WEEKDAY_JA[target.weekday()] if target else None,
         "days_until": (target - today).days if target else None,
@@ -119,3 +120,60 @@ def archive_if_done(conn: sqlite3.Connection, uid: int, now: datetime) -> None:
         "UPDATE plans SET archived = 1 WHERE user_id = ? AND archived = 0 AND target_date IS NOT NULL AND target_date < ?",
         (uid, now.date().isoformat()),
     )
+
+
+def _visited_spot_ids(conn: sqlite3.Connection, uid: int, target_date: str | None) -> set[int]:
+    """その旅（予定日の前後 2 日）に会えた人・レシートの店がある場所。"""
+    if not target_date:
+        return set()
+    d = date.fromisoformat(target_date)
+    s, e = (d - timedelta(days=2)).isoformat(), (d + timedelta(days=2)).isoformat()
+    ids = {
+        r["spot_id"] for r in conn.execute(
+            "SELECT sh.spot_id FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops sh ON sh.id = p.shop_id WHERE m.user_id = ? AND m.met_on BETWEEN ? AND ?",
+            (uid, s, e),
+        )
+    }
+    ids |= {r["spot_id"] for r in conn.execute("SELECT sh.spot_id FROM receipts r JOIN shops sh ON sh.id = r.shop_id WHERE r.user_id = ? AND r.received_on BETWEEN ? AND ?", (uid, s, e))}
+    return ids
+
+
+def plan_history(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
+    """旅のプラン一覧。終わった旅は「行けた／行けなかった」を付ける。"""
+    archive_if_done(conn, uid, now)
+    out = []
+    for p in conn.execute("SELECT * FROM plans WHERE user_id = ? AND is_dummy = 0 ORDER BY archived ASC, id DESC", (uid,)):
+        items = []
+        visited = _visited_spot_ids(conn, uid, p["target_date"]) if p["archived"] else set()
+        for it in conn.execute("SELECT * FROM plan_items WHERE plan_id = ? AND kind = 'spot' ORDER BY id", (p["id"],)):
+            sp = master.spot(conn, it["target_id"])
+            if sp:
+                items.append({"id": sp["id"], "name": sp["name"].split("（")[0], "image": f"/img/places/{sp['svg_key']}.jpg", "visited": sp["id"] in visited})
+        out.append({
+            "id": p["id"], "title": p["title"] or ("つぎの旅" if not p["archived"] else "旅"), "target_date": p["target_date"],
+            "weekday": WEEKDAY_JA[date.fromisoformat(p["target_date"]).weekday()] if p["target_date"] else None,
+            "archived": bool(p["archived"]), "created_at": p["created_at"], "items": items,
+            "unvisited": [i for i in items if not i["visited"]] if p["archived"] else [],
+        })
+    # 行けなかった場所（終わった旅から。いまの計画に入っていないもの）
+    active = next((p for p in out if not p["archived"]), None)
+    active_ids = {i["id"] for i in active["items"]} if active else set()
+    leftovers: dict[int, dict] = {}
+    for p in out:
+        if p["archived"]:
+            for i in p["unvisited"]:
+                if i["id"] not in active_ids and i["id"] not in leftovers:
+                    leftovers[i["id"]] = dict(i, from_title=p["title"], from_date=p["target_date"])
+    return {"plans": out, "active": active, "leftovers": list(leftovers.values())}
+
+
+def new_plan(conn: sqlite3.Connection, uid: int, now: datetime, title: str | None) -> int:
+    """いまの計画を閉じて、新しい旅をつくる。"""
+    conn.execute("UPDATE plans SET archived = 1 WHERE user_id = ? AND archived = 0", (uid,))
+    cur = conn.execute("INSERT INTO plans(user_id, target_date, created_at, title) VALUES(?, NULL, ?, ?)", (uid, now.isoformat(timespec="seconds"), (title or "").strip()[:30] or None))
+    return cur.lastrowid
+
+
+def set_title(conn: sqlite3.Connection, uid: int, now: datetime, title: str) -> None:
+    pid = active_plan_id(conn, uid, True, now)
+    conn.execute("UPDATE plans SET title = ? WHERE id = ?", (title.strip()[:30] or None, pid))

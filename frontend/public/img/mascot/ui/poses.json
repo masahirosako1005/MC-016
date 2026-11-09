@@ -1,0 +1,62 @@
+[
+ {
+  "key": "wave",
+  "label": "手をふる（あいさつ・初回ガイド）",
+  "svg": "/img/mascot/ui/hoshimaru_wave.svg",
+  "png": "/img/mascot/ui/hoshimaru_wave.png"
+ },
+ {
+  "key": "cheer",
+  "label": "ばんざい（当選・達成・種が花に）",
+  "svg": "/img/mascot/ui/hoshimaru_cheer.svg",
+  "png": "/img/mascot/ui/hoshimaru_cheer.png"
+ },
+ {
+  "key": "point",
+  "label": "右を指す（いまやること・案内）",
+  "svg": "/img/mascot/ui/hoshimaru_point.svg",
+  "png": "/img/mascot/ui/hoshimaru_point.png"
+ },
+ {
+  "key": "letter",
+  "label": "手紙を持つ（おもいで便）",
+  "svg": "/img/mascot/ui/hoshimaru_letter.svg",
+  "png": "/img/mascot/ui/hoshimaru_letter.png"
+ },
+ {
+  "key": "think",
+  "label": "考え中（読み込み・しらべる）",
+  "svg": "/img/mascot/ui/hoshimaru_think.svg",
+  "png": "/img/mascot/ui/hoshimaru_think.png"
+ },
+ {
+  "key": "sleep",
+  "label": "おやすみ（空の状態・夜・まだ開封できない便）",
+  "svg": "/img/mascot/ui/hoshimaru_sleep.svg",
+  "png": "/img/mascot/ui/hoshimaru_sleep.png"
+ },
+ {
+  "key": "sorry",
+  "label": "ごめんね（エラー・通信失敗）",
+  "svg": "/img/mascot/ui/hoshimaru_sorry.svg",
+  "png": "/img/mascot/ui/hoshimaru_sorry.png"
+ },
+ {
+  "key": "thanks",
+  "label": "ありがとう（完了・保存できた）",
+  "svg": "/img/mascot/ui/hoshimaru_thanks.svg",
+  "png": "/img/mascot/ui/hoshimaru_thanks.png"
+ },
+ {
+  "key": "camera",
+  "label": "カメラを持つ（AR フォト）",
+  "svg": "/img/mascot/ui/hoshimaru_camera.svg",
+  "png": "/img/mascot/ui/hoshimaru_camera.png"
+ },
+ {
+  "key": "coupon",
+  "label": "クーポンを持つ（クーポン・抽選）",
+  "svg": "/img/mascot/ui/hoshimaru_coupon.svg",
+  "png": "/img/mascot/ui/hoshimaru_coupon.png"
+ }
+]
