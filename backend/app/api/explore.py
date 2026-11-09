@@ -53,6 +53,26 @@ def delete_item(kind: str, target_id: int, conn=Depends(get_conn)):
     return plan_svc.plan_view(conn, settings.hero_user_id, now)
 
 
+@router.get("/plan/ics")
+def plan_ics(conn=Depends(get_conn)):
+    """予定日を iCalendar で返す（Google カレンダー等に取り込める）。外部 API は使わない。"""
+    from fastapi.responses import Response
+
+    v = plan_svc.plan_view(conn, settings.hero_user_id, clock.now(conn))
+    if not v["exists"] or not v["target_date"]:
+        raise AppError(404, "no_plan_date", "予定日がまだ決まっていません")
+    d = v["target_date"].replace("-", "")
+    places = "、".join(i["name"] for i in v["items"])
+    people = "、".join(p["name"] for p in v["people_that_day"] if p["available"])
+    desc = f"行く場所: {places}\\n会えそうな人: {people}\\nひとめぐり便"
+    ics = (
+        "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//hitomeguri//JP\r\nBEGIN:VEVENT\r\n"
+        f"UID:hitomeguri-plan-{v['id']}@local\r\nDTSTART;VALUE=DATE:{d}\r\n"
+        f"SUMMARY:星凪諸島へ（ひとめぐり便）\r\nDESCRIPTION:{desc}\r\nLOCATION:星凪諸島\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    )
+    return Response(content=ics, media_type="text/calendar; charset=utf-8", headers={"Content-Disposition": 'attachment; filename="hitomeguri.ics"'})
+
+
 @router.get("/shops/{shop_id}")
 def get_shop(shop_id: int, conn=Depends(get_conn)):
     sh = master.shop(conn, shop_id)

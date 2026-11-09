@@ -3,6 +3,7 @@ import { get, post, sendForm, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate, useRoute } from "../router";
 import { TodoCard } from "../components/parts";
+import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, TopBar } from "../components/ui";
 
 type Prize = { id: number; category: string; name: string; face_value: number; probability: number; in_stock: boolean; stock: number | null };
@@ -25,6 +26,7 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
   const presetShop = Number(route.query.get("shop") || 0);
   const [result, setResult] = useState<{ hit: boolean; prize: { name: string; category: string }; balance: number } | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [help, setHelp] = useState(0);
   const drawRef = useRef<HTMLDivElement>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
   const load = async () => setW(await get<Wallet>("/wallet"));
@@ -57,7 +59,8 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
       : { kind: "receipt", text: "お買いもののレシートを登録すると、ポイントがたまります。", button: t("receipt_button"), path: null };
   return (
     <div className="page">
-      <TopBar title={t("tab_wallet")} />
+      <Tutorial id="wallet" steps={TIPS.wallet} trigger={help} />
+      <TopBar title={t("tab_wallet")} right={<HelpButton onClick={() => setHelp((n) => n + 1)} />} />
       <TodoCard todo={todo} onButton={() => { if (todo.kind === "draw") drawRef.current?.scrollIntoView({ behavior: "smooth" }); else { setShowReceipt(true); setTimeout(() => receiptRef.current?.scrollIntoView({ behavior: "smooth" }), 50); } }} />
 
       <h2>{t("coupons")}</h2>

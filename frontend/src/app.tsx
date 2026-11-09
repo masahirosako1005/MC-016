@@ -12,6 +12,7 @@ import { WalletPage } from "./pages/Wallet";
 import { CameraPage } from "./pages/Camera";
 import { PhotoPage, PrintPage } from "./pages/Photo";
 import { MemoriesPage } from "./pages/Memories";
+import { BookPage } from "./pages/Book";
 import { AdminPage } from "./pages/Admin";
 import { PresentPage } from "./pages/Present";
 
@@ -29,7 +30,6 @@ export function App() {
   const today = useToday();
   const [epoch, setEpoch] = useState(0);
 
-  // present（親）からの合図: 画面を切り替えて読み直す。同一オリジンだけ受け付ける。
   useEffect(() => {
     const on = (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return;
@@ -44,22 +44,9 @@ export function App() {
   }, [today]);
 
   const head = route.parts[0] ?? "";
-  if (head === "present") {
-    return (
-      <div className="app">
-        <PresentPage />
-        <Toasts />
-      </div>
-    );
-  }
-  if (head === "admin") {
-    return (
-      <div className="app">
-        <AdminPage />
-        <Toasts />
-      </div>
-    );
-  }
+  if (head === "present") return <div className="app"><PresentPage /><Toasts /></div>;
+  if (head === "admin") return <div className="app"><AdminPage /><Toasts /></div>;
+
   let page: JSX.Element;
   let tab = "map";
   switch (head) {
@@ -71,11 +58,10 @@ export function App() {
       page = <PlanPage onChanged={today.reload} />;
       break;
     case "place":
-      tab = "plan";
       page = <PlacePage id={Number(route.parts[1])} onChanged={today.reload} />;
       break;
     case "people":
-      tab = "plan";
+      tab = "book";
       page = <PersonPage id={Number(route.parts[1])} onChanged={today.reload} />;
       break;
     case "settings":
@@ -89,16 +75,18 @@ export function App() {
       page = <CameraPage kind={route.parts[1]} id={Number(route.parts[2])} />;
       break;
     case "photo":
-      tab = "memories";
       page = <PhotoPage id={Number(route.parts[1])} />;
       break;
     case "print":
-      tab = "memories";
       page = <PrintPage id={Number(route.parts[1])} />;
       break;
     case "memories":
       tab = "memories";
-      page = <MemoriesPage sub={route.parts[1] ?? "letters"} day={route.parts[2]} onChanged={today.reload} />;
+      page = <MemoriesPage sub={route.parts[1] ?? ""} day={route.parts[2]} onChanged={today.reload} />;
+      break;
+    case "book":
+      tab = "book";
+      page = <BookPage />;
       break;
     case "wallet":
       tab = "wallet";

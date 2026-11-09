@@ -102,6 +102,9 @@ export function AdminPage() {
         </div>
       </div>
 
+      <h2>来訪予定（いつ、だれが来るか）</h2>
+      <VisitsTable />
+
       <h2>CSV 取り込み</h2>
       <div className="card">
         <div className="muted">取り込み元: {ov.sample_dir}（{ov.sample_files.length} ファイル: {ov.sample_files.join(", ")}）。列名から種類を判定し、行ごとに検証。2 回取り込んでも増えません。</div>
@@ -214,6 +217,28 @@ export function AdminPage() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function VisitsTable() {
+  const [v, setV] = useState<{ visits: { date: string; plans: number; dummy: number; places: { name: string; n: number }[] }[]; today: string } | null>(null);
+  useEffect(() => {
+    get<typeof v>("/admin/visits").then(setV).catch(() => setV({ visits: [], today: "" }));
+  }, []);
+  if (!v) return <p className="muted">読み込み中…</p>;
+  return (
+    <div className="card">
+      <div className="muted small" style={{ marginBottom: 6 }}>利用者が「計画」で決めた日ごとの件数と行き先。名前は出しません。お店の人の準備（仕込み・人手）に使います。</div>
+      <table className="tbl">
+        <thead><tr><th>日</th><th className="num">計画の数（ダミー）</th><th>行き先（件数）</th></tr></thead>
+        <tbody>
+          {v.visits.map((r) => (
+            <tr key={r.date}><td>{r.date.replace(/-/g, "/")}</td><td className="num">{r.plans}（{r.dummy}）</td><td className="muted small">{r.places.map((p) => `${p.name} ${p.n}`).join("、")}</td></tr>
+          ))}
+          {v.visits.length === 0 && <tr><td colSpan={3} className="muted">まだ予定はありません</td></tr>}
+        </tbody>
+      </table>
     </div>
   );
 }

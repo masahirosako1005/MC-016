@@ -106,6 +106,7 @@ export function FirstGuide() {
       /* ignore */
     }
     setOpen(false);
+    window.dispatchEvent(new Event("hitomeguri:guide-closed"));
   };
   const g = GUIDE[i];
   return (

@@ -5,6 +5,7 @@ const STD = {
   tab_plan: "計画",
   tab_map: "マップ",
   tab_memories: "思い出",
+  tab_book: "ひとめぐり帖",
   tab_wallet: "クーポン",
   plan_title: "行きたい場所をえらぶ",
   plan_step1: "行きたい場所をえらぶ",

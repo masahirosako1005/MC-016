@@ -29,7 +29,10 @@ def frame_info(conn: sqlite3.Connection, uid: int, kind: str, target_id: int, no
         unlocked = conn.execute("SELECT 1 FROM meetings WHERE user_id = ? AND person_id = ? AND met_on = ?", (uid, target_id, day)).fetchone() is not None
         sp = master.spot(conn, p["spot_id"])
         nxt = master.promise(conn, target_id, next_season(season))
+        from ..seed.mascots import mascot_for
         return {
+            "mascot": mascot_for(p["spot_id"], season),
+            "spot_id": p["spot_id"],
             "kind": "person", "id": target_id, "unlocked": unlocked,
             "reason": "" if unlocked else "今日その人に「会えた」を押した日だけ撮れます",
             "title": p["name"], "subtitle": p["shop_name"], "area": p["area"], "role": p.get("role", "店主"),
@@ -101,6 +104,14 @@ def photo_detail(conn: sqlite3.Connection, uid: int, photo_id: int) -> dict:
         if pr:
             d["promise"] = {"season_label": LABEL[pr["season"]], "title": pr["title"], "note": pr["note"]}
     d["share_text"] = f"{d['title']}と撮った一枚 #ひとめぐり便 #星凪諸島 #{d['area']}" if d["kind"] == "person" else f"{d['title']}で撮った一枚 #ひとめぐり便 #星凪諸島"
+    # 戻り先（場所の画面）
+    if d["kind"] == "person" and d["person_id"]:
+        p = master.person(conn, d["person_id"])
+        d["spot_id"] = p["spot_id"] if p else None
+        from ..seed.mascots import mascot_for
+        d["mascot"] = mascot_for(p["spot_id"], season_of(date.fromisoformat(d["taken_on"]))) if p else None
+    else:
+        d["mascot"] = None
     return d
 
 

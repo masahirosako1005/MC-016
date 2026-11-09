@@ -62,3 +62,31 @@ def test_book_view(client):
     assert b["people"][0]["seed"]["season_label"] == "冬"
     assert len(b["album"]) == 4
     assert b["trips"][0]["current"] is True and b["trips"][1]["start"] == "2026-10-14" and b["trips"][1]["days"] == 3
+
+
+def test_reminder_after_30_days_and_ics(client):
+    conn = client.app.state.conn
+    clock.set_demo_clock(conn, datetime(2026, 10, 24, 19, 0))
+    client.post("/api/meetings", json={"person_id": 6})
+    L = client.get("/api/letters/2026-10-24").json()
+    s = L["suggestions"][0]
+    assert s["image"] and s["person"]["name"]
+    client.post("/api/wishes", json={"kind": s["kind"], "target_type": s["target_type"], "target_id": s["target_id"], "label": s["title"]})
+    idx = client.get("/api/letters").json()
+    assert idx["reminders"] == []
+    clock.set_demo_clock(conn, datetime(2026, 11, 23, 10, 0))
+    idx = client.get("/api/letters").json()
+    r = next(x for x in idx["reminders"] if x["trip_start"] == "2026-10-24")
+    assert r["date"] == "2026-11-23" and r["people"] == ["鈴さん"] and len(r["wishes"]) == 1 and r["wishes"][0]["image"]
+    assert r["next_season_label"] == "冬" and r["weeks_to_next_season"] == 1
+    # ics
+    assert client.get("/api/plan/ics").status_code == 404
+    client.put("/api/plan", json={"target_date": "2026-12-01"})
+    ics = client.get("/api/plan/ics")
+    assert ics.status_code == 200 and "DTSTART;VALUE=DATE:20261201" in ics.text and "text/calendar" in ics.headers["content-type"]
+    # 来訪予定（運営）
+    v = client.get("/api/admin/visits").json()
+    assert any(x["date"] == "2026-12-01" and x["plans"] >= 1 for x in v["visits"])
+    # ゆるキャラ
+    f = client.get("/api/photos/frame/person/6").json()
+    assert f["mascot"]["key"] == "ongakudo" and f["mascot"]["outfit"]

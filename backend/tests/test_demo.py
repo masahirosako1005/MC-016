@@ -9,7 +9,7 @@ from .test_wallet import tiny_png
 
 def test_demo_scenes_and_reset(client):
     s = client.get("/api/demo/state").json()
-    assert s["scene"] == "pre" and s["date"] == "2026-10-17" and len(s["scenes"]) == 5
+    assert s["scene"] == "pre" and s["date"] == "2026-10-17" and len(s["scenes"]) == 6
     assert client.post("/api/demo/trip-day").json()["date"] == "2026-10-24"
     client.post("/api/meetings", json={"person_id": 2})
     client.post("/api/receipts", data={"shop_id": 4, "amount": 1000}, files={"image": ("r.png", tiny_png(9), "image/png")})

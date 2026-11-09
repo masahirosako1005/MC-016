@@ -231,3 +231,49 @@ details.fold[open] > summary::after { content: "－"; }
   .tabbar, .topbar, .noprint, .stickybar { display: none !important; }
   body { background: #fff; }
 }
+
+/* ---- 追加: 固定ヘッダ・5 タブ・スワイプ・地図・コルクボード・花 ---- */
+.tabbar { grid-template-columns: repeat(5, 1fr); }
+.tabbar button { font-size: 0.72rem; }
+.topbar { position: sticky; top: 0; z-index: 8; background: var(--paper); margin: -16px -16px 10px; padding: 8px 16px; border-bottom: 1px solid var(--ai-100); }
+.guide .figure { margin: 8px 0 10px; }
+
+.deck { position: relative; height: 440px; }
+.deck .dcard { position: absolute; inset: 0; background: #fff; border: 1px solid var(--ai-100); border-radius: 12px; overflow: hidden; touch-action: pan-y; user-select: none; box-shadow: 0 6px 20px rgba(27,42,68,.08); }
+.deck .dcard.behind { transform: scale(.96) translateY(10px); opacity: .7; }
+.deck .stamp { position: absolute; top: 18px; padding: 6px 12px; border: 3px solid; border-radius: 8px; font-family: var(--font-head); font-weight: 700; font-size: 1.3rem; transform: rotate(-12deg); opacity: 0; }
+.deck .stamp.go { right: 16px; color: var(--yamabuki); border-color: var(--yamabuki); background: #fff8e6; }
+.deck .stamp.skip { left: 16px; color: var(--ai-500); border-color: var(--ai-500); background: var(--paper); transform: rotate(12deg); }
+.deck-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.progress { height: 6px; background: var(--ai-100); border-radius: 3px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--yamabuki); }
+
+.gmap { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid #d9dde3; }
+.gmap text { font-family: var(--font-body); }
+
+.cork { background: #c9a06b; background-image: radial-gradient(rgba(0,0,0,.08) 1px, transparent 1.5px), radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px); background-size: 9px 9px, 13px 13px; border: 10px solid #7a5a3a; border-radius: 6px; padding: 14px 10px; position: relative; min-height: 220px; }
+.cork .polaroid { background: #fff; padding: 8px 8px 26px; box-shadow: 0 4px 10px rgba(0,0,0,.25); position: relative; }
+.cork .polaroid img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+.cork .polaroid .cap { position: absolute; left: 8px; right: 8px; bottom: 6px; font-family: var(--font-head); font-size: .8rem; color: #333; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cork .pin { position: absolute; top: -8px; left: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--yamabuki); border: 2px solid #8a6200; transform: translateX(-50%); box-shadow: 0 2px 3px rgba(0,0,0,.3); }
+.cork .note { background: #fff9c4; padding: 10px 12px; box-shadow: 0 3px 8px rgba(0,0,0,.2); font-size: .9rem; position: relative; }
+.cork .tape { position: absolute; top: -8px; left: 50%; width: 46px; height: 14px; background: rgba(255,255,255,.65); transform: translateX(-50%) rotate(-3deg); }
+
+.bloom { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(27,42,68,.55); z-index: 70; }
+.bloom .inner { background: var(--paper); border-radius: 14px; padding: 24px 20px; text-align: center; max-width: 360px; width: 90%; border: 1px solid var(--ai-300); }
+.bloom svg { animation: bloom 1.2s ease-out both; }
+@keyframes bloom { 0% { transform: scale(.2) rotate(-30deg); opacity: 0; } 60% { transform: scale(1.15) rotate(5deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+
+.collect { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ccard { border: 1px solid var(--ai-100); border-radius: 12px; background: #fff; padding: 12px 10px 10px; text-align: center; position: relative; overflow: hidden; }
+.ccard.met { border-color: var(--ai-900); }
+.ccard.unmet img { filter: grayscale(1) brightness(1.15) contrast(.6); opacity: .55; }
+.ccard .stamp-met { position: absolute; top: 10px; right: -24px; transform: rotate(35deg); background: var(--yamabuki); color: #fff; font-weight: 800; font-size: .72rem; padding: 2px 30px; letter-spacing: .1em; }
+.ccard .flowers { position: absolute; top: 8px; left: 8px; display: flex; gap: 2px; }
+
+.scanline { position: absolute; left: 0; right: 0; height: 3px; background: var(--yamabuki); box-shadow: 0 0 12px var(--yamabuki); animation: scan 1.6s linear infinite; }
+@keyframes scan { 0% { top: 0 } 100% { top: 100% } }
+.ocr-box { position: absolute; border: 2px solid var(--yamabuki); border-radius: 4px; animation: pop .4s ease-out both; }
+@keyframes pop { from { transform: scale(.8); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+.pulse { animation: pulse 1.8s ease-out infinite; transform-origin: center; }
+@keyframes pulse { 0% { opacity: .6; transform: scale(.6) } 100% { opacity: 0; transform: scale(2.2) } }

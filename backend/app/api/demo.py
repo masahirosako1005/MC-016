@@ -22,11 +22,12 @@ from ..services.season import LABEL, WEEKDAY_JA, season_of
 router = APIRouter(prefix="/demo")
 
 SCENES = [
-    {"key": "pre", "label": "⓪ 旅前", "at": settings.demo_start, "desc": "しらべる で星凪諸島を見て、つぎの旅をつくる"},
-    {"key": "trip", "label": "① 旅中", "at": settings.demo_trip_day, "desc": "きょう会えそうな人に会い、AR フォトを撮り、レシートでポイント"},
-    {"key": "night", "label": "② その夜", "at": settings.demo_night, "desc": "おもいで便が届く。日記と「行きたい」"},
-    {"key": "after30", "label": "③ 30 日後", "at": settings.demo_after30, "desc": "同じ便がもう一度。次の季節まであと何週間"},
-    {"key": "season", "label": "④ 次の季節", "at": settings.demo_next_season, "desc": "種が花に。会えた日に長押しで約束を果たす"},
+    {"key": "pre", "label": "⓪ 旅前", "at": settings.demo_start, "desc": "計画: 行きたい場所をスワイプで選び、地図で整えて、日を決める"},
+    {"key": "trip", "label": "① 旅中", "at": settings.demo_trip_day, "desc": "マップから場所へ。そこにいる人に会い、ゆるキャラと AR フォト、レシートでポイント"},
+    {"key": "night", "label": "② その夜", "at": settings.demo_night, "desc": "その日の思い出がコルクボードに。日記と「行きたい」"},
+    {"key": "after30", "label": "③ 30 日後", "at": settings.demo_after30, "desc": "30 日後、便りが届く。あの日の思い出と行きたい場所、次の季節まであと何週間"},
+    {"key": "season", "label": "④ 次の季節", "at": settings.demo_next_season, "desc": "種が花に。会えた日に約束を果たす"},
+    {"key": "admin", "label": "⑤ 運営", "at": settings.demo_next_season, "desc": "運営の窓: 指標・来訪予定・還元率・補填"},
 ]
 
 
@@ -34,7 +35,7 @@ def _state(conn: sqlite3.Connection) -> dict:
     now = clock.now(conn)
     cur = None
     for sc in SCENES:
-        if now >= datetime.fromisoformat(sc["at"]):
+        if sc["key"] != "admin" and now >= datetime.fromisoformat(sc["at"]):
             cur = sc["key"]
     fixed = conn.execute("SELECT value FROM settings WHERE key = ?", (FIX_KEY,)).fetchone()
     return {

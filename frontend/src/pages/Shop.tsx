@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { get, post, toast } from "../api";
 import { navigate } from "../router";
 import { Avatar, Photo } from "../components/parts";
-import { Badge, Loading, LongPressButton, TopBar } from "../components/ui";
+import { Badge, Loading, TopBar } from "../components/ui";
 
 type Coupon = { id: number; category: string; name: string; face_value: number; valid_from: string; valid_until: string };
 type ShopView = {
@@ -42,6 +42,9 @@ export function ShopPage({ id, onChanged }: { id: number; onChanged?: () => void
         <Badge strong>{v.forecast.label}</Badge>
         <Badge soft>還元 {v.shop.rate_percent}%</Badge>
       </div>
+      <div className="row wrap" style={{ gap: 6, marginTop: 6 }}>
+        <button className="btn ghost small" onClick={() => navigate(`/place/${v.shop.spot_id}`)}>この場所の画面へ</button>
+      </div>
       <p>{v.shop.description}</p>
       <p className="muted small">営業 {v.hours}・{v.forecast.reason}</p>
       {v.person && (
@@ -60,8 +63,8 @@ export function ShopPage({ id, onChanged }: { id: number; onChanged?: () => void
           <div key={c.id} className="card letter">
             <div className="title" style={{ fontSize: "1rem" }}>{c.name}</div>
             <div className="muted small">有効期限 {c.valid_until.replace(/-/g, "/")}</div>
-            <LongPressButton className="primary block" onComplete={() => use(c)}>1.2 秒長押しで使う</LongPressButton>
-            <p className="muted small" style={{ margin: "6px 0 0" }}>お店の人の前で長押ししてください。使用済みになります。</p>
+            <button className="btn primary block" onClick={() => { if (confirm(`${c.name} を使用済みにします。お店の人の前で押してください。`)) use(c); }}>このクーポンを使う</button>
+            <p className="muted small" style={{ margin: "6px 0 0" }}>お店の人の前で押してください。使用済みになります。</p>
           </div>
         ))}
       </div>

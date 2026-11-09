@@ -1,6 +1,6 @@
 # 05 テスト
 
-実行: `uv run pytest`（`backend/tests`、一時 DB、DEMO_MODE=1 で起動）。28 件。
+実行: `uv run pytest`（`backend/tests`、一時 DB、DEMO_MODE=1 で起動）。29 件。
 
 | ファイル | 内容 |
 |---|---|

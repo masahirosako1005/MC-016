@@ -14,7 +14,7 @@
 
 スクリプトは `npm ci → npm run build → uv sync → uvicorn` を順に行い、1 プロセスで画面と API を同じポートから配ります。`-SkipBuild` で画面のビルドを飛ばせます。
 
-テスト: `uv run pytest`（28 件）。
+テスト: `uv run pytest`（29 件）。
 
 ## 構成
 - backend: Python 3.12 + FastAPI + uvicorn、SQLite（標準 sqlite3、`data/app.db`）。層は api（pydantic）→ services → repositories。

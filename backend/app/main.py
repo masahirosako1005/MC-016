@@ -24,6 +24,10 @@ log = logging.getLogger("hitomeguri")
 def create_app(db_path: str | Path | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # SQLite の接続は 1 本なので、同期エンドポイントを 1 本ずつ実行する（並行アクセスの InterfaceError を防ぐ）
+        import anyio
+
+        anyio.to_thread.current_default_thread_limiter().total_tokens = 1
         conn = dbmod.connect(db_path or settings.db_path)
         dbmod.init_schema(conn)
         seed_master(conn)

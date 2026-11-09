@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-labelledby="t">
+  <title id="t">星凪諸島のゆるキャラ「ほしまる」</title>
+  <defs>
+    <clipPath id="bg"><circle cx="200" cy="200" r="186"/></clipPath>
+    <clipPath id="body">
+      <path d="M200 120 C282 120 314 186 312 248 C310 306 266 332 200 332 C134 332 90 306 88 248 C86 186 118 120 200 120 Z"/>
+    </clipPath>
+    <symbol id="spark" viewBox="-10 -10 20 20">
+      <path d="M0 -10 Q1.6 -1.6 10 0 Q1.6 1.6 0 10 Q-1.6 1.6 -10 0 Q-1.6 -1.6 0 -10 Z"/>
+    </symbol>
+  </defs>
+
+  <!-- 背景: 凪の海と星 -->
+  <g clip-path="url(#bg)">
+    <rect width="400" height="400" fill="#edf1f7"/>
+    <path d="M0 330 Q25 318 50 330 T100 330 T150 330 T200 330 T250 330 T300 330 T350 330 T400 330 V400 H0 Z" fill="#dfe6f1"/>
+    <path d="M0 356 Q25 344 50 356 T100 356 T150 356 T200 356 T250 356 T300 356 T350 356 T400 356 V400 H0 Z" fill="#d0dae9"/>
+    <path d="M0 382 Q25 370 50 382 T100 382 T150 382 T200 382 T250 382 T300 382 T350 382 T400 382 V400 H0 Z" fill="#c1cde1"/>
+  </g>
+  <g fill="#b3c1d8">
+    <use href="#spark" x="70" y="96" width="22" height="22"/>
+    <use href="#spark" x="310" y="78" width="28" height="28"/>
+    <use href="#spark" x="330" y="160" width="14" height="14"/>
+    <use href="#spark" x="52" y="182" width="12" height="12"/>
+  </g>
+
+  <!-- 足元の影 -->
+  <ellipse cx="200" cy="338" rx="104" ry="10" fill="#1b2a44" opacity="0.12"/>
+
+  <!-- 後ろのしっぽ（尾びれ） -->
+  <path d="M292 300 C312 296 332 284 340 292 C346 300 330 316 312 322 C300 326 292 318 292 300 Z"
+        fill="#f1f5fb" stroke="#1b2a44" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- ふる手（左ひれ） -->
+  <path d="M106 236 C84 226 62 202 66 186 C70 172 90 178 102 194 C110 205 116 220 116 232 Z"
+        fill="#f1f5fb" stroke="#1b2a44" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- 頭の星 -->
+  <path d="M200 124 Q196 108 206 98" fill="none" stroke="#1b2a44" stroke-width="5" stroke-linecap="round"/>
+  <polygon transform="rotate(12 208 86)"
+           points="208,68 212.7,79.5 225.1,80.4 215.6,88.5 218.6,100.6 208,94 197.4,100.6 200.4,88.5 190.9,80.4 203.3,79.5"
+           fill="#e3a21a" stroke="#1b2a44" stroke-width="4.5" stroke-linejoin="round"/>
+
+  <!-- からだ -->
+  <path d="M200 120 C282 120 314 186 312 248 C310 306 266 332 200 332 C134 332 90 306 88 248 C86 186 118 120 200 120 Z"
+        fill="#f1f5fb"/>
+  <g clip-path="url(#body)">
+    <!-- ほんのり影とつや -->
+    <ellipse cx="200" cy="350" rx="150" ry="60" fill="#dfe6f1"/>
+    <ellipse cx="150" cy="150" rx="34" ry="16" transform="rotate(-28 150 150)" fill="#ffffff"/>
+    <!-- ごまふ模様 -->
+    <g fill="#cfd9e8">
+      <circle cx="232" cy="142" r="4"/><circle cx="246" cy="152" r="3"/><circle cx="236" cy="160" r="2.5"/>
+      <circle cx="270" cy="182" r="3.5"/><circle cx="124" cy="190" r="3"/><circle cx="114" cy="204" r="2.5"/>
+    </g>
+    <!-- 藍染のスカーフ（絞りの白い点） -->
+    <path d="M80 266 Q200 296 320 266 L320 282 Q200 314 80 282 Z" fill="#1b2a44"/>
+    <g fill="#fbfcfd" opacity="0.9"><circle cx="110" cy="281" r="2.4"/><circle cx="138" cy="285.4" r="2.4"/><circle cx="166" cy="288.3" r="2.4"/><circle cx="194" cy="289.5" r="2.4"/><circle cx="222" cy="289" r="2.4"/><circle cx="250" cy="286.8" r="2.4"/><circle cx="278" cy="283" r="2.4"/><circle cx="302" cy="278.3" r="2.4"/></g>
+  </g>
+  <path d="M200 120 C282 120 314 186 312 248 C310 306 266 332 200 332 C134 332 90 306 88 248 C86 186 118 120 200 120 Z"
+        fill="none" stroke="#1b2a44" stroke-width="5"/>
+
+  <!-- スカーフの結び目 -->
+  <path d="M120 288 C110 296 104 308 110 312 C116 314 124 302 126 292 Z" fill="#2e4266" stroke="#1b2a44" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M126 290 C128 302 134 312 141 311 C147 309 142 298 132 290 Z" fill="#2e4266" stroke="#1b2a44" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="125" cy="287" rx="8" ry="7" fill="#2e4266" stroke="#1b2a44" stroke-width="3"/>
+
+  <!-- かお -->
+  <g transform="translate(0 12)">
+    <ellipse cx="138" cy="226" rx="17" ry="10" fill="#f2a7a7" opacity="0.6"/>
+    <ellipse cx="262" cy="226" rx="17" ry="10" fill="#f2a7a7" opacity="0.6"/>
+    <ellipse cx="160" cy="200" rx="12" ry="15" fill="#1b2a44"/>
+    <ellipse cx="240" cy="200" rx="12" ry="15" fill="#1b2a44"/>
+    <circle cx="164" cy="194" r="4.5" fill="#ffffff"/>
+    <circle cx="244" cy="194" r="4.5" fill="#ffffff"/>
+    <circle cx="156" cy="207" r="2" fill="#ffffff"/>
+    <circle cx="236" cy="207" r="2" fill="#ffffff"/>
+    <ellipse cx="200" cy="218" rx="7.5" ry="5.5" fill="#1b2a44"/>
+    <path d="M186 226 Q193 236 200 226 Q207 236 214 226" fill="none" stroke="#1b2a44" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#9aabc6">
+      <circle cx="178" cy="222" r="1.8"/><circle cx="172" cy="229" r="1.8"/>
+      <circle cx="222" cy="222" r="1.8"/><circle cx="228" cy="229" r="1.8"/>
+    </g>
+  </g>
+
+  <!-- おもいで便（手紙） -->
+  <g transform="translate(0 8) rotate(-8 252 306)">
+    <rect x="212" y="282" width="80" height="52" rx="6" fill="#fbfcfd" stroke="#1b2a44" stroke-width="4.5"/>
+    <path d="M215 286 L252 312 L289 286" fill="none" stroke="#1b2a44" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="252" cy="312" r="8" fill="#1b2a44"/>
+    <use href="#spark" x="246" y="306" width="12" height="12" fill="#fbfcfd"/>
+  </g>
+  <!-- 手紙をもつ右ひれ -->
+  <path d="M298 276 C308 288 306 308 294 316 C284 322 274 314 276 302 C278 290 286 278 298 276 Z"
+        fill="#f1f5fb" stroke="#1b2a44" stroke-width="5" stroke-linejoin="round"/>
+</svg>

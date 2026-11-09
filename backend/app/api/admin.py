@@ -113,6 +113,29 @@ def get_reimbursement(month: str = Query(..., min_length=7, max_length=7), conn=
     return svc.reimbursement(conn, month)
 
 
+@router.get("/admin/visits")
+def visits(conn=Depends(get_conn)):
+    """いつ人が来るか: 予定日ごとの計画の数と、行く場所の内訳（利用者名は出さない）。"""
+    today = clock.today(conn).isoformat()
+    rows = conn.execute(
+        "SELECT p.target_date, COUNT(DISTINCT p.id) AS plans, SUM(p.is_dummy) AS dummy FROM plans p WHERE p.target_date IS NOT NULL AND p.target_date >= ? "
+        "GROUP BY p.target_date ORDER BY p.target_date LIMIT 60",
+        (today,),
+    ).fetchall()
+    out = []
+    for r in rows:
+        places = conn.execute(
+            "SELECT sp.name, COUNT(*) AS n FROM plan_items pi JOIN plans p ON p.id = pi.plan_id JOIN spots sp ON sp.id = pi.target_id "
+            "WHERE p.target_date = ? AND pi.kind = 'spot' GROUP BY sp.name ORDER BY n DESC",
+            (r["target_date"],),
+        ).fetchall()
+        out.append({
+            "date": r["target_date"], "plans": r["plans"], "dummy": r["dummy"] or 0,
+            "places": [{"name": x["name"].split("（")[0], "n": x["n"]} for x in places],
+        })
+    return {"visits": out, "today": today}
+
+
 @router.get("/admin/history")
 def get_history(conn=Depends(get_conn)):
     return {"history": svc.history(conn)}

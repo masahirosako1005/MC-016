@@ -1,49 +1,27 @@
-/** 発表用 1280×720。左にスマホ枠で本体（iframe）、上に 5 場面の帯、右に場面の説明と指標。DEMO_MODE=1 のときだけ。 */
+/** 発表用 1280×720。左にスマホ枠で本体（iframe）、上に場面の帯、右にプレゼンのスライド。DEMO_MODE=1 のときだけ。 */
 import { useEffect, useRef, useState } from "react";
-import { get, post, toast, ApiError } from "../api";
+import { ApiError, get, post, toast } from "../api";
 import { navigate } from "../router";
+import { Mascot } from "../components/mascots";
 import { MetricsGrid } from "./Admin";
 
 type Scene = { key: string; label: string; at: string; desc: string };
 type DemoState = { now: string; date: string; weekday: string; season_label: string; scene: string | null; scenes: Scene[]; fixed_prize: number | null; prizes: { id: number; name: string; category: string }[] };
+type Metrics = Parameters<typeof MetricsGrid>[0]["m"];
 
-const SCRIPT: Record<string, { path: string; steps: string[]; point: string }> = {
-  pre: {
-    path: "/plan",
-    steps: ["「計画」で行きたい場所を選ぶ（風景写真のカード。地区・季節で絞る）", "カードの下に「ここにいる人」。人はまだ選ばない、場所を選ぶだけ", "「行きたい」を 2 か所、日を 10/24 に決める"],
-    point: "いきなり人を選ばせない。場所を選ぶと、そこにいる人が付いてくる。旅人の声はデモ用の内部データ（本番は公式 API に差し替え）。格付け・順位は出さない。",
-  },
-  trip: {
-    path: "/",
-    steps: ["「マップ」に計画の場所が先頭。行った先に「ここにいる人」と予報（定休日・営業時間・季節イベント）", "「〇〇さんに会えた」→ 次の季節の種 → いっしょに AR フォト（カメラ不可なら風景写真で合成）", "レシートを登録 → ポイント → 「クーポン」で抽選"],
-    point: "人を選んだつもりはないのに、気づいたら人に会っている。会えたは自己申告・同じ日に同じ人は 1 回。レシート画像は 7 日で削除、数値は残す。",
-  },
-  night: {
-    path: "/memories/letters",
-    steps: ["おもいで便が届く（18:00 以降）", "会えた人・スポット・AR フォトのコラージュ、一言日記 140 字", "次の旅の提案 3 つ → 「行きたい」を押すと つぎの旅 の候補に"],
-    point: "便の中身は保存せず、毎回記録から組み立てる。保存するのは日記と「行きたい」だけ。",
-  },
-  after30: {
-    path: "/memories/letters",
-    steps: ["30 日後、同じ便がもう一度届く", "「行きたい」を先頭に、次の季節まで あと N 週間", "つぎの旅の予定日を決める"],
-    point: "旅の後に開く理由をつくる。再訪のきっかけは季節の便りとクーポン。",
-  },
-  season: {
-    path: "/",
-    steps: ["次の季節、種が花になる（マップのその人のカードが長押しに変わる）", "その人に「会えた」日だけ 1.2 秒長押しで約束を果たす", "さらに次の季節の種をもらう（関係: はじめまして → また会えたね → おなじみ）"],
-    point: "種は人ごとに 1 つ、逃しても枯れない。「またあの人に会いたい」が次の旅の計画になる。運営の窓（/#/admin）で指標・取り込み・還元率・補填を確認。",
-  },
-};
+const SCENE_PATH: Record<string, string> = { pre: "/plan", trip: "/", night: "/memories", after30: "/memories", season: "/", admin: "/admin" };
 
 export function PresentPage() {
   const [st, setSt] = useState<DemoState | null>(null);
-  const [metrics, setMetrics] = useState<Parameters<typeof MetricsGrid>[0]["m"] | null>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [busy, setBusy] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const [adminMode, setAdminMode] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
 
   const load = async () => {
     try {
-      const [s, m] = await Promise.all([get<DemoState>("/demo/state"), get<Parameters<typeof MetricsGrid>[0]["m"]>("/metrics")]);
+      const [s, m] = await Promise.all([get<DemoState>("/demo/state"), get<Metrics>("/metrics")]);
       setSt(s);
       setMetrics(m);
     } catch (e) {
@@ -57,21 +35,35 @@ export function PresentPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") setSlide((s) => Math.min(SLIDES.length - 1, s + 1));
+      if (e.key === "ArrowLeft") setSlide((s) => Math.max(0, s - 1));
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, []);
 
-  const tell = (path: string) => {
-    frame.current?.contentWindow?.postMessage({ type: "hitomeguri", path }, window.location.origin);
-  };
+  const tell = (path: string) => frame.current?.contentWindow?.postMessage({ type: "hitomeguri", path }, window.location.origin);
   const go = async (key: string) => {
     if (!st) return;
     setBusy(true);
     try {
+      if (key === "admin") {
+        setAdminMode(true);
+        setSlide(SLIDES.findIndex((s) => s.scene === "admin"));
+        return;
+      }
+      setAdminMode(false);
       if (key === "pre") await post("/demo/clock", { at: st.scenes[0].at });
       else if (key === "trip") await post("/demo/trip-day");
       else if (key === "night") await post("/demo/night");
       else if (key === "after30") await post("/demo/after30");
       else if (key === "season") await post("/demo/next-season");
       await load();
-      tell(SCRIPT[key].path);
+      tell(SCENE_PATH[key]);
+      const idx = SLIDES.findIndex((s) => s.scene === key);
+      if (idx >= 0) setSlide(idx);
     } catch (e) {
       toast((e as Error).message, "error");
     } finally {
@@ -79,55 +71,152 @@ export function PresentPage() {
     }
   };
   if (!st) return <div className="page wide"><p className="muted">読み込み中…</p></div>;
-  const cur = st.scene ?? "pre";
-  const sc = SCRIPT[cur];
+  const cur = adminMode ? "admin" : (st.scene ?? "pre");
+  const S = SLIDES[slide];
   return (
-    <div style={{ width: 1280, height: 720, margin: "0 auto", display: "grid", gridTemplateRows: "68px 1fr", gap: 8, padding: 8, boxSizing: "border-box", background: "var(--bg)", overflow: "hidden" }}>
+    <div style={{ width: 1280, height: 720, margin: "0 auto", display: "grid", gridTemplateRows: "64px 1fr", gap: 8, padding: 8, boxSizing: "border-box", background: "var(--bg)", overflow: "hidden" }}>
       <div className="row" style={{ gap: 6 }}>
-        <div style={{ fontWeight: 800, fontSize: "1.1rem", marginRight: 8 }}>ひとめぐり便</div>
+        <div className="serif" style={{ fontWeight: 800, fontSize: "1.1rem", marginRight: 8 }}>ひとめぐり便</div>
         {st.scenes.map((s) => (
-          <button key={s.key} className={`btn small ${cur === s.key ? "primary" : ""}`} disabled={busy} style={{ flex: 1 }} onClick={() => go(s.key)} title={s.desc}>
-            {s.label}
-            <span className="muted" style={{ fontSize: "0.7rem", color: cur === s.key ? "#fff" : undefined }}>{s.at.slice(5, 10).replace("-", "/")} {s.at.slice(11, 16)}</span>
+          <button key={s.key} className={`btn small ${cur === s.key ? "primary" : ""}`} disabled={busy} style={{ flex: 1, flexDirection: "column", gap: 0, lineHeight: 1.1 }} onClick={() => go(s.key)} title={s.desc}>
+            <span>{s.label}</span>
+            {s.key !== "admin" && <span style={{ fontSize: "0.68rem", opacity: 0.8 }}>{s.at.slice(5, 10).replace("-", "/")} {s.at.slice(11, 16)}</span>}
           </button>
         ))}
         <div style={{ textAlign: "right", minWidth: 150, fontSize: "0.85rem" }}>
           <div style={{ fontWeight: 700 }}>{st.date.replace(/-/g, "/")}（{st.weekday}）{st.now.slice(11, 16)}</div>
-          <div className="muted">{st.season_label}・模擬の時計</div>
+          <div className="muted small">{st.season_label}・模擬の時計</div>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 12, minHeight: 0 }}>
-        <div style={{ justifySelf: "center", width: 340, height: 630, border: "10px solid #1e2a2c", borderRadius: 36, overflow: "hidden", background: "#000", boxShadow: "0 8px 30px #0004" }}>
-          <iframe ref={frame} src="/#/plan" title="ひとめぐり便（本体）" style={{ width: "100%", height: "100%", border: 0, background: "#fff" }} />
-        </div>
-        <div style={{ display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8, minHeight: 0 }}>
-          <div className="card">
-            <div className="row between">
-              <div className="title">{st.scenes.find((s) => s.key === cur)?.label} — {st.scenes.find((s) => s.key === cur)?.desc}</div>
-              <button className="btn small ghost" onClick={() => tell(sc.path)}>この場面の画面へ</button>
-            </div>
-            <ol style={{ margin: "6px 0 0", paddingLeft: 20 }}>
-              {sc.steps.map((s, i) => <li key={i}>{s}</li>)}
-            </ol>
-            <div className="muted" style={{ marginTop: 4 }}>{sc.point}</div>
+      <div style={{ display: "grid", gridTemplateColumns: adminMode ? "1fr 420px" : "380px 1fr", gap: 12, minHeight: 0 }}>
+        {adminMode ? (
+          <div style={{ border: "1px solid var(--ai-300)", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
+            <iframe src="/#/admin" title="運営の窓" style={{ width: "100%", height: "100%", border: 0 }} />
           </div>
-          <div style={{ overflow: "auto", minHeight: 0 }}>
-            {metrics && <MetricsGrid m={metrics} compact />}
-            <div className="muted" style={{ fontSize: "0.75rem", marginTop: 4 }}>n は対象人数、ダミーは固定乱数で補った履歴。3 人未満は非表示。</div>
+        ) : (
+          <div style={{ justifySelf: "center", width: 340, height: 630, border: "10px solid #1b2a44", borderRadius: 36, overflow: "hidden", background: "#000", boxShadow: "0 8px 30px #0004" }}>
+            <iframe ref={frame} src="/#/plan" title="ひとめぐり便（本体）" style={{ width: "100%", height: "100%", border: 0, background: "#fff" }} />
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 8, minHeight: 0 }}>
+          <div className="card" style={{ position: "relative", overflow: "hidden", padding: 22, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div className="muted small" style={{ letterSpacing: ".2em" }}>{S.kicker}</div>
+            <h1 className="serif" style={{ fontSize: adminMode ? "1.5rem" : "1.9rem", margin: "4px 0 10px", lineHeight: 1.25 }}>{S.title}</h1>
+            <div style={{ flex: 1, minHeight: 0, overflow: "auto", fontSize: adminMode ? ".95rem" : "1.05rem" }}>{S.body(metrics)}</div>
+            <div className="row between" style={{ marginTop: 8 }}>
+              <button className="btn ghost small" onClick={() => setSlide((s) => Math.max(0, s - 1))} disabled={slide === 0}>← 前</button>
+              <span className="muted small">{slide + 1} / {SLIDES.length}</span>
+              <button className="btn ghost small" onClick={() => setSlide((s) => Math.min(SLIDES.length - 1, s + 1))} disabled={slide === SLIDES.length - 1}>次 →</button>
+            </div>
+            <div style={{ position: "absolute", right: 14, top: 10, opacity: .9 }}><Mascot k={S.mascot ?? "toudai"} size={64} /></div>
           </div>
           <div className="card row wrap" style={{ gap: 8, padding: 8 }}>
-            <span className="muted" style={{ fontSize: "0.8rem" }}>デモ操作:</span>
+            <span className="muted small">デモ操作:</span>
             <select value={st.fixed_prize ?? ""} style={{ width: 200, minHeight: 36, padding: 4 }} onChange={async (e) => { await post("/demo/fix-lottery", { prize_id: e.target.value ? Number(e.target.value) : null }); await load(); }}>
               <option value="">次の抽選: 通常</option>
               {st.prizes.map((p) => <option key={p.id} value={p.id}>次の抽選を固定: {p.name}</option>)}
             </select>
             <button className="btn small ghost" onClick={() => tell("/wallet")}>クーポン</button>
-            <button className="btn small ghost" onClick={() => tell("/memories/book")}>ひとめぐり帖</button>
-            <button className="btn small ghost" onClick={() => window.open("/#/admin", "_blank")}>運営の窓</button>
-            <button className="btn small ghost" style={{ marginLeft: "auto", borderColor: "var(--yamabuki)", color: "#7a5300" }} onClick={async () => { if (confirm("主人公の履歴を初期化して旅前に戻します。よろしいですか？")) { await post("/demo/reset"); await load(); tell("/plan"); } }}>初期化</button>
+            <button className="btn small ghost" onClick={() => tell("/book")}>ひとめぐり帖</button>
+            <button className="btn small ghost" onClick={() => tell(SCENE_PATH[cur] ?? "/")}>場面の画面へ</button>
+            <button className="btn small ghost" style={{ marginLeft: "auto", borderColor: "var(--yamabuki)", color: "#7a5300" }} onClick={async () => { if (confirm("主人公の履歴を初期化して旅前に戻します。よろしいですか？")) { await post("/demo/reset"); setAdminMode(false); await load(); tell("/plan"); setSlide(0); } }}>初期化</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+const Li = ({ children }: { children: React.ReactNode }) => <li style={{ margin: "4px 0" }}>{children}</li>;
+
+const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; body: (m: Metrics | null) => JSX.Element }[] = [
+  {
+    scene: "pre", kicker: "01 課題", title: "スタンプラリーは、旅の途中で終わってしまう", mascot: "toudai",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>既存アプリは「旅の途中」の機能だけ。旅の後に開く理由がない。</Li>
+        <Li>参加後アンケートでは満足度が高いのに、2 回目の来訪につながっていない。</Li>
+        <Li>再訪の理由は「場所」より「人」。でも、いきなり人を選ばせると敷居が高い。</Li>
+        <Li><b>ひとめぐり便</b>: 場所を選ぶと人が付いてきて、気づいたら人に会っている。会った人との約束が、次の季節に花になる。</Li>
+      </ul>
+    ),
+  },
+  {
+    scene: "pre", kicker: "02 旅前", title: "計画: カードをスワイプして、行きたい場所を選ぶ", mascot: "hoshimi",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>風景写真のカードを右へ「行く」、左へ「行かない」。7 枚だけ。</Li>
+        <Li>カードの下に「ここにいる人」。人は付加情報 — まだ選ばせない。</Li>
+        <Li>選び終えると地図に並ぶ。ピンをタップして微調整。</Li>
+        <Li>日を決めると、その日に会えそうな人（定休日で判定）が分かり、Google カレンダーへ。お店側にも「その日に来る」が伝わる（運営の窓の来訪予定）。</Li>
+      </ul>
+    ),
+  },
+  {
+    scene: "trip", kicker: "03 旅中", title: "マップ: 行った先で、人に会う", mascot: "yoichi",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>地図アプリ風の島の地図。山吹の番号ピンが「きょう行く場所」、青い点が現在地、会えた場所はチェック。</Li>
+        <Li>場所をタップ → その場所の画面に、会えた・AR フォト・レシート・クーポンをまとめる。</Li>
+        <Li>「会えた」は自己申告、同じ日に同じ人は 1 回（DB の制約）。次の季節の約束が「種」になる。</Li>
+        <Li>AR フォトは、その場所の<b>ゆるキャラ「ほしまる」</b>と。場所ごとの小物、季節の衣装。ここで、きょうだけ撮れる一枚（IP に頼らない自作キャラ）。</Li>
+        <Li>レシートは撮るだけ。AI-OCR が店名と金額を推定（デモは演出）。ポイント → 抽選 → 次の旅で使えるカテゴリ別クーポン。画像は 7 日で削除。</Li>
+      </ul>
+    ),
+  },
+  {
+    scene: "night", kicker: "04 その夜", title: "思い出: コルクボードに、今日の一日", mascot: "kohan",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>18:00 以降、会えた人・AR フォト・行った場所がコルクボードに貼られる。</Li>
+        <Li>中身は保存せず、毎回記録から組み立てる。保存するのは一言日記と「行きたい」だけ。</Li>
+        <Li>次の旅の提案 3 つ（別の季節に、また／別のイベント／まだ行っていない場所）。写真と人つき。「行きたい」でその場所が計画の候補に入る。</Li>
+      </ul>
+    ),
+  },
+  {
+    scene: "after30", kicker: "05 30 日後", title: "便り: あの日の思い出と、行きたい場所が届く", mascot: "ishidatami",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>旅から 30 日。星凪諸島から便りが届く（リマインド）。</Li>
+        <Li>あの日の写真・会った人・一言日記、そして「行きたい」と選んだ場所の写真。</Li>
+        <Li>次の季節まで あと N 週間 — 種が花になる季節。そのまま計画の日決めへ。</Li>
+      </ul>
+    ),
+  },
+  {
+    scene: "season", kicker: "06 次の季節", title: "花が咲く: 約束を果たし、また会いたくなる", mascot: "ongakudo",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>季節が変わると種が花に。その人に会えた日に「約束を果たす」。咲いた花はひとめぐり帖に増える。</Li>
+        <Li>関係は会えた別日数で はじめまして → また会えたね → おなじみ、おかえり。格付け・順位はつくらない。</Li>
+        <Li>ひとめぐり帖は 8 人をカードで集める帖。全員に会うと完成。</Li>
+        <Li>クーポンは当選の翌日から 1 年、同じ区分の店で。補填額は運営の窓で店ごとに集計。</Li>
+      </ul>
+    ),
+  },
+  {
+    scene: "admin", kicker: "07 運営", title: "運営の窓: 指標・来訪予定・還元率・補填", mascot: "kazaguruma",
+    body: (m) => (
+      <div>
+        <ul style={{ paddingLeft: 20, marginTop: 0 }}>
+          <Li>再訪率・訪問間隔・旅の後の起動率・満足なのに再訪なし・地区別消費・クーポン再訪・計画→来訪。3 人未満は出さない。</Li>
+          <Li>来訪予定: 計画の日ごとに、何人がどこへ来るか。お店の人の準備に。</Li>
+          <Li>CSV 取り込み（冪等・失敗行の理由）、還元率、抽選の商品、補填、変更履歴。</Li>
+        </ul>
+        {m && <MetricsGrid m={m} compact />}
+      </div>
+    ),
+  },
+  {
+    kicker: "08 技術と正直な注記", title: "ローカルで完結、外部に頼らない", mascot: "toudai",
+    body: () => (
+      <ul style={{ paddingLeft: 20 }}>
+        <Li>FastAPI + SQLite + React/TS。1 プロセス、外部 API・CDN・外部フォントなし。入力検証・CSP・先頭バイト判定・SHA-256 重複・7 日削除。</Li>
+        <Li>AR はカメラ映像にキャラクターを合成（マーカー認識なし）。AI-OCR はデモ演出（将来差し替え）。旅人の声は内部データ（本番は SNS 公式 API）。</Li>
+        <Li>人の絵: Loose Drawing、風景: Unsplash、アイコン: ICOOON MONO、ほしまる: 自作。</Li>
+        <Li>認証なし（ローカル前提）。本番では運営の窓に認証が必要。</Li>
+      </ul>
+    ),
+  },
+];

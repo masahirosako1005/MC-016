@@ -1,10 +1,11 @@
 import { navigate } from "../router";
 import { useT } from "../i18n";
 
-const TABS: { key: string; path: string; icon: string; label: "tab_plan" | "tab_map" | "tab_memories" | "tab_wallet" }[] = [
+const TABS: { key: string; path: string; icon: string; label: "tab_plan" | "tab_map" | "tab_memories" | "tab_book" | "tab_wallet" }[] = [
   { key: "plan", path: "/plan", icon: "calendar", label: "tab_plan" },
   { key: "map", path: "/", icon: "pin", label: "tab_map" },
   { key: "memories", path: "/memories", icon: "letter", label: "tab_memories" },
+  { key: "book", path: "/book", icon: "book", label: "tab_book" },
   { key: "wallet", path: "/wallet", icon: "ticket", label: "tab_wallet" },
 ];
 

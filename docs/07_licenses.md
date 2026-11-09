@@ -51,3 +51,10 @@ Python 3.12（PSF）、uv（MIT/Apache-2.0）、Node.js（MIT）。グローバ�
 
 ### アイコン 11 点 — ICOOON MONO（https://icooon-mono.com/、商用利用可・クレジット不要。色を藍 #1b2a44 に変更）
 calendar（12549）, pin（00020）, map（10163）, letter（00024）, ticket（11458）, camera（00068）, receipt（12044）, settings（00001）, download（00178）, share（00054）, print（11011）
+
+### ゆるキャラ「ほしまる」 — 自作
+| ファイル | 内容 |
+|---|---|
+| mascot/hoshimaru.svg | 星凪諸島のゆるキャラ（ごまふアザラシの子、頭に山吹の星、藍染のスカーフ、おもいで便の手紙）。このリポジトリで自作した SVG |
+| mascot/hoshimaru.png | 上の SVG を Edge headless で 800×800 に書き出したもの |
+| mascot/hoshimaru_<svg_key>.svg / .png | スポット別のほしまる 7 枚（svg_key は spots マスタと同じ: lighthouse・cape・market・lake・windmill・street・hall）。`scripts/mascot/gen_hoshimaru.py` で生成した自作 SVG と 800×800 PNG |

@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { get, toast } from "../api";
-import { navigate } from "../router";
+import { navigate, useRoute } from "../router";
 import { Badge, Loading, TopBar } from "../components/ui";
 
 export type Photo = {
   id: number; kind: "person" | "spot"; title: string; subtitle: string; area: string; taken_on: string; season_label: string;
-  url: string; is_sample: boolean; promise: { season_label: string; title: string; note: string } | null; share_text: string;
+  url: string; is_sample: boolean; spot_id?: number | null; mascot?: { name: string } | null; promise: { season_label: string; title: string; note: string } | null; share_text: string;
 };
 
 export function PhotoPage({ id }: { id: number }) {
+  const route = useRoute();
+  const from = route.query.get("from");
   const [p, setP] = useState<Photo | null>(null);
   useEffect(() => {
     get<Photo>(`/photos/${id}`).then(setP).catch((e) => toast((e as Error).message, "error"));
@@ -32,7 +34,7 @@ export function PhotoPage({ id }: { id: number }) {
   };
   return (
     <div className="page">
-      <TopBar title="AR フォト" backTo="/memories/book" />
+      <TopBar title="AR フォト" backTo={from ? `/place/${from}` : p.spot_id ? `/place/${p.spot_id}` : "/book"} />
       <img src={p.url} alt={p.title} style={{ width: "100%", borderRadius: 14, display: "block" }} />
       <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
         <span className="title">{p.title}</span>
@@ -46,7 +48,8 @@ export function PhotoPage({ id }: { id: number }) {
           写真をダウンロード
         </a>
         <button className="btn block" onClick={share}>共有する（SNS など）</button>
-        <button className="btn block ghost" onClick={() => navigate(`/print/${p.id}`)}>印刷する（ハガキ判）</button>
+        <button className="btn block ghost" onClick={() => navigate(`/print/`)}>印刷する（ハガキ判）</button>
+        <button className="btn block ghost" onClick={() => navigate(from ? `/place/${from}` : p.spot_id ? `/place/${p.spot_id}` : "/")}>{from || p.spot_id ? "場所の画面にもどる" : "マップにもどる"}</button>
       </div>
       <p className="muted" style={{ marginTop: 10 }}>共有の文: {p.share_text}</p>
     </div>

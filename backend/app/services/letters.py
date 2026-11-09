@@ -52,8 +52,41 @@ def letters_index(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
             })
     items.sort(key=lambda x: x["day"], reverse=True)
     pending_today = today in days and now.hour < settings.letter_open_hour
+    # 30 日後のリマインド: 旅の最終日 + 30 日に届く「便り」。その旅で選んだ行きたい場所と、当時の思い出を添える。
+    reminders = []
+    wish_rows = [dict(w) for w in conn.execute("SELECT * FROM wishes WHERE user_id = ? ORDER BY id", (uid,))]
+    for start, end in trips:
+        due = end + timedelta(days=30)
+        if today < due:
+            continue
+        s, e = start.isoformat(), end.isoformat()
+        ppl = [r["name"] for r in conn.execute("SELECT DISTINCT p.name FROM meetings m JOIN people p ON p.id = m.person_id WHERE m.user_id = ? AND m.met_on BETWEEN ? AND ? ORDER BY p.id", (uid, s, e))]
+        photos = [{"id": r["id"], "url": f"/api/photos/{r['id']}/image"} for r in conn.execute("SELECT id FROM photos WHERE user_id = ? AND taken_on BETWEEN ? AND ? ORDER BY id LIMIT 4", (uid, s, e))]
+        # その旅の夜〜30 日の間に押した「行きたい」
+        wishes = [w for w in wish_rows if s <= w["created_at"][:10] <= due.isoformat()]
+        wish_items = []
+        for w in wishes:
+            img = None
+            if w["target_type"] == "shop":
+                row = conn.execute("SELECT sp.svg_key, sp.name FROM shops sh JOIN spots sp ON sp.id = sh.spot_id WHERE sh.id = ?", (w["target_id"],)).fetchone()
+            else:
+                row = conn.execute("SELECT sp.svg_key, sp.name FROM promises pr JOIN people pe ON pe.id = pr.person_id JOIN shops sh ON sh.id = pe.shop_id JOIN spots sp ON sp.id = sh.spot_id WHERE pr.id = ?", (w["target_id"],)).fetchone()
+            if row:
+                img = f"/img/places/{row['svg_key']}.jpg"
+            wish_items.append({"label": w["label"], "image": img, "place": row["name"].split("（")[0] if row else None})
+        nxt = season_start_after(due)
+        diary = conn.execute("SELECT text FROM diaries WHERE user_id = ? AND day BETWEEN ? AND ? ORDER BY day DESC LIMIT 1", (uid, s, e)).fetchone()
+        reminders.append({
+            "date": due.isoformat(), "weekday": WEEKDAY_JA[due.weekday()],
+            "trip_start": s, "trip_end": e, "trip_label": f"{start.month}/{start.day}" + (f"〜{end.month}/{end.day}" if start != end else ""),
+            "people": ppl, "photos": photos, "wishes": wish_items, "diary": diary["text"] if diary else None,
+            "next_season_label": LABEL[season_of(nxt)], "weeks_to_next_season": weeks_until_next_season(due),
+            "title": f"{start.month}/{start.day} の旅から 30 日。星凪諸島から便りが届きました",
+        })
+    reminders.sort(key=lambda r: r["date"], reverse=True)
     return {
         "letters": items,
+        "reminders": reminders,
         "pending_today": pending_today,
         "open_hour": settings.letter_open_hour,
         "wish_count": len(wished),
@@ -149,10 +182,13 @@ def _suggestions(conn: sqlite3.Connection, uid: int, d: date, people: list[dict]
     pr = master.promise(conn, person_id, nxt)
     person = master.person(conn, person_id)
     if pr and person:
+        sp = master.spot(conn, person["spot_id"])
         out.append({
             "kind": "season", "target_type": "promise", "target_id": pr["id"],
             "title": f"{LABEL[nxt]}に、{person['name']}の「{pr['title']}」",
             "note": pr["note"], "shop_id": person["shop_id"], "wished": ("season", "promise", pr["id"]) in wished,
+            "image": f"/img/places/{sp['svg_key']}.jpg" if sp else None, "place": sp["name"].split("（")[0] if sp else None,
+            "person": {"id": person["id"], "name": person["name"], "image": f"/img/people/{person['svg_key']}.png"},
         })
     # 2) 別のイベント: 他の人の、期間つきの約束（次の季節 → その次）
     met_ids = {p["id"] for p in people}
@@ -168,10 +204,15 @@ def _suggestions(conn: sqlite3.Connection, uid: int, d: date, people: list[dict]
             ev = row
             break
     if ev:
+        sh = master.shop(conn, ev["shop_id"])
+        sp = master.spot(conn, sh["spot_id"]) if sh else None
+        evp = master.person(conn, ev["person_id"])
         out.append({
             "kind": "event", "target_type": "promise", "target_id": ev["id"],
             "title": f"{LABEL[ev['season']]}の行事「{ev['title']}」（{ev['person_name']}・{ev['start_md'].replace('-', '/')}〜{ev['end_md'].replace('-', '/')}）",
             "note": ev["note"], "shop_id": ev["shop_id"], "wished": ("event", "promise", ev["id"]) in wished,
+            "image": f"/img/places/{sp['svg_key']}.jpg" if sp else None, "place": sp["name"].split("（")[0] if sp else None,
+            "person": {"id": evp["id"], "name": evp["name"], "image": f"/img/people/{evp['svg_key']}.png"} if evp else None,
         })
     # 3) まだ行っていない場所（そこにいる人）
     visited_shops = {r["shop_id"] for r in conn.execute("SELECT shop_id FROM receipts WHERE user_id = ?", (uid,))}
@@ -187,6 +228,8 @@ def _suggestions(conn: sqlite3.Connection, uid: int, d: date, people: list[dict]
             "title": f"まだ行っていない場所「{sp['name'].split('（')[0]}」（{sp['area']}）",
             "note": f"{sp['description']} {who}".strip(), "shop_id": ppl[0]["shop_id"] if ppl else None,
             "spot_id": sp["id"], "wished": ("shop", "shop", ppl[0]["shop_id"] if ppl else 0) in wished,
+            "image": f"/img/places/{sp['svg_key']}.jpg", "place": sp["name"].split("（")[0],
+            "person": {"id": ppl[0]["id"], "name": ppl[0]["name"], "image": f"/img/people/{ppl[0]['svg_key']}.png"} if ppl else None,
         })
     return out
 
