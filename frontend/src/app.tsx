@@ -1,4 +1,5 @@
-import { useRoute } from "./router";
+import { useEffect, useState } from "react";
+import { navigate, useRoute } from "./router";
 import { TabBar } from "./components/tabbar";
 import { Toasts } from "./components/ui";
 import { TodayPage, useToday } from "./pages/Today";
@@ -10,12 +11,13 @@ import { CameraPage } from "./pages/Camera";
 import { PhotoPage, PrintPage } from "./pages/Photo";
 import { MemoriesPage } from "./pages/Memories";
 import { AdminPage } from "./pages/Admin";
+import { PresentPage } from "./pages/Present";
 
-function Placeholder({ name }: { name: string }) {
+function NotFound() {
   return (
     <div className="page">
-      <h1>{name}</h1>
-      <p className="muted">準備中</p>
+      <h1>ページが見つかりません</h1>
+      <button className="btn" onClick={() => navigate("/")}>きょうへ</button>
     </div>
   );
 }
@@ -23,7 +25,39 @@ function Placeholder({ name }: { name: string }) {
 export function App() {
   const route = useRoute();
   const today = useToday();
+  const [epoch, setEpoch] = useState(0);
+
+  // present（親）からの合図: 画面を切り替えて読み直す。同一オリジンだけ受け付ける。
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const d = e.data as { type?: string; path?: string };
+      if (d?.type !== "hitomeguri") return;
+      if (d.path) navigate(d.path);
+      today.reload();
+      setEpoch((n) => n + 1);
+    };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, [today]);
+
   const head = route.parts[0] ?? "";
+  if (head === "present") {
+    return (
+      <div className="app">
+        <PresentPage />
+        <Toasts />
+      </div>
+    );
+  }
+  if (head === "admin") {
+    return (
+      <div className="app">
+        <AdminPage />
+        <Toasts />
+      </div>
+    );
+  }
   let page: JSX.Element;
   let tab = "today";
   switch (head) {
@@ -67,19 +101,12 @@ export function App() {
       tab = "wallet";
       page = <WalletPage onChanged={today.reload} />;
       break;
-    case "admin":
-      return (
-        <div className="app">
-          <AdminPage />
-          <Toasts />
-        </div>
-      );
     default:
-      page = <Placeholder name={head} />;
+      page = <NotFound />;
   }
   return (
     <div className="app">
-      {page}
+      <div key={epoch}>{page}</div>
       <TabBar active={tab} letterBadge={!!today.data?.letter_ready} />
       <Toasts />
     </div>
