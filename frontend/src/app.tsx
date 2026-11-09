@@ -5,6 +5,7 @@ import { TodayPage, useToday } from "./pages/Today";
 import { SettingsPage } from "./pages/Settings";
 import { ExplorePage, PlacePage, PlanPage } from "./pages/Explore";
 import { ShopPage } from "./pages/Shop";
+import { WalletPage } from "./pages/Wallet";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -49,7 +50,7 @@ export function App() {
       break;
     case "wallet":
       tab = "wallet";
-      page = <Placeholder name="おさいふ" />;
+      page = <WalletPage onChanged={today.reload} />;
       break;
     default:
       page = <Placeholder name={head} />;
