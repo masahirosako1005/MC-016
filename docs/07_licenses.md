@@ -65,3 +65,4 @@ calendar（12549）, pin（00020）, map（10163）, letter（00024）, ticket�
 | map/island.jpg | https://unsplash.com/photos/Cgt8qnrgz4s （島々の空撮。星凪諸島の地図の背景に使用。ピン・航路・地名は自前の SVG） |
 | mascot/ui/hoshimaru_<pose>.svg / .png | UI 用のポーズ差分 10 種（背景透過、PNG 720×720）。wave・cheer・point・letter・think・sleep・sorry・thanks・camera・coupon。一覧は mascot/ui/poses.json。`scripts/mascot/gen_hoshimaru_ui.py` で生成した自作素材 |
 | frames/frame_<key>.svg / .png | AR フォト用フレーム 5 種（900×1200、写真の部分は透明）。ai・hoshizora・hagaki・cheki・hyokkori。一覧は frames/frames.json。同じスクリプトで生成した自作素材 |
+| frames/frame_spot_<svg_key>.svg / .png | 場所ごとの特別フレーム 7 種（900×1200、写真の部分は透明。その場所の服装のほしまると場所名の札入り）。frames.json の `spot` に svg_key。同じスクリプトで生成した自作素材 |
