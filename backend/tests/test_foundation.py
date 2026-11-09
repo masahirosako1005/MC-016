@@ -56,3 +56,21 @@ def test_health_and_404(client):
     j = r.json()
     assert set(j) == {"detail", "code", "request_id"}
     assert j["code"] == "not_found"
+
+
+def test_spa_never_serves_outside_dist(client):
+    """SPA 配信は dist の外を返さない（%2F・%2e・%5C でエンコードした .. も含む）。"""
+    import pytest
+
+    from app.config import settings
+
+    if not settings.frontend_dist.exists():
+        pytest.skip("frontend/dist がない（npm run build 前）")
+    for p in ("/..%2F..%2Fpyproject.toml", "/%2e%2e/%2e%2e/pyproject.toml", "/..%5C..%5Cpyproject.toml", "/x/..%2F..%2F..%2Fpyproject.toml"):
+        r = client.get(p)
+        assert r.status_code == 200, p
+        assert r.headers["content-type"].startswith("text/html"), p
+        assert "[project]" not in r.text, p
+    # 正規の静的ファイルと SPA フォールバックは今まで通り
+    assert client.get("/index.html").status_code == 200
+    assert "<!doctype html>" in client.get("/plan").text.lower()

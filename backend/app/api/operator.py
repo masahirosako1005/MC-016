@@ -3,9 +3,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from datetime import time
+
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .. import clock
 from ..config import settings
@@ -39,6 +41,17 @@ class ShopIn(BaseModel):
     close_time: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
     closed_weekday: int | None = Field(default=None, ge=0, le=6)
 
+    @field_validator("open_time", "close_time")
+    @classmethod
+    def _valid_clock(cls, v: str | None) -> str | None:
+        # 形だけでなく実在する時刻か（99:99 を通すと予報の計算で 500 になる）
+        if v is not None:
+            try:
+                time.fromisoformat(v)
+            except ValueError:
+                raise ValueError("時刻は 00:00〜23:59 で入力してください")
+        return v
+
 
 @router.get("/admin/advice")
 def dmo_advice(conn=Depends(get_conn)):
@@ -60,15 +73,16 @@ def shop_audience(shop_id: int, stages: str = "", seeds: str = "", conn=Depends(
 
     st = [s for s in stages.split(",") if s in ("first", "again", "regular")]
     se = [s for s in seeds.split(",") if s in ("none", "bud", "flower")]
-    a = audience(conn, shop_id, st or None, se or None)
+    a = audience(conn, shop_id, clock.now(conn), st or None, se or None)
     a.pop("users", None)
     return a
 
 
 @router.put("/admin/shops/{shop_id}")
 def put_shop(shop_id: int, body: ShopIn, conn=Depends(get_conn)):
+    # 送られてきた項目だけ更新する（exclude_unset がないと未指定の closed_weekday が None として届き、定休日が消える）
     with write_tx(conn):
-        return svc.update_shop(conn, shop_id, body.model_dump(), clock.now(conn))
+        return svc.update_shop(conn, shop_id, body.model_dump(exclude_unset=True), clock.now(conn))
 
 
 @router.post("/admin/shops/{shop_id}/photo")

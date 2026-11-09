@@ -162,10 +162,11 @@ def seed_master(conn: sqlite3.Connection) -> None:
     )
     # 地図の座標は写真に合わせて更新する
     conn.executemany("UPDATE spots SET map_x = ?, map_y = ? WHERE id = ?", [(s[7], s[8], s[0]) for s in SPOTS])
-    # 旧版（無人店 2 件）の DB を上書きして、全部の店に人が付く状態にする
+    # 旧版（無人店 2 件）の DB を上書きして、全部の店に人が付く状態にする。
+    # 運営の窓で編集できる列（営業時間・定休日・紹介・行き方）は触らない（起動やデモ初期化のたびに編集が消えないように）
     conn.executemany(
-        "UPDATE shops SET spot_id=?, name=?, area=?, category=?, open_time=?, close_time=?, closed_weekday=?, is_unmanned=?, svg_key=?, description=?, access=?, best_season=? WHERE id=?",
-        [(s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[9], s[10], s[11], s[12], s[13], s[0]) for s in SHOPS],
+        "UPDATE shops SET spot_id=?, name=?, area=?, category=?, is_unmanned=?, svg_key=?, best_season=? WHERE id=?",
+        [(s[1], s[2], s[3], s[4], s[9], s[10], s[13], s[0]) for s in SHOPS],
     )
     conn.executemany("INSERT OR IGNORE INTO people(id,shop_id,name,intro,svg_key,role) VALUES(?,?,?,?,?,?)", PEOPLE)
     conn.executemany("UPDATE people SET role=?, intro=? WHERE id=?", [(p[5], p[3], p[0]) for p in PEOPLE])

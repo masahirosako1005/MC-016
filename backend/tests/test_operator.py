@@ -83,3 +83,43 @@ def test_audience_targeting_and_advice(client):
     assert p["shop"]["address"].endswith("1-2-3") and p["shop"]["phone"]
     f = client.get("/api/photos/frame/person/6").json()
     assert f["mascot"]["image"] == "/img/mascot/hoshimaru_hall.png" and f["frames"][0]["key"] == "spot_hall" and f["frames"][-1]["key"] == "none"
+
+
+def test_shop_edit_keeps_closed_weekday_and_rejects_bad_time(client):
+    """一部の項目だけ PUT しても定休日は消えない。null を明示したときだけ無休になる。実在しない時刻は 422。"""
+    sh = client.get("/api/admin/shops/4/dashboard").json()["shop"]
+    assert sh["closed_weekday"] == 1
+    r = client.put("/api/admin/shops/4", json={"recommend": "朝が静かです"})
+    assert r.status_code == 200 and r.json()["closed_weekday"] == 1 and r.json()["open_time"] == "09:00"
+    r = client.put("/api/admin/shops/4", json={"closed_weekday": None})
+    assert r.status_code == 200 and r.json()["closed_weekday"] is None
+    r = client.put("/api/admin/shops/4", json={"closed_weekday": 5, "open_time": "10:30"})
+    assert r.json()["closed_weekday"] == 5 and r.json()["open_time"] == "10:30"
+    for bad in ({"open_time": "99:99"}, {"close_time": "12:60"}, {"open_time": "24:00"}):
+        assert client.put("/api/admin/shops/4", json=bad).status_code == 422, bad
+    # 利用者側の画面は落ちない
+    assert client.get("/api/today").status_code == 200
+    assert client.get("/api/places").status_code == 200
+    # 起動のたびに走るマスタ seed で編集が消えない
+    from app.seed.master import seed_master
+
+    seed_master(client.app.state.conn)
+    sh = client.get("/api/admin/shops/4/dashboard").json()["shop"]
+    assert sh["closed_weekday"] == 5 and sh["open_time"] == "10:30"
+
+
+def test_audience_follows_demo_clock(client):
+    """便りの宛先の「花」判定はデモ時計で決まる（実時刻ではない）。"""
+    conn = client.app.state.conn
+    clock.set_demo_clock(conn, datetime(2026, 10, 24, 11, 0))
+    client.post("/api/meetings", json={"person_id": 6})  # 秋に会う → 冬の種
+    assert client.get("/api/admin/shops/8/audience").json()["seeds"] == {"none": 0, "bud": 1, "flower": 0}
+    clock.set_demo_clock(conn, datetime(2026, 12, 1, 10, 0))  # 冬 → 花
+    a = client.get("/api/admin/shops/8/audience").json()
+    assert a["seeds"] == {"none": 0, "bud": 0, "flower": 1}
+    assert client.get("/api/admin/shops/8/audience", params={"seeds": "flower"}).json()["selected"] == 1
+    adv = client.get("/api/admin/shops/8/advice").json()["advice"]
+    assert any("花" in x["title"] for x in adv)
+    # 花の人にだけ送る
+    r = client.post("/api/admin/shops/8/messages", json={"title": "花", "body": "y", "seeds": ["flower"]})
+    assert r.json()["sent_to"] == 1

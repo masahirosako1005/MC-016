@@ -69,13 +69,17 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     dist = settings.frontend_dist
     if dist.exists():
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+        dist_root = dist.resolve()
+        index_html = dist_root / "index.html"
 
         @app.get("/{full_path:path}", include_in_schema=False)
         async def spa(full_path: str):
-            candidate = dist / full_path
-            if full_path and candidate.is_file():
-                return FileResponse(candidate)
-            return FileResponse(dist / "index.html")
+            # dist の外は絶対に返さない（%2F や %5C でエンコードした .. も resolve で潰す）
+            if full_path:
+                candidate = (dist_root / full_path).resolve()
+                if candidate.is_relative_to(dist_root) and candidate.is_file():
+                    return FileResponse(candidate)
+            return FileResponse(index_html)
 
     return app
 

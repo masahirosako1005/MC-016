@@ -219,7 +219,7 @@ def send_message(conn: sqlite3.Connection, shop_id: int, now: datetime, title: s
         raise AppError(404, "shop_not_found", "お店が見つかりません")
     person = conn.execute("SELECT id, name FROM people WHERE shop_id = ?", (shop_id,)).fetchone()
     from .advice import audience
-    recipients = audience(conn, shop_id, stages, seeds)["users"]
+    recipients = audience(conn, shop_id, now, stages, seeds)["users"]
     cur = conn.execute(
         "INSERT INTO messages(shop_id, title, body, coupon_face_value, coupon_days, created_at, sent_to) VALUES(?,?,?,?,?,?,?)",
         (shop_id, title.strip()[:60], body.strip()[:400], coupon_face_value, coupon_days, now.isoformat(timespec="seconds"), len(recipients)),

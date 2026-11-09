@@ -82,7 +82,7 @@ def shop_advice(conn: sqlite3.Connection, shop_id: int, now: datetime) -> list[d
     nxt_season = next_season(season)
     nxt = season_start_after(today)
     weeks = max(0, (nxt - today).days // 7)
-    aud = audience(conn, shop_id)
+    aud = audience(conn, shop_id, now)
     pname = person["name"] if person else sh["name"]
     # 1) 花が咲く人への便り
     if aud["seeds"]["flower"]:
@@ -136,13 +136,14 @@ def shop_advice(conn: sqlite3.Connection, shop_id: int, now: datetime) -> list[d
     return out[:5]
 
 
-def audience(conn: sqlite3.Connection, shop_id: int, stages: list[str] | None = None, seeds: list[str] | None = None) -> dict:
-    """便りの宛先の内訳と、絞り込み後の人数。関係: first/again/regular、種: none/bud/flower。"""
+def audience(conn: sqlite3.Connection, shop_id: int, now: datetime, stages: list[str] | None = None, seeds: list[str] | None = None) -> dict:
+    """便りの宛先の内訳と、絞り込み後の人数。関係: first/again/regular、種: none/bud/flower。
+    時刻は clock から受け取る（デモ時計で「花」になっている人を正しく数えるため）。"""
     person = conn.execute("SELECT id FROM people WHERE shop_id = ?", (shop_id,)).fetchone()
     if not person:
         return {"total": 0, "selected": 0, "stages": {"first": 0, "again": 0, "regular": 0}, "seeds": {"none": 0, "bud": 0, "flower": 0}, "users": []}
     pid = person["id"]
-    season = season_of(datetime.now().date())
+    season = season_of(now.date())
     rows = conn.execute(
         "SELECT m.user_id, COUNT(DISTINCT m.met_on) AS days FROM meetings m WHERE m.person_id = ? AND m.is_dummy = 0 GROUP BY m.user_id", (pid,)
     ).fetchall()
