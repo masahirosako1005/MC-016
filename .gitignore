@@ -1,0 +1,20 @@
+# 利用者のファイル（触らない）
+Password.txt.txt
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# 実行時データ
+data/app.db
+data/app.db-*
+data/uploads/
+data/photos/*
+!data/photos/.gitkeep
+*.log

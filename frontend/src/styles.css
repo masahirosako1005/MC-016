@@ -1,0 +1,14 @@
+:root {
+  --bg: #fbf8f1;
+  --fg: #27323a;
+  --accent: #2f5d62;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+}
+.page {
+  padding: 16px;
+}
