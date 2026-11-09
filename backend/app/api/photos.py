@@ -20,7 +20,7 @@ def get_frame(kind: str, target_id: int, conn=Depends(get_conn)):
 
 
 @router.post("/photos")
-async def post_photo(kind: str = Form(pattern="^(person|spot)$"), target_id: int = Form(ge=1), image: UploadFile = File(...), conn=Depends(get_conn)):
+async def post_photo(kind: str = Form(pattern="^(person)$"), target_id: int = Form(ge=1), image: UploadFile = File(...), conn=Depends(get_conn)):
     data = await image.read()
     now = clock.now(conn)
     with write_tx(conn):

@@ -6,7 +6,7 @@ from datetime import date, datetime
 
 from ..errors import AppError
 from ..repositories import master
-from .season import LABEL, season_of
+from .season import LABEL, WEEKDAY_JA, season_of
 
 
 def active_plan_id(conn: sqlite3.Connection, uid: int, create: bool, now: datetime) -> int | None:
@@ -23,18 +23,22 @@ def plan_view(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
     pid = active_plan_id(conn, uid, False, now)
     today = now.date()
     if pid is None:
-        return {"exists": False, "target_date": None, "days_until": None, "items": [], "seeds_in_season": [], "coupons_usable": [], "season_label": None}
+        return {"exists": False, "target_date": None, "weekday": None, "days_until": None, "items": [], "people_that_day": [], "seeds_in_season": [], "coupons_usable": [], "season_label": None}
     plan = conn.execute("SELECT * FROM plans WHERE id = ?", (pid,)).fetchone()
     items = []
+    people_all = master.people(conn)
     for it in conn.execute("SELECT * FROM plan_items WHERE plan_id = ? ORDER BY id", (pid,)):
         if it["kind"] == "spot":
             m = master.spot(conn, it["target_id"])
             if m:
-                items.append({"kind": "spot", "id": m["id"], "name": m["name"], "area": m["area"], "svg_key": m["svg_key"], "category": "景色", "source": it["source"]})
+                ppl = [{"id": p["id"], "name": p["name"], "role": p.get("role", "店主"), "svg_key": p["svg_key"], "image": f"/img/people/{p['svg_key']}.png", "shop_name": p["shop_name"]}
+                       for p in people_all if p["spot_id"] == m["id"]]
+                items.append({"kind": "spot", "id": m["id"], "name": m["name"].split("（")[0], "full_name": m["name"], "area": m["area"], "svg_key": m["svg_key"],
+                              "image": f"/img/places/{m['svg_key']}.jpg", "category": "場所", "source": it["source"], "people": ppl})
         else:
             m = master.shop(conn, it["target_id"])
             if m:
-                items.append({"kind": "shop", "id": m["id"], "name": m["name"], "area": m["area"], "svg_key": m["svg_key"], "category": m["category"], "source": it["source"]})
+                items.append({"kind": "shop", "id": m["id"], "name": m["name"], "area": m["area"], "svg_key": m["svg_key"], "image": None, "category": m["category"], "source": it["source"], "people": []})
     target = date.fromisoformat(plan["target_date"]) if plan["target_date"] else None
     season = season_of(target) if target else None
     seeds = []
@@ -52,13 +56,27 @@ def plan_view(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
             (uid, target.isoformat(), target.isoformat()),
         ):
             coupons.append(dict(c))
+    # その日に会えそうな人（定休日だけで判定。時刻は分からないので営業時間は見ない）
+    people_that_day = []
+    if target:
+        wd = target.weekday()
+        for it in items:
+            for p in it.get("people", []):
+                row = next((x for x in people_all if x["id"] == p["id"]), None)
+                if row is None:
+                    continue
+                closed = row["closed_weekday"] is not None and int(row["closed_weekday"]) == wd
+                people_that_day.append(dict(p, place_name=it["name"], available=not closed,
+                                            note=("その日は定休日" if closed else f"{row['open_time']}–{row['close_time']}")))
     return {
         "exists": True,
         "id": pid,
         "target_date": plan["target_date"],
+        "weekday": WEEKDAY_JA[target.weekday()] if target else None,
         "days_until": (target - today).days if target else None,
         "season_label": LABEL[season] if season else None,
         "items": items,
+        "people_that_day": people_that_day,
         "seeds_in_season": seeds,
         "coupons_usable": coupons,
     }

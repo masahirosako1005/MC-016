@@ -32,24 +32,14 @@ def frame_info(conn: sqlite3.Connection, uid: int, kind: str, target_id: int, no
         return {
             "kind": "person", "id": target_id, "unlocked": unlocked,
             "reason": "" if unlocked else "今日その人に「会えた」を押した日だけ撮れます",
-            "title": p["name"], "subtitle": p["shop_name"], "area": p["area"],
-            "person_svg_key": p["svg_key"], "scene_svg_key": sp["svg_key"] if sp else "street",
+            "title": p["name"], "subtitle": p["shop_name"], "area": p["area"], "role": p.get("role", "店主"),
+            "person_svg_key": p["svg_key"], "person_image": f"/img/people/{p['svg_key']}.png",
+            "scene_svg_key": sp["svg_key"] if sp else "street", "scene_image": f"/img/places/{sp['svg_key']}.jpg" if sp else None,
+            "place_name": sp["name"].split("（")[0] if sp else "",
             "date": day, "season": season, "season_label": LABEL[season],
             "promise": {"season_label": LABEL[nxt["season"]], "title": nxt["title"]} if nxt else None,
         }
-    if kind == "spot":
-        s = master.spot(conn, target_id)
-        if s is None:
-            raise AppError(404, "spot_not_found", "スポットが見つかりません")
-        unlocked = conn.execute("SELECT 1 FROM spot_checkins WHERE user_id = ? AND spot_id = ? AND day = ?", (uid, target_id, day)).fetchone() is not None
-        return {
-            "kind": "spot", "id": target_id, "unlocked": unlocked,
-            "reason": "" if unlocked else "今日そのスポットで「行けた」を押した日だけ撮れます",
-            "title": s["name"], "subtitle": s["area"], "area": s["area"],
-            "person_svg_key": None, "scene_svg_key": s["svg_key"],
-            "date": day, "season": season, "season_label": LABEL[season], "promise": None,
-        }
-    raise AppError(404, "not_found", "見つかりません")
+    raise AppError(404, "not_found", "AR フォトは「今日会えた人」といっしょに撮ります")
 
 
 def save_photo(conn: sqlite3.Connection, uid: int, kind: str, target_id: int, data: bytes, now: datetime) -> dict:
@@ -79,12 +69,14 @@ def _row_to_item(conn: sqlite3.Connection, r: sqlite3.Row) -> dict:
         d["subtitle"] = p["shop_name"] if p else ""
         d["area"] = p["area"] if p else ""
         d["person_svg_key"] = p["svg_key"] if p else None
+        d["person_image"] = f"/img/people/{p['svg_key']}.png" if p else None
     else:
         s = master.spot(conn, d["spot_id"])
-        d["title"] = s["name"] if s else ""
-        d["subtitle"] = s["area"] if s else ""
+        d["title"] = s["name"].split("（")[0] if s else ""
+        d["subtitle"] = f"{s['area']}の風景" if s else ""
         d["area"] = s["area"] if s else ""
         d["person_svg_key"] = None
+        d["person_image"] = None
     d["url"] = f"/api/photos/{d['id']}/image"
     d["is_sample"] = bool(d["is_sample"])
     d["season_label"] = LABEL[season_of(date.fromisoformat(d["taken_on"]))]

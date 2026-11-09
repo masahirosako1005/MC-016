@@ -25,8 +25,11 @@ export function Toasts() {
   );
 }
 
-export function Badge({ kind, children }: { kind?: "warn" | "good" | "seed" | "flower"; children: ReactNode }) {
-  return <span className={`badge ${kind ?? ""}`}>{children}</span>;
+export function Badge({ strong, soft, flower, kind, children }: { strong?: boolean; soft?: boolean; flower?: boolean; kind?: "good" | "warn" | "seed" | "flower"; children: ReactNode }) {
+  const s = strong || kind === "good" || kind === "warn";
+  const f = flower || kind === "flower";
+  const so = soft || kind === "seed";
+  return <span className={`badge ${s ? "strong" : ""} ${so && !s ? "soft" : ""} ${f ? "flower" : ""}`}>{children}</span>;
 }
 
 export function TopBar({ title, right, backTo }: { title: ReactNode; right?: ReactNode; backTo?: string }) {
@@ -36,7 +39,7 @@ export function TopBar({ title, right, backTo }: { title: ReactNode; right?: Rea
       <div className="row">
         {backTo !== undefined && (
           <button className="iconbtn" aria-label={t("back")} onClick={() => navigate(backTo)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 5l-7 7 7 7" />
             </svg>
           </button>
@@ -49,19 +52,7 @@ export function TopBar({ title, right, backTo }: { title: ReactNode; right?: Rea
 }
 
 /** 1.2 秒の長押しボタン。途中で離すと取り消し。 */
-export function LongPressButton({
-  onComplete,
-  children,
-  className = "",
-  disabled,
-  ms = 1200,
-}: {
-  onComplete: () => void;
-  children: ReactNode;
-  className?: string;
-  disabled?: boolean;
-  ms?: number;
-}) {
+export function LongPressButton({ onComplete, children, className = "", disabled, ms = 1200 }: { onComplete: () => void; children: ReactNode; className?: string; disabled?: boolean; ms?: number }) {
   const [pressing, setPressing] = useState(false);
   const timer = useRef<number | null>(null);
   const start = () => {
@@ -81,15 +72,7 @@ export function LongPressButton({
     setPressing(false);
   };
   return (
-    <button
-      className={`btn longpress ${pressing ? "pressing" : ""} ${className}`}
-      disabled={disabled}
-      onPointerDown={start}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onContextMenu={(e) => e.preventDefault()}
-    >
+    <button className={`btn longpress ${pressing ? "pressing" : ""} ${className}`} disabled={disabled} onPointerDown={start} onPointerUp={cancel} onPointerLeave={cancel} onPointerCancel={cancel} onContextMenu={(e) => e.preventDefault()}>
       <span className="fill" />
       <span style={{ position: "relative" }}>{children}</span>
     </button>
@@ -101,11 +84,10 @@ export function Loading() {
   return <p className="muted">{t("loading")}</p>;
 }
 
+export function Icon({ name, size = 24, style }: { name: string; size?: number; style?: React.CSSProperties }) {
+  return <img src={`/img/icons/${name}.svg`} alt="" width={size} height={size} style={style} aria-hidden="true" />;
+}
+
 export function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
-    </svg>
-  );
+  return <Icon name="settings" size={24} style={{ opacity: 0.8 }} />;
 }

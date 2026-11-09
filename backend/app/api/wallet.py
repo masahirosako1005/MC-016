@@ -26,7 +26,11 @@ def get_wallet(conn=Depends(get_conn)):
         ],
         "coupons": lottery.coupon_list(conn, uid, today),
         "receipts": points.receipt_list(conn, uid),
-        "shops": [{"id": s["id"], "name": s["name"], "category": s["category"], "rate_percent": s["rate_percent"]} for s in master.shops(conn)],
+        "shops": [
+            {"id": s["id"], "name": s["name"], "category": s["category"], "rate_percent": s["rate_percent"],
+             "person_name": next((p["name"] for p in master.people(conn) if p["shop_id"] == s["id"]), None)}
+            for s in master.shops(conn)
+        ],
         "legacy_rewards": legacy,
         "today": today,
     }

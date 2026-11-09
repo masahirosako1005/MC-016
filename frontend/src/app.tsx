@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { navigate, useRoute } from "./router";
 import { TabBar } from "./components/tabbar";
 import { Toasts } from "./components/ui";
-import { TodayPage, useToday } from "./pages/Today";
+import { FirstGuide } from "./components/parts";
+import { MapPage, useToday } from "./pages/Map";
+import { PlanPage } from "./pages/Plan";
+import { PersonPage, PlacePage } from "./pages/Place";
 import { SettingsPage } from "./pages/Settings";
-import { ExplorePage, PlacePage, PlanPage } from "./pages/Explore";
 import { ShopPage } from "./pages/Shop";
 import { WalletPage } from "./pages/Wallet";
 import { CameraPage } from "./pages/Camera";
@@ -17,7 +19,7 @@ function NotFound() {
   return (
     <div className="page">
       <h1>ページが見つかりません</h1>
-      <button className="btn" onClick={() => navigate("/")}>きょうへ</button>
+      <button className="btn" onClick={() => navigate("/")}>マップへ</button>
     </div>
   );
 }
@@ -59,27 +61,28 @@ export function App() {
     );
   }
   let page: JSX.Element;
-  let tab = "today";
+  let tab = "map";
   switch (head) {
     case "":
-      page = <TodayPage data={today.data} reload={today.reload} />;
+      page = <MapPage data={today.data} reload={today.reload} />;
+      break;
+    case "plan":
+      tab = "plan";
+      page = <PlanPage onChanged={today.reload} />;
+      break;
+    case "place":
+      tab = "plan";
+      page = <PlacePage id={Number(route.parts[1])} onChanged={today.reload} />;
+      break;
+    case "people":
+      tab = "plan";
+      page = <PersonPage id={Number(route.parts[1])} onChanged={today.reload} />;
       break;
     case "settings":
       page = <SettingsPage />;
       break;
-    case "explore":
-      tab = "explore";
-      page = <ExplorePage />;
-      break;
-    case "place":
-      tab = "explore";
-      page = <PlacePage kind={route.parts[1]} id={Number(route.parts[2])} />;
-      break;
-    case "plan":
-      tab = "explore";
-      page = <PlanPage />;
-      break;
     case "shop":
+      tab = "wallet";
       page = <ShopPage id={Number(route.parts[1])} onChanged={today.reload} />;
       break;
     case "camera":
@@ -109,6 +112,7 @@ export function App() {
       <div key={epoch}>{page}</div>
       <TabBar active={tab} letterBadge={!!today.data?.letter_ready} />
       <Toasts />
+      <FirstGuide />
     </div>
   );
 }

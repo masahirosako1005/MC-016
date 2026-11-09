@@ -32,7 +32,7 @@ def shop(conn: sqlite3.Connection, shop_id: int) -> dict | None:
 def people(conn: sqlite3.Connection) -> list[dict]:
     return rows(
         conn,
-        "SELECT p.*, s.name AS shop_name, s.spot_id, s.area, s.category, s.open_time, s.close_time, s.closed_weekday, s.svg_key AS shop_svg_key "
+        "SELECT p.*, s.name AS shop_name, s.spot_id, s.area, s.category, s.open_time, s.close_time, s.closed_weekday, s.svg_key AS shop_svg_key, s.description AS shop_description "
         "FROM people p JOIN shops s ON s.id = p.shop_id ORDER BY p.id",
     )
 
@@ -40,7 +40,7 @@ def people(conn: sqlite3.Connection) -> list[dict]:
 def person(conn: sqlite3.Connection, person_id: int) -> dict | None:
     return one(
         conn,
-        "SELECT p.*, s.name AS shop_name, s.spot_id, s.area, s.category, s.open_time, s.close_time, s.closed_weekday "
+        "SELECT p.*, s.name AS shop_name, s.spot_id, s.area, s.category, s.open_time, s.close_time, s.closed_weekday, s.svg_key AS shop_svg_key "
         "FROM people p JOIN shops s ON s.id = p.shop_id WHERE p.id = ?",
         (person_id,),
     )

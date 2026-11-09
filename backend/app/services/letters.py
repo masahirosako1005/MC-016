@@ -92,10 +92,17 @@ def letter_view(conn: sqlite3.Connection, uid: int, day: str, now: datetime) -> 
         "SELECT p.id, p.name, p.svg_key, s.name AS shop_name FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops s ON s.id = p.shop_id WHERE m.user_id = ? AND m.met_on = ? ORDER BY m.id",
         (uid, day),
     ):
-        people.append({"id": m["id"], "name": m["name"], "svg_key": m["svg_key"], "shop_name": m["shop_name"], "relationship": relationship(conn, uid, m["id"])})
+        people.append({"id": m["id"], "name": m["name"], "svg_key": m["svg_key"], "image": f"/img/people/{m['svg_key']}.png", "shop_name": m["shop_name"], "relationship": relationship(conn, uid, m["id"])})
+    # 行った場所 = 会えた人のいる場所 + （旧データ）スポット訪問
     spot_names = {r["spot_name"] for r in conn.execute("SELECT spot_name FROM spot_visits WHERE user_id = ? AND substr(visited_at,1,10) = ?", (uid, day))}
     spot_names |= {r["name"] for r in conn.execute("SELECT s.name FROM spot_checkins c JOIN spots s ON s.id = c.spot_id WHERE c.user_id = ? AND c.day = ?", (uid, day))}
-    spots = [{"id": s["id"], "name": s["name"], "area": s["area"], "svg_key": s["svg_key"]} for s in master.spots(conn) if s["name"] in spot_names]
+    spot_names |= {
+        r["name"] for r in conn.execute(
+            "SELECT DISTINCT sp.name FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops sh ON sh.id = p.shop_id JOIN spots sp ON sp.id = sh.spot_id WHERE m.user_id = ? AND m.met_on = ?",
+            (uid, day),
+        )
+    }
+    spots = [{"id": s["id"], "name": s["name"].split("（")[0], "area": s["area"], "svg_key": s["svg_key"], "image": f"/img/places/{s['svg_key']}.jpg"} for s in master.spots(conn) if s["name"] in spot_names]
     photos = [
         {"id": p["id"], "url": f"/api/photos/{p['id']}/image", "kind": p["kind"], "is_sample": bool(p["is_sample"])}
         for p in conn.execute("SELECT id, kind, is_sample FROM photos WHERE user_id = ? AND taken_on = ? ORDER BY id", (uid, day))
@@ -166,18 +173,20 @@ def _suggestions(conn: sqlite3.Connection, uid: int, d: date, people: list[dict]
             "title": f"{LABEL[ev['season']]}の行事「{ev['title']}」（{ev['person_name']}・{ev['start_md'].replace('-', '/')}〜{ev['end_md'].replace('-', '/')}）",
             "note": ev["note"], "shop_id": ev["shop_id"], "wished": ("event", "promise", ev["id"]) in wished,
         })
-    # 3) 別のお店: まだ行っていない店
-    visited = {r["shop_id"] for r in conn.execute("SELECT shop_id FROM receipts WHERE user_id = ?", (uid,))}
-    visited |= {r["shop_id"] for r in conn.execute("SELECT p.shop_id FROM meetings m JOIN people p ON p.id = m.person_id WHERE m.user_id = ?", (uid,))}
-    spot_ids = {s["id"] for s in spots}
-    cands = [sh for sh in master.shops(conn) if sh["id"] not in visited]
-    cands.sort(key=lambda sh: (0 if sh["spot_id"] not in spot_ids else 1, sh["id"]))
+    # 3) まだ行っていない場所（そこにいる人）
+    visited_shops = {r["shop_id"] for r in conn.execute("SELECT shop_id FROM receipts WHERE user_id = ?", (uid,))}
+    visited_shops |= {r["shop_id"] for r in conn.execute("SELECT p.shop_id FROM meetings m JOIN people p ON p.id = m.person_id WHERE m.user_id = ?", (uid,))}
+    visited_spots = {sh["spot_id"] for sh in master.shops(conn) if sh["id"] in visited_shops} | {s["id"] for s in spots}
+    cands = [s for s in master.spots(conn) if s["id"] not in visited_spots]
     if cands:
-        sh = cands[0]
+        sp = cands[0]
+        ppl = [p for p in master.people(conn) if p["spot_id"] == sp["id"]]
+        who = f"そこには{ppl[0]['name']}（{ppl[0].get('role', '店主')}）がいます。" if ppl else ""
         out.append({
-            "kind": "shop", "target_type": "shop", "target_id": sh["id"],
-            "title": f"まだ行っていないお店「{sh['name']}」（{sh['area']}・{sh['category']}）",
-            "note": sh["description"], "shop_id": sh["id"], "wished": ("shop", "shop", sh["id"]) in wished,
+            "kind": "shop", "target_type": "shop", "target_id": ppl[0]["shop_id"] if ppl else 0,
+            "title": f"まだ行っていない場所「{sp['name'].split('（')[0]}」（{sp['area']}）",
+            "note": f"{sp['description']} {who}".strip(), "shop_id": ppl[0]["shop_id"] if ppl else None,
+            "spot_id": sp["id"], "wished": ("shop", "shop", ppl[0]["shop_id"] if ppl else 0) in wished,
         })
     return out
 
@@ -206,14 +215,18 @@ def add_wish(conn: sqlite3.Connection, uid: int, kind: str, target_type: str, ta
         (uid, kind, target_type, target_id, label[:100], now.isoformat(timespec="seconds")),
     )
     added = cur.rowcount > 0
-    # つぎの旅の候補に自動で入れる（店、または約束の人の店）
+    # つぎの旅の候補に、その人のいる「場所」を自動で入れる
     shop_id = None
     if target_type == "shop":
         shop_id = target_id
     else:
         row = conn.execute("SELECT pe.shop_id FROM promises pr JOIN people pe ON pe.id = pr.person_id WHERE pr.id = ?", (target_id,)).fetchone()
         shop_id = row["shop_id"] if row else None
+    spot_id = None
     if shop_id:
-        from .plan import add_item
-        add_item(conn, uid, now, "shop", shop_id, source="wish")
-    return {"added": added, "shop_id": shop_id}
+        sh = master.shop(conn, shop_id)
+        if sh:
+            spot_id = sh["spot_id"]
+            from .plan import add_item
+            add_item(conn, uid, now, "spot", spot_id, source="wish")
+    return {"added": added, "shop_id": shop_id, "spot_id": spot_id}

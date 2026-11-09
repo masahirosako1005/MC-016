@@ -3,7 +3,8 @@ import { get, post, put, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate } from "../router";
 import type { Relationship, Seed } from "../types";
-import { PersonArt, SceneArt, SeedIcon } from "../components/art";
+import { SeedIcon } from "../components/art";
+import { Avatar } from "../components/parts";
 import { Badge, Loading, LongPressButton, TopBar } from "../components/ui";
 
 type LetterIndex = {
@@ -13,8 +14,8 @@ type LetterIndex = {
 type Suggestion = { kind: "season" | "event" | "shop"; target_type: string; target_id: number; title: string; note: string; shop_id: number | null; wished: boolean };
 type Letter = {
   day: string; weekday: string; season: string; season_label: string; trip_start: string; trip_end: string; redelivered: boolean; days_since_trip: number;
-  people: { id: number; name: string; svg_key: string; shop_name: string; relationship: Relationship }[];
-  spots: { id: number; name: string; area: string; svg_key: string }[];
+  people: { id: number; name: string; svg_key: string; image: string; shop_name: string; relationship: Relationship }[];
+  spots: { id: number; name: string; area: string; svg_key: string; image: string }[];
   photos: { id: number; url: string; kind: string; is_sample: boolean }[];
   receipts: { count: number; total: number; points: number };
   diary: string; suggestions: Suggestion[]; next_season_label: string; next_season_start: string; weeks_to_next_season: number; greeting: string;
@@ -161,20 +162,21 @@ function Collage({ L }: { L: Letter }) {
     </button>,
   ));
   L.people.forEach((p) => tiles.push(
-    <div key={`pe${p.id}`} className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 10 }}>
-      <PersonArt k={p.svg_key} size={64} />
+    <button key={`pe${p.id}`} className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 10, cursor: "pointer" }} onClick={() => navigate(`/people/${p.id}`)}>
+      <Avatar p={p} size="lg" met />
       <div style={{ fontWeight: 700 }}>{p.name}</div>
       <Badge>{p.relationship.label}</Badge>
-    </div>,
+    </button>,
   ));
   L.spots.forEach((s) => tiles.push(
-    <div key={`sp${s.id}`} style={{ position: "relative" }}>
-      <SceneArt k={s.svg_key} season={L.season} />
-      <div style={{ position: "absolute", left: 6, bottom: 6, background: "#fffd", borderRadius: 6, padding: "2px 6px", fontSize: "0.8rem" }}>{s.name.split("（")[0]}</div>
+    <div key={`sp${s.id}`} className="photo-wrap" style={{ aspectRatio: "1 / 1" }}>
+      <img src={s.image} alt={s.name} />
+      <div className="tint" />
+      <div className="caption"><div className="name" style={{ fontSize: "1rem" }}>{s.name}</div></div>
     </div>,
   ));
   return (
-    <div className="card" style={{ background: "linear-gradient(135deg, #fbf7ee, #e6eef0)" }}>
+    <div className="card letter">
       <div className="grid2">{tiles}</div>
       {L.receipts.count > 0 && (
         <div className="muted" style={{ marginTop: 8 }}>お買いもの {L.receipts.count} 件・{L.receipts.total.toLocaleString()} 円・{L.receipts.points} pt</div>
@@ -185,7 +187,7 @@ function Collage({ L }: { L: Letter }) {
 
 type BookView = {
   today: string; season_label: string;
-  people: { id: number; name: string; intro: string; svg_key: string; shop: { id: number; name: string; area: string }; relationship: Relationship; met_days: string[]; met_today: boolean; seed: Seed | null; fulfilled: { title: string; season_label: string; fulfilled_on: string }[] }[];
+  people: { id: number; name: string; intro: string; svg_key: string; image: string; role: string; shop: { id: number; name: string; area: string }; relationship: Relationship; met_days: string[]; met_today: boolean; seed: Seed | null; fulfilled: { title: string; season_label: string; fulfilled_on: string }[] }[];
   album: { id: number; url: string; kind: string; title: string; taken_on: string; season_label: string; is_sample: boolean }[];
   trips: { start: string; end: string; days: number; season_label: string; weekday_start: string; spots: string[]; people: string[]; photos: number; spent: number; current: boolean }[];
 };
@@ -210,19 +212,19 @@ function Book({ onChanged }: { onChanged?: () => void }) {
   };
   return (
     <div className="stack">
-      <h2 style={{ margin: 0 }}>お店の人と、種と花</h2>
+      <h2 style={{ margin: 0 }}>会った人と、種と花</h2>
       {b.people.map((p) => (
         <div key={p.id} className="card">
-          <div className="row">
-            <div className="avatar"><PersonArt k={p.svg_key} /></div>
+          <button className="row" style={{ background: "none", border: 0, padding: 0, width: "100%", textAlign: "left", cursor: "pointer" }} onClick={() => navigate(`/people/${p.id}`)}>
+            <Avatar p={p} dim={p.relationship.stage === "none"} met={p.met_today} />
             <div className="grow">
               <div className="row wrap" style={{ gap: 6 }}>
                 <span className="title">{p.name}</span>
                 <Badge kind={p.relationship.stage === "none" ? undefined : "good"}>{p.relationship.label}</Badge>
               </div>
-              <div className="muted">{p.shop.name}・会えた日 {p.relationship.days} 日</div>
+              <div className="muted small">{p.role}・{p.shop.name}・会えた日 {p.relationship.days} 日</div>
             </div>
-          </div>
+          </button>
           {p.seed ? (
             <div className="row" style={{ marginTop: 8 }}>
               <SeedIcon state={p.seed.state} size={32} />
@@ -268,7 +270,7 @@ function Book({ onChanged }: { onChanged?: () => void }) {
             <Badge kind="seed">{tr.season_label}</Badge>
           </div>
           <div className="muted">
-            {tr.spots.length > 0 && <>スポット: {tr.spots.join("、")}<br /></>}
+            {tr.spots.length > 0 && <>行った場所: {tr.spots.join("、")}<br /></>}
             {tr.people.length > 0 && <>会えた人: {tr.people.join("、")}<br /></>}
             写真 {tr.photos} 枚{tr.spent > 0 ? `・お買いもの ${tr.spent.toLocaleString()} 円` : ""}
           </div>

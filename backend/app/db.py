@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS people(
   shop_id INTEGER NOT NULL UNIQUE REFERENCES shops(id),
   name TEXT NOT NULL,
   intro TEXT NOT NULL,
-  svg_key TEXT NOT NULL
+  svg_key TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT '店主'
 );
 CREATE TABLE IF NOT EXISTS promises(
   id INTEGER PRIMARY KEY,
@@ -270,6 +271,10 @@ def connect(path: Path | str) -> sqlite3.Connection:
 
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    # 旧版の DB への列追加（あれば何もしない）
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(people)")}
+    if "role" not in cols:
+        conn.execute("ALTER TABLE people ADD COLUMN role TEXT NOT NULL DEFAULT '店主'")
 
 
 @contextmanager

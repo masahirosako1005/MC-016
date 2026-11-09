@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Query
+"""つぎの旅（計画: 行きたい場所と日）と店ページ。"""
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from .. import clock
@@ -7,33 +8,9 @@ from ..deps import get_conn, write_tx
 from ..errors import AppError
 from ..repositories import master
 from ..services import plan as plan_svc
-from ..services.explore import explore_view, place_detail
 from ..services.forecast import forecast
 
 router = APIRouter()
-
-
-@router.get("/explore")
-def get_explore(
-    q: str = Query("", max_length=50),
-    area: str = Query("", max_length=20),
-    season: str = Query("", pattern="^(|spring|summer|autumn|winter)$"),
-    category: str = Query("", max_length=10),
-    conn=Depends(get_conn),
-):
-    return explore_view(conn, clock.now(conn), q=q.strip(), area=area, season=season, category=category)
-
-
-@router.get("/place/{kind}/{target_id}")
-def get_place(kind: str, target_id: int, conn=Depends(get_conn)):
-    if kind not in ("spot", "shop"):
-        raise AppError(404, "not_found", "見つかりません")
-    d = place_detail(conn, clock.now(conn), kind, target_id)
-    if d is None:
-        raise AppError(404, "not_found", "場所が見つかりません")
-    plan = plan_svc.plan_view(conn, settings.hero_user_id, clock.now(conn))
-    d["in_plan"] = any(it["kind"] == kind and it["id"] == target_id for it in plan["items"])
-    return d
 
 
 class TargetIn(BaseModel):
@@ -41,7 +18,7 @@ class TargetIn(BaseModel):
 
 
 class ItemIn(BaseModel):
-    kind: str = Field(pattern="^(spot|shop)$")
+    kind: str = Field(default="spot", pattern="^(spot|shop)$")
     target_id: int = Field(ge=1)
 
 
@@ -83,7 +60,7 @@ def get_shop(shop_id: int, conn=Depends(get_conn)):
         raise AppError(404, "shop_not_found", "お店が見つかりません")
     now = clock.now(conn)
     today = now.date().isoformat()
-    person = conn.execute("SELECT id, name, intro, svg_key FROM people WHERE shop_id = ?", (shop_id,)).fetchone()
+    person = conn.execute("SELECT id, name, intro, svg_key, role FROM people WHERE shop_id = ?", (shop_id,)).fetchone()
     coupons = [
         dict(c)
         for c in conn.execute(
@@ -99,11 +76,13 @@ def get_shop(shop_id: int, conn=Depends(get_conn)):
             (settings.hero_user_id, sh["category"], today),
         )
     ]
+    sp = master.spot(conn, sh["spot_id"])
     return {
-        "shop": {k: sh[k] for k in ("id", "name", "area", "category", "description", "access", "svg_key", "is_unmanned", "rate_percent")},
+        "shop": {k: sh[k] for k in ("id", "name", "area", "category", "description", "access", "svg_key", "rate_percent", "spot_id")},
+        "place": {"id": sp["id"], "name": sp["name"].split("（")[0], "image": f"/img/places/{sp['svg_key']}.jpg"} if sp else None,
         "hours": f"{sh['open_time']}–{sh['close_time']}",
         "forecast": forecast(sh, now),
-        "person": dict(person) if person else None,
+        "person": dict(person, image=f"/img/people/{person['svg_key']}.png") if person else None,
         "coupons_usable": coupons,
         "coupons_not_yet": not_yet,
     }

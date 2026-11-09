@@ -17,10 +17,6 @@ class MeetIn(BaseModel):
     person_id: int = Field(ge=1)
 
 
-class CheckinIn(BaseModel):
-    spot_id: int = Field(ge=1)
-
-
 @router.get("/today")
 def get_today(conn=Depends(get_conn)):
     return today_view(conn, clock.now(conn))
@@ -50,23 +46,6 @@ def post_meeting(body: MeetIn, conn=Depends(get_conn)):
         "seed": seeds_svc.describe(seeds_svc.active_seed(conn, uid, body.person_id), today, True),
         "new_seed": given is not None,
     }
-
-
-@router.post("/checkins")
-def post_checkin(body: CheckinIn, conn=Depends(get_conn)):
-    uid = settings.hero_user_id
-    now = clock.now(conn)
-    day = now.date().isoformat()
-    sp = master.spot(conn, body.spot_id)
-    if sp is None:
-        raise AppError(404, "spot_not_found", "スポットが見つかりません")
-    with write_tx(conn):
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO spot_checkins(user_id, spot_id, day, created_at) VALUES(?,?,?,?)",
-            (uid, body.spot_id, day, now.isoformat(timespec="seconds")),
-        )
-        already = cur.rowcount == 0
-    return {"already": already, "spot": {"id": sp["id"], "name": sp["name"]}, "day": day}
 
 
 @router.post("/seeds/{seed_id}/fulfill")

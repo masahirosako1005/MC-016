@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 
 from ..config import settings
-from . import admin, explore, health, memories, photos, today, wallet
+from . import admin, explore, health, memories, photos, places, today, wallet
 
 router = APIRouter()
 router.include_router(health.router)
 router.include_router(today.router)
+router.include_router(places.router)
 router.include_router(explore.router)
 router.include_router(wallet.router)
 router.include_router(photos.router)

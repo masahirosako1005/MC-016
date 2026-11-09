@@ -40,7 +40,9 @@ def test_letter_timing_redelivery_and_wishes(client):
     r = client.post("/api/wishes", json={"kind": s["kind"], "target_type": s["target_type"], "target_id": s["target_id"], "label": s["title"]})
     assert r.status_code == 200 and r.json()["added"] is True
     plan = client.get("/api/plan").json()
-    assert any(i["kind"] == "shop" and i["id"] == s["target_id"] and i["source"] == "wish" for i in plan["items"])
+    assert r.json()["spot_id"] is not None
+    assert any(i["kind"] == "spot" and i["id"] == r.json()["spot_id"] and i["source"] == "wish" for i in plan["items"])
+    assert s["title"].startswith("まだ行っていない場所")
 
     # 30 日後: 同じ便がもう一度、行きたいが先頭、次の季節まで何週間
     clock.set_demo_clock(conn, datetime(2026, 11, 23, 10, 0))

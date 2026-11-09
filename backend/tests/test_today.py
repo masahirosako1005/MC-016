@@ -34,7 +34,13 @@ def test_meet_once_per_day_and_seed(client):
     assert r.status_code == 200
     body = r.json()
     assert body["date"] == "2026-10-17" and body["weekday"] == "土"
-    assert len(body["people"]) == 6 and len(body["spots"]) == 7 and len(body["unmanned_shops"]) == 2
+    assert len(body["places"]) == 7 and sum(len(p["people"]) for p in body["places"]) == 8
+    assert body["todo"]["kind"] == "explore" and body["has_plan"] is False
+    # 計画の場所が先頭に来て、いまやることが「会えたら押す」になる
+    client.post("/api/plan/items", json={"kind": "spot", "target_id": 7})
+    body = client.get("/api/today").json()
+    assert body["places"][0]["id"] == 7 and body["places"][0]["in_plan"] is True
+    assert body["todo"]["kind"] == "meet" and "鈴さん" in body["todo"]["text"]
 
     r = client.post("/api/meetings", json={"person_id": 2})
     assert r.status_code == 200
@@ -53,6 +59,7 @@ def test_meet_once_per_day_and_seed(client):
     r = client.post("/api/meetings", json={"person_id": 999})
     assert r.status_code == 404
 
-    r = client.post("/api/checkins", json={"spot_id": 4})
-    assert r.json()["already"] is False
-    assert client.post("/api/checkins", json={"spot_id": 4}).json()["already"] is True
+    body = client.get("/api/today").json()
+    lake = next(p for p in body["places"] if p["id"] == 4)
+    assert lake["met_today"] is True and lake["people"][0]["met_today"] is True
+    assert body["met_today"] == [{"id": 2, "name": "瑠衣さん"}]

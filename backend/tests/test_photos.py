@@ -22,14 +22,12 @@ def test_frame_lock_and_save(client):
     assert client.get(d["url"]).headers["content-type"].startswith("image/png")
     assert client.get(f"/api/photos/{d['id']}/print").status_code == 200
 
-    # スポットは「行けた」が必要
+    # スポット撮影はなくなった（人といっしょに撮るだけ）
     r = client.post("/api/photos", data={"kind": "spot", "target_id": 2}, files={"image": ("a.png", tiny_png(6), "image/png")})
-    assert r.status_code == 409
-    client.post("/api/checkins", json={"spot_id": 2})
-    r = client.post("/api/photos", data={"kind": "spot", "target_id": 2}, files={"image": ("a.png", tiny_png(6), "image/png")})
-    assert r.status_code == 200 and r.json()["kind"] == "spot"
+    assert r.status_code == 422
+    assert client.get("/api/photos/frame/spot/2").status_code == 404
     # PNG 以外は拒否
-    r = client.post("/api/photos", data={"kind": "spot", "target_id": 2}, files={"image": ("a.jpg", b"\xff\xd8\xff" + b"0" * 10, "image/jpeg")})
+    r = client.post("/api/photos", data={"kind": "person", "target_id": 1}, files={"image": ("a.jpg", b"\xff\xd8\xff" + b"0" * 10, "image/jpeg")})
     assert r.status_code == 415
-    assert len(client.get("/api/photos").json()["photos"]) == 6
+    assert len(client.get("/api/photos").json()["photos"]) == 5
     assert client.get("/api/photos/999").status_code == 404

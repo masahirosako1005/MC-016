@@ -33,10 +33,10 @@ SPOTS = [
 
 # id, spot_id, name, area, category, open, close, closed_weekday(月=0..日=6, None=無休), rate, is_unmanned, svg_key, description, access, best_season
 SHOPS = [
-    (1, 1, "風の小箱（無人売店）", "白波離島", "物販", "09:00", "17:00", None, 10, 1, "stand",
-     "灯台のふもとの無人売店。貝がらのしおりや島の塩キャラメルを、料金箱に入れて持ち帰る。", "灯台の下", "summer"),
-    (2, 2, "星綾の塩ラムネ（無人スタンド）", "薄青岬", "物販", "10:00", "18:00", None, 10, 1, "stand",
-     "潮見台の入口にある無人スタンド。岬の塩を使ったラムネと干し芋。夕方は売り切れることも。", "潮見台の入口", "autumn"),
+    (1, 1, "白波離島 灯台ガイド詰所", "白波離島", "体験", "09:00", "17:00", None, 10, 0, "stand",
+     "灯台のふもとの小さな詰所。ボランティアガイドの帆さんが灯台と島の話をしながら一周 40 分の散歩に連れていってくれる。", "灯台の下", "summer"),
+    (2, 2, "薄青岬 観光案内所（売店つき）", "薄青岬", "物販", "10:00", "18:00", None, 10, 0, "stand",
+     "潮見台の入口にある観光案内所。案内役の凪さんが干潮の時刻と星の見え方を教えてくれる。岬の塩ラムネや干し芋の売店も。", "潮見台の入口", "autumn"),
     (3, 3, "夜市食堂 虹のかけら", "虹帆町", "飲食", "16:00", "22:00", 0, 10, 0, "diner",
      "夜市の真ん中にある八席の食堂。季節の魚と新米のおにぎりが名物。店主の灯里さんが一人で切り盛り。", "夜市の中ほど", "summer"),
     (4, 4, "湖畔カフェ 水鏡", "雫森谷", "飲食", "09:00", "17:00", 1, 10, 0, "cafe",
@@ -45,20 +45,22 @@ SHOPS = [
      "風車丘の下のパン屋。石窯で焼く季節のパン。売り切れ次第おしまい。月乃さんが毎朝 5 時から焼く。", "風車丘のふもと", "spring"),
     (6, 6, "石畳の宿 灯雲荘", "星綴港", "宿泊", "15:00", "21:00", None, 10, 0, "inn",
      "石畳通りの古い宿。囲炉裏のある広間と、港が見える 5 部屋。主人の港さんは元漁師。", "石畳通りの中ほど", "winter"),
-    (7, 7, "港の工房 星綴ガラス", "星綴港", "体験", "10:00", "17:00", 3, 10, 0, "glass",
+    (7, 6, "港の工房 星綴ガラス", "星綴港", "体験", "10:00", "17:00", 3, 10, 0, "glass",
      "石畳通りの端のガラス工房。吹きガラスの体験ができる。綴さんが季節の色を一緒に選んでくれる。", "石畳通りの坂上", "winter"),
     (8, 7, "高原の茶屋 雪雫", "鈴風高原", "飲食", "10:00", "16:00", 2, 10, 0, "teahouse",
      "音楽堂のとなりの茶屋。高原のお茶と季節の甘味。鈴さんは音楽堂の管理人でもある。", "音楽堂のとなり", "winter"),
 ]
 
-# id, shop_id, name, intro, svg_key
+# id, shop_id, name, intro, svg_key, role
 PEOPLE = [
-    (1, 3, "灯里さん", "夜市食堂の店主。魚をさばく手が早い。旅人の顔を一度で覚える。", "akari"),
-    (2, 4, "瑠衣さん", "湖畔カフェの店主。朝霧の湖を毎日写真に撮っている。", "rui"),
-    (3, 5, "月乃さん", "パン屋の店主。焼きたてを一つ、必ずおまけしてくれる。", "tsukino"),
-    (4, 6, "港さん", "宿の主人。元漁師。囲炉裏の夜話が長い。", "minato"),
-    (5, 7, "綴さん", "ガラス職人。季節の色をガラスに閉じ込める。", "tsuzuri"),
-    (6, 8, "鈴さん", "茶屋の店主で音楽堂の管理人。鈴の音のような笑い声。", "suzu"),
+    (1, 3, "灯里さん", "夜市食堂の店主。魚をさばく手が早い。旅人の顔を一度で覚える。", "akari", "店主"),
+    (2, 4, "瑠衣さん", "湖畔カフェの店主。朝霧の湖を毎日写真に撮っている。", "rui", "店主"),
+    (3, 5, "月乃さん", "パン屋の店主。焼きたてを一つ、必ずおまけしてくれる。", "tsukino", "店主"),
+    (4, 6, "港さん", "宿の主人。元漁師。囲炉裏の夜話が長い。", "minato", "宿の主人"),
+    (5, 7, "綴さん", "ガラス職人。季節の色をガラスに閉じ込める。", "tsuzuri", "職人"),
+    (6, 8, "鈴さん", "茶屋の店主で音楽堂の管理人。鈴の音のような笑い声。", "suzu", "店主"),
+    (7, 2, "凪さん", "岬の観光案内所の案内役。干潮の時刻と星の出る方角を毎日手帳に書いている。", "nagi", "観光案内所"),
+    (8, 1, "帆さん", "灯台のボランティアガイド。元灯台守。風の音を聞き分けて天気を当てる。", "ho", "ガイド"),
 ]
 
 # id, person_id, season, title, note, start_md, end_md
@@ -87,6 +89,14 @@ PROMISES = [
     (22, 6, "summer", "鈴風の冷やし甘酒", "高原の風と冷やし甘酒。", None, None),
     (23, 6, "autumn", "音楽堂のススキ野点", "ススキ野原で小さなお茶会。", "10-10", "10-31"),
     (24, 6, "winter", "雪見ぜんざい", "雪の音楽堂でぜんざいを。", None, None),
+    (25, 7, "spring", "春の大潮の星岩", "春の大潮は星の岩が一番大きく現れます。時刻を教えます。", "03-20", "04-10"),
+    (26, 7, "summer", "岬の流れ星の夜", "夏の流れ星、岬の先で一緒に数えましょう。", "08-10", "08-15"),
+    (27, 7, "autumn", "干し芋の初物", "秋の干し芋ができたら、ひと切れ取っておきます。", None, None),
+    (28, 7, "winter", "冬の星座の案内", "空気が澄む冬、星座の見方を案内します。", None, None),
+    (29, 8, "spring", "春の渡り鳥の灯台歩き", "渡り鳥が戻る春、灯台まで一緒に歩きましょう。", "04-10", "05-10"),
+    (30, 8, "summer", "灯台の夕涼み", "夏の夕方、灯台のテラスで風に当たりましょう。", None, None),
+    (31, 8, "autumn", "秋風の音あて", "秋の風の音を聞き分ける遊び。当たったら島の塩キャラメル。", None, None),
+    (32, 8, "winter", "冬の灯台の点灯", "冬は 16 時半に灯がともります。一緒に見ましょう。", "12-01", "01-31"),
 ]
 
 # id, category, name, face_value, weight, stock(None=無制限), enabled
@@ -133,8 +143,10 @@ VOICES = [
     ("shop", 7, "summer", "@umi_iro_glass", "海色のグラス、綴さんと色を選ぶ時間が楽しい。", "#星綴ガラス #体験"),
     ("shop", 8, "winter", "@zenzai_yuki", "雪見ぜんざい。音楽堂の灯りを見ながら。", "#茶屋雪雫 #ぜんざい"),
     ("shop", 8, "summer", "@amazake_kaze", "冷やし甘酒と高原の風。鈴さんの笑い声。", "#茶屋雪雫 #甘酒"),
-    ("shop", 1, "summer", "@kai_shiori", "無人売店の貝がらのしおり、料金箱に入れて持ち帰る体験が好き。", "#風の小箱 #無人売店"),
-    ("shop", 2, "autumn", "@hoshiimo_cape", "干し芋と塩ラムネ、岬の風の中で。", "#星綾の塩ラムネ #岬"),
+    ("shop", 1, "summer", "@kaze_walk", "帆さんのガイドで灯台まで。風の音の話が面白くて 40 分があっという間。", "#灯台ガイド #白波離島"),
+    ("shop", 1, "winter", "@tou_dai_fuyu", "冬の点灯を帆さんと見た。16 時半、灯がともる瞬間。", "#風詠みの灯台 #点灯"),
+    ("shop", 2, "autumn", "@hoshiimo_cape", "案内所の凪さんに干潮の時刻を聞いて正解。星の岩が見えた。", "#薄青岬 #観光案内所"),
+    ("shop", 2, "summer", "@nagareboshi_misaki", "凪さんと流れ星を数えた夜。12 個。", "#薄青岬 #流れ星"),
 ]
 
 
@@ -148,14 +160,21 @@ def seed_master(conn: sqlite3.Connection) -> None:
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         SHOPS,
     )
-    conn.executemany("INSERT OR IGNORE INTO people(id,shop_id,name,intro,svg_key) VALUES(?,?,?,?,?)", PEOPLE)
+    # 旧版（無人店 2 件）の DB を上書きして、全部の店に人が付く状態にする
+    conn.executemany(
+        "UPDATE shops SET spot_id=?, name=?, area=?, category=?, open_time=?, close_time=?, closed_weekday=?, is_unmanned=?, svg_key=?, description=?, access=?, best_season=? WHERE id=?",
+        [(s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[9], s[10], s[11], s[12], s[13], s[0]) for s in SHOPS],
+    )
+    conn.executemany("INSERT OR IGNORE INTO people(id,shop_id,name,intro,svg_key,role) VALUES(?,?,?,?,?,?)", PEOPLE)
+    conn.executemany("UPDATE people SET role=?, intro=? WHERE id=?", [(p[5], p[3], p[0]) for p in PEOPLE])
     conn.executemany(
         "INSERT OR IGNORE INTO promises(id,person_id,season,title,note,start_md,end_md) VALUES(?,?,?,?,?,?,?)", PROMISES
     )
     conn.executemany(
         "INSERT OR IGNORE INTO prizes(id,category,name,face_value,weight,stock,enabled) VALUES(?,?,?,?,?,?,?)", PRIZES
     )
-    if conn.execute("SELECT COUNT(*) AS c FROM voices").fetchone()["c"] == 0:
+    if conn.execute("SELECT COUNT(*) AS c FROM voices").fetchone()["c"] != len(VOICES):
+        conn.execute("DELETE FROM voices")
         conn.executemany(
             "INSERT INTO voices(target_type,target_id,season,author,text,hashtags) VALUES(?,?,?,?,?,?)", VOICES
         )

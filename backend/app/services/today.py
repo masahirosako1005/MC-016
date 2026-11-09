@@ -1,4 +1,4 @@
-"""きょう: 今日会えそうなお店の人の予報、スポット、計画の品目。"""
+"""マップ（旅中）: 場所ごとに、そこにいる人。計画の場所を先頭に。"""
 from __future__ import annotations
 
 import sqlite3
@@ -6,10 +6,8 @@ from datetime import datetime
 
 from ..config import settings
 from ..repositories import master
-from .forecast import current_event, forecast, sort_key
-from .relationship import met_on, relationship
-from .season import WEEKDAY_JA, LABEL, season_of
-from .seeds import active_seed, describe
+from .places import place_card, plan_spot_ids
+from .season import LABEL, WEEKDAY_JA, season_of
 
 
 def today_view(conn: sqlite3.Connection, now: datetime) -> dict:
@@ -17,64 +15,49 @@ def today_view(conn: sqlite3.Connection, now: datetime) -> dict:
     today = now.date()
     day = today.isoformat()
     season = season_of(today)
-    plan_ids = _plan_targets(conn, uid, day)
+    plan_ids = plan_spot_ids(conn, uid)
+    plan = conn.execute("SELECT target_date FROM plans WHERE user_id = ? AND archived = 0 ORDER BY id DESC LIMIT 1", (uid,)).fetchone()
+    plan_today = bool(plan and plan["target_date"] == day)
 
-    people_items = []
-    for p in master.people(conn):
-        shop = {k: p[k] for k in ("open_time", "close_time", "closed_weekday")}
-        promises = master.promises_of(conn, p["id"])
-        met = met_on(conn, uid, p["id"], day)
-        item = {
-            "person": {"id": p["id"], "name": p["name"], "intro": p["intro"], "svg_key": p["svg_key"]},
-            "shop": {"id": p["shop_id"], "name": p["shop_name"], "area": p["area"], "category": p["category"],
-                     "spot_id": p["spot_id"], "svg_key": p["shop_svg_key"]},
-            "forecast": forecast(shop, now),
-            "event": current_event(promises, today),
-            "met_today": met,
-            "relationship": relationship(conn, uid, p["id"]),
-            "seed": describe(active_seed(conn, uid, p["id"]), today, met),
-            "in_plan": ("shop", p["shop_id"]) in plan_ids,
-        }
-        people_items.append(item)
-    people_items.sort(key=lambda it: (0 if it["in_plan"] else 1,) + sort_key(it))
+    places = [place_card(conn, s, now, uid, plan_ids) for s in master.spots(conn)]
+    order = {"open": 0, "not_yet": 1, "closed": 2}
+    places.sort(key=lambda c: (0 if c["in_plan"] else 1, order[c["status"]], c["id"]))
 
-    checked = {r["spot_id"] for r in conn.execute("SELECT spot_id FROM spot_checkins WHERE user_id = ? AND day = ?", (uid, day))}
-    spots = []
-    for s in master.spots(conn):
-        spots.append({"id": s["id"], "name": s["name"], "area": s["area"], "svg_key": s["svg_key"],
-                      "checked_in_today": s["id"] in checked, "in_plan": ("spot", s["id"]) in plan_ids})
-    spots.sort(key=lambda x: (0 if x["in_plan"] else 1, x["id"]))
-
-    unmanned = []
-    for sh in master.shops(conn):
-        if sh["is_unmanned"]:
-            unmanned.append({"id": sh["id"], "name": sh["name"], "area": sh["area"], "category": sh["category"],
-                             "svg_key": sh["svg_key"], "forecast": forecast(sh, now), "in_plan": ("shop", sh["id"]) in plan_ids})
-
+    people = [p for c in places for p in c["people"]]
+    met_today = [p for p in people if p["met_today"]]
     activity_today = bool(
-        conn.execute("SELECT 1 FROM meetings WHERE user_id = ? AND met_on = ? LIMIT 1", (uid, day)).fetchone()
+        met_today
         or conn.execute("SELECT 1 FROM receipts WHERE user_id = ? AND received_on = ? LIMIT 1", (uid, day)).fetchone()
-        or checked
+        or conn.execute("SELECT 1 FROM photos WHERE user_id = ? AND taken_on = ? LIMIT 1", (uid, day)).fetchone()
     )
+    letter_ready = activity_today and now.hour >= settings.letter_open_hour
+
+    # いまやること（主ボタン 1 つ）
+    flower = next((p for p in people if p["seed"] and p["seed"]["can_fulfill"]), None)
+    if letter_ready:
+        todo = {"kind": "letter", "text": "今夜のおもいで便が届いています", "button": "便を開く", "path": "/memories/letters"}
+    elif flower:
+        todo = {"kind": "flower", "text": f"{flower['name']}の花が咲いています。会えた今日、約束を果たせます", "button": "ひとめぐり帖で長押し", "path": "/memories/book"}
+    elif plan_ids:
+        first = next((c for c in places if c["in_plan"] and not c["met_today"]), None)
+        if first and first["people"]:
+            todo = {"kind": "meet", "text": f"{first['name']}に着いたら、{first['people'][0]['name']}に会えたら「会えた」を押しましょう", "button": None, "path": None, "place_id": first["id"]}
+        else:
+            todo = {"kind": "done", "text": "計画の場所はぜんぶ回れました。レシートを登録してポイントをもらいましょう", "button": "レシートを登録", "path": "/wallet?receipt=1"}
+    else:
+        todo = {"kind": "explore", "text": "地図の場所をタップして、そこにいる人に会いに行きましょう", "button": "行きたい場所を決める", "path": "/plan"}
+
     return {
         "now": now.isoformat(timespec="seconds"),
         "date": day,
         "weekday": WEEKDAY_JA[now.weekday()],
         "season": season,
         "season_label": LABEL[season],
-        "plan_today": bool(plan_ids),
-        "people": people_items,
-        "spots": spots,
-        "unmanned_shops": unmanned,
+        "plan_today": plan_today,
+        "has_plan": bool(plan_ids),
+        "places": places,
+        "met_today": [{"id": p["id"], "name": p["name"]} for p in met_today],
         "activity_today": activity_today,
-        "letter_ready": activity_today and now.hour >= settings.letter_open_hour,
+        "letter_ready": letter_ready,
+        "todo": todo,
     }
-
-
-def _plan_targets(conn: sqlite3.Connection, uid: int, day: str) -> set[tuple[str, int]]:
-    plan = conn.execute(
-        "SELECT id FROM plans WHERE user_id = ? AND archived = 0 AND target_date = ? ORDER BY id DESC LIMIT 1", (uid, day)
-    ).fetchone()
-    if not plan:
-        return set()
-    return {(r["kind"], r["target_id"]) for r in conn.execute("SELECT kind, target_id FROM plan_items WHERE plan_id = ?", (plan["id"],))}

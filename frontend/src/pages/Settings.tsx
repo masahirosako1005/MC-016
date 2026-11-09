@@ -1,5 +1,6 @@
 import { useT } from "../i18n";
 import { setPrefs, usePrefs, type FontSize } from "../settings";
+import { showGuide } from "../components/parts";
 import { TopBar } from "../components/ui";
 
 export function SettingsPage() {
@@ -22,27 +23,21 @@ export function SettingsPage() {
         <div>
           <div className="title">{t("theme")}</div>
           <div className="grid2" style={{ marginTop: 8 }}>
-            <button className={`btn small ${p.theme === "standard" ? "primary" : ""}`} onClick={() => setPrefs({ theme: "standard" })}>
-              {t("standard")}
-            </button>
-            <button className={`btn small ${p.theme === "contrast" ? "primary" : ""}`} onClick={() => setPrefs({ theme: "contrast" })}>
-              {t("contrast")}
-            </button>
+            <button className={`btn small ${p.theme === "standard" ? "primary" : ""}`} onClick={() => setPrefs({ theme: "standard" })}>{t("standard")}</button>
+            <button className={`btn small ${p.theme === "contrast" ? "primary" : ""}`} onClick={() => setPrefs({ theme: "contrast" })}>{t("contrast")}</button>
           </div>
         </div>
         <div>
           <div className="title">{t("easy_ja")}</div>
           <div className="grid2" style={{ marginTop: 8 }}>
-            <button className={`btn small ${!p.easy ? "primary" : ""}`} onClick={() => setPrefs({ easy: false })}>
-              ふつう
-            </button>
-            <button className={`btn small ${p.easy ? "primary" : ""}`} onClick={() => setPrefs({ easy: true })}>
-              やさしい
-            </button>
+            <button className={`btn small ${!p.easy ? "primary" : ""}`} onClick={() => setPrefs({ easy: false })}>ふつう</button>
+            <button className={`btn small ${p.easy ? "primary" : ""}`} onClick={() => setPrefs({ easy: true })}>やさしい</button>
           </div>
         </div>
       </div>
-      <p className="muted" style={{ marginTop: 12 }}>設定はこの端末だけに保存されます。</p>
+      <h2>使い方</h2>
+      <button className="btn block" onClick={showGuide}>使い方をもう一度見る</button>
+      <p className="muted small" style={{ marginTop: 12 }}>設定はこの端末だけに保存されます。</p>
     </div>
   );
 }
