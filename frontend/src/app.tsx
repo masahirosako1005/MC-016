@@ -3,6 +3,8 @@ import { TabBar } from "./components/tabbar";
 import { Toasts } from "./components/ui";
 import { TodayPage, useToday } from "./pages/Today";
 import { SettingsPage } from "./pages/Settings";
+import { ExplorePage, PlacePage, PlanPage } from "./pages/Explore";
+import { ShopPage } from "./pages/Shop";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -28,7 +30,18 @@ export function App() {
       break;
     case "explore":
       tab = "explore";
-      page = <Placeholder name="しらべる" />;
+      page = <ExplorePage />;
+      break;
+    case "place":
+      tab = "explore";
+      page = <PlacePage kind={route.parts[1]} id={Number(route.parts[2])} />;
+      break;
+    case "plan":
+      tab = "explore";
+      page = <PlanPage />;
+      break;
+    case "shop":
+      page = <ShopPage id={Number(route.parts[1])} onChanged={today.reload} />;
       break;
     case "memories":
       tab = "memories";

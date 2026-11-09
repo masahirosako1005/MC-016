@@ -1,4 +1,4 @@
-# ひとめぐり便 起動スクリプト: 画面のビルド → uv sync → 起動（1 プロセス 127.0.0.1:8000）
+﻿# ひとめぐり便 起動スクリプト: 画面のビルド → uv sync → 起動（1 プロセス 127.0.0.1:8000）
 # 使い方:  .\scripts\start.ps1            通常モード
 #          .\scripts\start.ps1 -Demo      デモ層を有効にする（DEMO_MODE=1）
 #          .\scripts\start.ps1 -SkipBuild 画面のビルドを飛ばす
@@ -28,5 +28,7 @@ uv sync --python 3.12
 if ($LASTEXITCODE -ne 0) { throw "uv sync failed" }
 
 if ($Demo) { $env:DEMO_MODE = "1" } else { $env:DEMO_MODE = "0" }
-Write-Host "== 起動 http://127.0.0.1:8000  (DEMO_MODE=$env:DEMO_MODE)"
-uv run uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+$port = 8000
+if ($env:PORT -and ($env:PORT -match '^\d+$')) { $port = [int]$env:PORT }
+Write-Host "== 起動 http://127.0.0.1:$port  (DEMO_MODE=$env:DEMO_MODE)"
+uv run uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port $port
