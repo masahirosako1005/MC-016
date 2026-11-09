@@ -9,14 +9,14 @@ type DemoState = { now: string; date: string; weekday: string; season_label: str
 
 const SCRIPT: Record<string, { path: string; steps: string[]; point: string }> = {
   pre: {
-    path: "/explore",
-    steps: ["「しらべる」で諸島マップとカードを見る（キーワード・季節・地区で絞る）", "詳細で「季節の約束」と「SNS で見かけた声」を読む", "「つぎの旅に入れる」を 2 件、予定日を 10/24 に"],
-    point: "旅の前から使える。SNS 風の声はデモ用の内部データ（本番は公式 API に差し替え）。格付け・順位は出さない。",
+    path: "/plan",
+    steps: ["「計画」で行きたい場所を選ぶ（風景写真のカード。地区・季節で絞る）", "カードの下に「ここにいる人」。人はまだ選ばない、場所を選ぶだけ", "「行きたい」を 2 か所、日を 10/24 に決める"],
+    point: "いきなり人を選ばせない。場所を選ぶと、そこにいる人が付いてくる。旅人の声はデモ用の内部データ（本番は公式 API に差し替え）。格付け・順位は出さない。",
   },
   trip: {
     path: "/",
-    steps: ["きょう会えそうな人を予報（定休日・営業時間・季節イベント）で見る", "「会えた」→ 次の季節の種をもらう → AR フォトを撮る（カメラ不可なら風景で合成）", "レシートを撮って登録 → ポイント → おさいふで抽選"],
-    point: "会えたは自己申告・同じ日に同じ人は 1 回。レシート画像は 7 日で自動削除、数値は残す。クーポンはカテゴリ単位で当選翌日から。",
+    steps: ["「マップ」に計画の場所が先頭。行った先に「ここにいる人」と予報（定休日・営業時間・季節イベント）", "「〇〇さんに会えた」→ 次の季節の種 → いっしょに AR フォト（カメラ不可なら風景写真で合成）", "レシートを登録 → ポイント → 「クーポン」で抽選"],
+    point: "人を選んだつもりはないのに、気づいたら人に会っている。会えたは自己申告・同じ日に同じ人は 1 回。レシート画像は 7 日で削除、数値は残す。",
   },
   night: {
     path: "/memories/letters",
@@ -30,8 +30,8 @@ const SCRIPT: Record<string, { path: string; steps: string[]; point: string }> =
   },
   season: {
     path: "/",
-    steps: ["次の季節、種が花になる", "その人に「会えた」日だけ 1.2 秒長押しで約束を果たす", "さらに次の季節の種をもらう（関係: はじめまして → また会えたね → おなじみ）"],
-    point: "種は人ごとに 1 つ、逃しても枯れない。運営の窓（/#/admin）で指標・取り込み・還元率・補填を確認。",
+    steps: ["次の季節、種が花になる（マップのその人のカードが長押しに変わる）", "その人に「会えた」日だけ 1.2 秒長押しで約束を果たす", "さらに次の季節の種をもらう（関係: はじめまして → また会えたね → おなじみ）"],
+    point: "種は人ごとに 1 つ、逃しても枯れない。「またあの人に会いたい」が次の旅の計画になる。運営の窓（/#/admin）で指標・取り込み・還元率・補填を確認。",
   },
 };
 
@@ -98,7 +98,7 @@ export function PresentPage() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 12, minHeight: 0 }}>
         <div style={{ justifySelf: "center", width: 340, height: 630, border: "10px solid #1e2a2c", borderRadius: 36, overflow: "hidden", background: "#000", boxShadow: "0 8px 30px #0004" }}>
-          <iframe ref={frame} src="/#/explore" title="ひとめぐり便（本体）" style={{ width: "100%", height: "100%", border: 0, background: "#fff" }} />
+          <iframe ref={frame} src="/#/plan" title="ひとめぐり便（本体）" style={{ width: "100%", height: "100%", border: 0, background: "#fff" }} />
         </div>
         <div style={{ display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8, minHeight: 0 }}>
           <div className="card">
@@ -121,10 +121,10 @@ export function PresentPage() {
               <option value="">次の抽選: 通常</option>
               {st.prizes.map((p) => <option key={p.id} value={p.id}>次の抽選を固定: {p.name}</option>)}
             </select>
-            <button className="btn small ghost" onClick={() => tell("/wallet")}>おさいふ</button>
+            <button className="btn small ghost" onClick={() => tell("/wallet")}>クーポン</button>
             <button className="btn small ghost" onClick={() => tell("/memories/book")}>ひとめぐり帖</button>
             <button className="btn small ghost" onClick={() => window.open("/#/admin", "_blank")}>運営の窓</button>
-            <button className="btn small ghost" style={{ marginLeft: "auto", borderColor: "var(--warn)", color: "var(--warn)" }} onClick={async () => { if (confirm("主人公の履歴を初期化して旅前に戻します。よろしいですか？")) { await post("/demo/reset"); await load(); tell("/explore"); } }}>初期化</button>
+            <button className="btn small ghost" style={{ marginLeft: "auto", borderColor: "var(--yamabuki)", color: "#7a5300" }} onClick={async () => { if (confirm("主人公の履歴を初期化して旅前に戻します。よろしいですか？")) { await post("/demo/reset"); await load(); tell("/plan"); } }}>初期化</button>
           </div>
         </div>
       </div>

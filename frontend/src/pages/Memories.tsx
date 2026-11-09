@@ -102,7 +102,7 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
       <Collage L={L} />
 
       {L.redelivered && (
-        <div className="card" style={{ borderColor: "var(--flower)" }}>
+        <div className="card" style={{ borderColor: "var(--yamabuki)" }}>
           <div className="title">{L.next_season_label}まで、あと {L.weeks_to_next_season} 週間</div>
           <div className="muted">{L.next_season_start.replace(/-/g, "/")} から{L.next_season_label}。種が花になる季節です。</div>
         </div>
@@ -112,7 +112,7 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
       {L.suggestions.map((s) => (
         <div key={`${s.kind}${s.target_id}`} className={`card ${s.wished ? "highlight" : ""}`}>
           <div className="row between">
-            <Badge kind="seed">{s.kind === "season" ? "別の季節" : s.kind === "event" ? "別のイベント" : "別のお店"}</Badge>
+            <Badge kind="seed">{s.kind === "season" ? "別の季節に、また" : s.kind === "event" ? "別のイベント" : "まだ行っていない場所"}</Badge>
             {s.wished && <Badge kind="good">行きたい</Badge>}
           </div>
           <div style={{ fontWeight: 700, marginTop: 4 }}>{s.title}</div>
@@ -120,7 +120,7 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
           {!s.wished ? (
             <button className="btn small primary block" style={{ marginTop: 8 }} onClick={() => wish(s)}>行きたい</button>
           ) : (
-            <button className="btn small ghost block" style={{ marginTop: 8 }} onClick={() => navigate("/plan")}>つぎの旅を見る</button>
+            <button className="btn small ghost block" style={{ marginTop: 8 }} onClick={() => navigate("/plan")}>計画を見る</button>
           )}
         </div>
       ))}

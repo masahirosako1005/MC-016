@@ -10,3 +10,4 @@
 - 2026-11-09 12:30 指標(/api/metrics: 7指標+地区別消費、n/dummy_n、3人未満null)と運営の窓(/#/admin: 指標・CSV確認→取り込み・アップロード・還元率・商品の重み/在庫/額面・補填月次・直近レシート・変更履歴)。pytest 26件。
 - 2026-11-09 12:33 デモ層: DEMO_MODE=1だけ /api/demo/{state,trip-day,night,after30,next-season,clock,fix-lottery,reset}、DEMO_MODE=0では404を別プロセステストで確認。/#/present(1280×720、5場面の帯、iframeで本体、postMessageで画面切替、指標、固定当たり、初期化)。pytest 28件。
 - 2026-11-09 12:37 通し確認: present の 5 場面を帯で進めて ⓪→①(会えた/行けた/レシート/固定当たり)→②便→③30日後→④次の季節(冬の花) を確認。docs 02/04/05/06/07/08 と README。できなかったこと: 実機カメラ・Web Share・実プリンタでの確認、frontend の vitest。pytest 28件・ビルド通過。
+- 2026-11-09 13:51 UI 再設計: スタンプラリー要素を外し「場所→そこにいる人」に。タブ=計画／マップ／思い出／クーポン、いまやることカード、初回ガイド 3 枚、藍染と和紙のデザイン（藍#1b2a44・紙#fbfcfd・山吹#e3a21a、明朝+ゴシック）。無人店2件→観光案内所(凪さん)・灯台ガイド詰所(帆さん)で人 8 人。画像: loosedrawing 8・Unsplash 7・ICOOON MONO 11（Chrome で選定、curl 保存、07_licenses に出典）。places/people API、計画は場所単位、AR フォトは人の PNG を canvas 合成。pytest 28 件・ビルド通過、ブラウザで計画→マップ→会えた→AR を確認。

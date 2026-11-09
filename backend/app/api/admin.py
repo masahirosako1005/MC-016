@@ -26,7 +26,11 @@ def get_metrics(conn=Depends(get_conn)):
 @router.get("/admin/overview")
 def overview(conn=Depends(get_conn)):
     return {
-        "shops": [{"id": s["id"], "name": s["name"], "area": s["area"], "category": s["category"], "rate_percent": s["rate_percent"]} for s in master.shops(conn)],
+        "shops": [
+            {"id": s["id"], "name": s["name"], "area": s["area"], "category": s["category"], "rate_percent": s["rate_percent"],
+             "person_name": next((p["name"] for p in master.people(conn) if p["shop_id"] == s["id"]), None)}
+            for s in master.shops(conn)
+        ],
         "prizes": prize_table(conn),
         "history": svc.history(conn),
         "recent_receipts": svc.recent_receipts(conn),

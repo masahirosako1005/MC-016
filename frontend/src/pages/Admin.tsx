@@ -12,7 +12,7 @@ type Metrics = {
 };
 type Prize = { id: number; category: string; name: string; face_value: number; weight: number; stock: number | null; enabled: number; probability: number; in_stock: boolean };
 type Overview = {
-  shops: { id: number; name: string; area: string; category: string; rate_percent: number }[];
+  shops: { id: number; name: string; area: string; category: string; rate_percent: number; person_name?: string | null }[];
   prizes: Prize[];
   history: { id: number; at: string; kind: string; target: string; before: unknown; after: unknown }[];
   recent_receipts: { id: number; user_id: number; amount: number; rate_percent: number; points: number; received_on: string; shop_name: string; has_image: boolean; image_url: string | null }[];
@@ -223,7 +223,7 @@ function RateRow({ shop, onSaved }: { shop: Overview["shops"][number]; onSaved: 
   useEffect(() => setV(String(shop.rate_percent)), [shop.rate_percent]);
   return (
     <tr>
-      <td>{shop.name}</td><td>{shop.category}</td>
+      <td>{shop.name}{shop.person_name && <div className="muted small">{shop.person_name}</div>}</td><td>{shop.category}</td>
       <td className="num"><input type="number" min={1} max={20} value={v} onChange={(e) => setV(e.target.value)} style={{ width: 70, minHeight: 36, padding: 4 }} /> %</td>
       <td>
         <button className="btn small" disabled={Number(v) === shop.rate_percent} onClick={async () => {
