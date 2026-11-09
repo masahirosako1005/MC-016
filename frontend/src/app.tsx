@@ -6,6 +6,8 @@ import { SettingsPage } from "./pages/Settings";
 import { ExplorePage, PlacePage, PlanPage } from "./pages/Explore";
 import { ShopPage } from "./pages/Shop";
 import { WalletPage } from "./pages/Wallet";
+import { CameraPage } from "./pages/Camera";
+import { PhotoPage, PrintPage } from "./pages/Photo";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -43,6 +45,17 @@ export function App() {
       break;
     case "shop":
       page = <ShopPage id={Number(route.parts[1])} onChanged={today.reload} />;
+      break;
+    case "camera":
+      page = <CameraPage kind={route.parts[1]} id={Number(route.parts[2])} />;
+      break;
+    case "photo":
+      tab = "memories";
+      page = <PhotoPage id={Number(route.parts[1])} />;
+      break;
+    case "print":
+      tab = "memories";
+      page = <PrintPage id={Number(route.parts[1])} />;
       break;
     case "memories":
       tab = "memories";

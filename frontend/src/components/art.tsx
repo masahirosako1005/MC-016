@@ -1,15 +1,15 @@
 /** 自前 SVG。スポット・店の風景と、お店の人のキャラクター。外部画像は使わない。 */
 import type { CSSProperties } from "react";
 
-type Props = { className?: string; style?: CSSProperties };
+type Props = { className?: string; style?: CSSProperties; slice?: boolean };
 
 const SKY = "#dbeaf3";
 const SEA = "#7fb3c8";
 const LAND = "#b9c99a";
 
-function Frame({ children, className, style, bg = SKY }: Props & { children: React.ReactNode; bg?: string }) {
+function Frame({ children, className, style, slice, bg = SKY }: Props & { children: React.ReactNode; bg?: string }) {
   return (
-    <svg viewBox="0 0 320 180" className={className ?? "art"} style={style} role="img" aria-hidden="true">
+    <svg viewBox="0 0 320 180" className={className ?? "art"} style={style} role="img" aria-hidden="true" preserveAspectRatio={slice ? "xMidYMid slice" : "xMidYMid meet"}>
       <rect width="320" height="180" fill={bg} />
       {children}
     </svg>

@@ -15,6 +15,7 @@ from .errors import install_error_handlers
 from .security import install_security_headers
 from .seed.master import seed_master
 from .services.cleanup import purge_old_receipt_images
+from .services.photos import seed_sample_photos
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("hitomeguri")
@@ -29,6 +30,10 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         app.state.conn = conn
         settings.uploads_dir.mkdir(parents=True, exist_ok=True)
         settings.photos_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            seed_sample_photos(conn, settings.hero_user_id)
+        except Exception:
+            log.exception("サンプル写真の作成に失敗")
         try:
             n = purge_old_receipt_images(conn)
             if n:
