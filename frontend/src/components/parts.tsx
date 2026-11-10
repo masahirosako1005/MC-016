@@ -83,8 +83,8 @@ export function PersonLine({ p, onClick }: { p: PersonLite; onClick?: () => void
 const GUIDE_KEY = "hitomeguri.guide.v2";
 const GUIDE = [
   { no: "一", title: "この島には、会いに行ける人がいます", body: "お店の人、案内所の人、灯台のガイド。まずは「計画」で行きたい場所を選ぶと、そこにいる人が分かります。", figure: <GuideFigure n={0} /> },
-  { no: "二", title: "会えたら「会えた」を押す", body: "旅の日は「マップ」。行った先の人に会えたら押してください。次の季節の約束が「種」になり、ほしまると AR フォトも撮れます。", figure: <GuideFigure n={1} /> },
-  { no: "三", title: "季節が変わると、花が咲く", body: "その夜「思い出」に便りが届きます。次の季節に花が咲いたら、また会いに行って約束を果たしましょう。クーポンは次の旅で使えます。", figure: <GuideFigure n={2} /> },
+  { no: "二", title: "会えたら「会えた」を押す", body: "旅の日は「マップ」。行った先の人に会えたら押してください。ひとめぐり帖にその人が加わり、ほしまると AR フォトも撮れます。", figure: <GuideFigure n={1} /> },
+  { no: "三", title: "会うたびに、帯が育つ", body: "その夜「思い出」にコルクボードが届きます。同じ人に 2 回、3 回と会うと、帖の帯が はじめまして → また会えたね → おなじみ に。クーポンは次の旅で使えます。", figure: <GuideFigure n={2} /> },
 ];
 
 export function FirstGuide() {

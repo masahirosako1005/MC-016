@@ -60,7 +60,13 @@ def letters_index(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
         if today < due:
             continue
         s, e = start.isoformat(), end.isoformat()
-        ppl = [r["name"] for r in conn.execute("SELECT DISTINCT p.name FROM meetings m JOIN people p ON p.id = m.person_id WHERE m.user_id = ? AND m.met_on BETWEEN ? AND ? ORDER BY p.id", (uid, s, e))]
+        prow = [dict(r) for r in conn.execute(
+            "SELECT DISTINCT p.id, p.name, p.svg_key, sp.id AS spot_id, sp.name AS spot_name, sp.svg_key AS spot_key "
+            "FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops sh ON sh.id = p.shop_id JOIN spots sp ON sp.id = sh.spot_id "
+            "WHERE m.user_id = ? AND m.met_on BETWEEN ? AND ? ORDER BY p.id", (uid, s, e))]
+        ppl = [r["name"] for r in prow]
+        people_cards = [{"id": r["id"], "name": r["name"], "image": f"/img/people/{r['svg_key']}.png", "label": relationship(conn, uid, r["id"])["label"]} for r in prow]
+        spot_cards = list({r["spot_id"]: {"id": r["spot_id"], "name": r["spot_name"].split("（")[0], "image": f"/img/places/{r['spot_key']}.jpg"} for r in prow}.values())
         photos = [{"id": r["id"], "url": f"/api/photos/{r['id']}/image"} for r in conn.execute("SELECT id FROM photos WHERE user_id = ? AND taken_on BETWEEN ? AND ? ORDER BY id LIMIT 4", (uid, s, e))]
         # その旅の夜〜30 日の間に押した「行きたい」
         wishes = [w for w in wish_rows if s <= w["created_at"][:10] <= due.isoformat()]
@@ -79,7 +85,7 @@ def letters_index(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
         reminders.append({
             "date": due.isoformat(), "weekday": WEEKDAY_JA[due.weekday()],
             "trip_start": s, "trip_end": e, "trip_label": f"{start.month}/{start.day}" + (f"〜{end.month}/{end.day}" if start != end else ""),
-            "people": ppl, "photos": photos, "wishes": wish_items, "diary": diary["text"] if diary else None,
+            "people": ppl, "people_cards": people_cards, "spots": spot_cards, "photos": photos, "wishes": wish_items, "diary": diary["text"] if diary else None,
             "next_season_label": LABEL[season_of(nxt)], "weeks_to_next_season": weeks_until_next_season(due),
             "title": f"{start.month}/{start.day} の旅から 30 日。星凪諸島から便りが届きました",
         })

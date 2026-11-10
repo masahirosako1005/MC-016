@@ -23,7 +23,7 @@ type ShopDash = {
   messages: { id: number; title: string; body: string; coupon_face_value: number | null; coupon_days: number | null; created_at: string; sent_to: number }[];
   coupons_used: { count: number; amount: number };
   reach: number;
-  visitors: { user_id: number; days: number; last_met: string; first_met: string; stage: string; label: string; is_dummy: boolean }[];
+  visitors: { user_id: number; nickname: string; age_band: string | null; region: string | null; days: number; last_met: string; first_met: string; stage: string; label: string; is_dummy: boolean }[];
 };
 type Audience = { total: number; selected: number; stages: { first: number; again: number; regular: number }; seeds: { none: number; bud: number; flower: number } };
 
@@ -122,7 +122,7 @@ export function ShopPanel() {
     <div>
       <div className="row wrap" style={{ gap: 10, marginBottom: 10 }}>
         <label className="field" style={{ margin: 0, maxWidth: 360 }}>
-          <span>あなたのお店・施設（デモ: 切り替えられます）</span>
+          <span>お店・施設</span>
           <select value={shopId} onChange={(e) => setShopId(Number(e.target.value))}>
             {shops.map((s) => <option key={s.id} value={s.id}>{s.name}{s.person_name ? `（${s.person_name}）` : ""}</option>)}
           </select>
@@ -146,7 +146,6 @@ export function ShopPanel() {
         <div className="card"><BarChart title="会えた回数（自分 / 地区平均）" labels={labels} values={d.series.map((s) => s.meetings)} compare={d.series.map((s) => s.meetings_area_avg)} unit="回" compareLabel="地区平均" /></div>
         <div className="card"><BarChart title="お買いもの（自分 / 地区平均）" labels={labels} values={d.series.map((s) => s.spend)} compare={d.series.map((s) => s.spend_area_avg)} unit="円" compareLabel="地区平均" /></div>
       </div>
-      <p className="muted small">地域内の横の誘客のために、近くのお店の平均と並べています。順位はつけません。</p>
         </>
       )}
 
@@ -159,14 +158,14 @@ export function ShopPanel() {
               {d.visitors.map((v) => (
                 <tr key={v.user_id}>
                   <td style={{ whiteSpace: "nowrap" }}><span className={`badge rank-${v.stage}`}>{RANK_SHORT[v.stage] ?? v.label}</span></td>
-                  <td>旅行者 {v.user_id}{v.is_dummy ? <span className="muted small">（ダミー）</span> : ""}</td>
+                  <td><b>{v.nickname}</b>{(v.age_band || v.region) && <div className="muted small">{[v.age_band, v.region].filter(Boolean).join("・")}</div>}</td>
                   <td className="num" style={{ whiteSpace: "nowrap" }}>{v.days} 日</td>
                   <td className="muted small" style={{ whiteSpace: "nowrap" }}>最後 {v.last_met.slice(5).replace("-", "/")}</td>
                 </tr>
               ))}
               {d.visitors.length === 0 && <tr><td className="muted">まだ会った旅行者はいません</td></tr>}
             </tbody></table>
-            <div className="muted small" style={{ marginBottom: 10 }}>「この人、前にも来てくれた」をお店の側でも思い出せるように。帯は旅行者のひとめぐり帖と同じ色です。</div>
+            <div style={{ height: 10 }} />
             <div className="small" style={{ fontWeight: 700 }}>この場所に来る予定（旅行者の計画）</div>
             <table className="tbl"><tbody>
               {d.upcoming_visits.map((v) => <tr key={v.date}><td>{v.date.replace(/-/g, "/")}</td><td className="num">{v.plans} 件</td></tr>)}

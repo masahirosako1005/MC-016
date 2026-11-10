@@ -25,6 +25,8 @@ export type PlaceCard = {
   id: number; name: string; full_name: string; area: string; svg_key: string; image: string; description: string; access: string;
   best_season: string; best_season_label: string; map_x: number; map_y: number; in_plan: boolean; recommend?: string | null;
   last_visit?: { date: string; season: string; season_label: string; same_season: boolean } | null;
+  photo_count?: number;
+  receipts?: { count: number; total: number; points: number; rows: { id: number; date: string; shop_name: string; amount: number; points: number }[] };
   hours?: string; closed?: string; address?: string | null; phone?: string | null;
   people: PersonFull[];
   status: "open" | "not_yet" | "closed"; status_label: string; met_today: boolean;
@@ -47,6 +49,7 @@ type History = {
   plans: { id: number; title: string; target_date: string | null; weekday: string | null; archived: boolean; created_at: string; items: HistItem[]; unvisited: HistItem[] }[];
   active: { id: number; title: string } | null;
   leftovers: (HistItem & { from_title: string; from_date: string | null })[];
+  next_title?: string;
 };
 
 function decidedKey(planId: number | undefined) {
@@ -71,7 +74,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   const [help, setHelp] = useState(0);
   const [stage, setStage] = useState<"list" | "deck" | "map" | "date">("list");
   const [mapSel, setMapSel] = useState<number | null>(null);
-  const [newTitle, setNewTitle] = useState("");
+  const [newTitle, setNewTitle] = useState<string | null>(null); // null のあいだは既定の名前（星凪諸島旅行 N 回目）を見せる
 
   const load = async () => {
     const [d, pl, h] = await Promise.all([get<PlacesView>("/places"), get<PlanView>("/plan"), get<History>("/plan/history")]);
@@ -100,6 +103,10 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   const count = plan.items.length;
   const leftoverIds = new Set(hist.leftovers.map((l) => l.id));
   const mapSelPlace = data.places.find((p) => p.id === mapSel) ?? null;
+  // 前回の旅で「行く」に入れなかった場所（行ったことがある・行けなかった場所は別のタグ）
+  const prevPlan = hist.plans.find((p) => p.archived);
+  const prevIds = new Set((prevPlan?.items ?? []).map((i) => i.id));
+  const skippedIds = new Set(prevPlan ? data.places.filter((p) => !prevIds.has(p.id) && !leftoverIds.has(p.id) && !p.last_visit).map((p) => p.id) : []);
   const remaining = data.places
     .filter((p) => !decided[p.id] && !p.in_plan)
     .sort((a, b) => Number(leftoverIds.has(b.id)) - Number(leftoverIds.has(a.id)));
@@ -144,8 +151,8 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   };
   const startNew = async () => {
     try {
-      await post("/plan/new", { title: newTitle || null });
-      setNewTitle("");
+      await post("/plan/new", { title: (newTitle ?? hist.next_title ?? "").trim() || null });
+      setNewTitle(null);
       await load();
       setStage("deck");
       toast("新しい旅をつくりました。行きたい場所を選びましょう");
@@ -183,8 +190,8 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
           <div className="card stack">
             <div className="title" style={{ fontSize: "1.05rem" }}>新しい旅をつくる</div>
             <label className="field" style={{ margin: 0 }}>
-              <span>旅の名前（空でも大丈夫）</span>
-              <input type="text" value={newTitle} maxLength={30} onChange={(e) => setNewTitle(e.target.value)} placeholder="例: 秋の星凪、ふたたび" />
+              <span>旅の名前（そのままでも、変えても）</span>
+              <input type="text" value={newTitle ?? hist.next_title ?? ""} maxLength={30} onChange={(e) => setNewTitle(e.target.value)} placeholder="例: 秋の星凪、ふたたび" />
             </label>
             <button className="btn primary block mark" onClick={startNew}>行きたい場所を選びはじめる</button>
           </div>
@@ -216,7 +223,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
             <>
               <div className="progress" style={{ marginBottom: 10 }}><i style={{ width: `${((data.places.length - remaining.length) / data.places.length) * 100}%` }} /></div>
               {remaining.length > 0 ? (
-                <Deck cards={remaining.slice(0, 2)} total={remaining.length} leftoverIds={leftoverIds} onDecide={decide} season_label={data.season_label} />
+                <Deck cards={remaining.slice(0, 2)} total={remaining.length} leftoverIds={leftoverIds} skippedIds={skippedIds} onDecide={decide} season_label={data.season_label} />
               ) : (
                 <div className="card">
                   <p>すべてのカードを見ました。</p>
@@ -308,7 +315,6 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
                       <Badge soft={!p.available} strong={p.available}>{p.available ? p.note : "定休日"}</Badge>
                     </div>
                   ))}
-                  {plan.seeds_in_season.length > 0 && <div className="muted small" style={{ marginTop: 6 }}>その季節に花になる種: {plan.seeds_in_season.map((s) => `${s.person_name}の「${s.title}」`).join("、")}</div>}
                   {plan.coupons_usable.length > 0 && <div className="muted small">その日に使えるクーポン: {plan.coupons_usable.map((c) => c.name).join("、")}</div>}
                 </div>
               )}
@@ -362,7 +368,7 @@ function nextDay(iso: string): string {
 }
 
 /** スワイプの山札。右=行く、左=行かない。 */
-function Deck({ cards, total, leftoverIds, onDecide, season_label }: { cards: PlaceCard[]; total: number; leftoverIds: Set<number>; onDecide: (pl: PlaceCard, d: "go" | "skip") => void; season_label: string }) {
+function Deck({ cards, total, leftoverIds, skippedIds, onDecide, season_label }: { cards: PlaceCard[]; total: number; leftoverIds: Set<number>; skippedIds: Set<number>; onDecide: (pl: PlaceCard, d: "go" | "skip") => void; season_label: string }) {
   const t = useT();
   const [dx, setDx] = useState(0);
   const start = useRef<number | null>(null);
@@ -412,6 +418,8 @@ function Deck({ cards, total, leftoverIds, onDecide, season_label }: { cards: Pl
               <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(251,252,253,.92)", color: "var(--ai-900)" }}>
                 {top.last_visit.season_label}に行った（{top.last_visit.date.slice(5).replace("-", "/")}）{!top.last_visit.same_season && <>　→ {season_label}はどう？</>}
               </span>
+            ) : skippedIds.has(top.id) ? (
+              <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(27,42,68,.78)", color: "#fbfcfd" }}>前回は選ばなかった場所</span>
             ) : null}
             <div style={{ position: "absolute", left: 14, bottom: 12, color: "#fbfcfd" }}>
               <div className="serif" style={{ fontSize: "1.5rem" }}>{top.name}</div>

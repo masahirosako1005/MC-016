@@ -9,13 +9,19 @@ from ..repositories import master
 from .season import LABEL, WEEKDAY_JA, season_of
 
 
+def default_title(conn: sqlite3.Connection, uid: int) -> str:
+    """旅の名前の既定値: 星凪諸島旅行 N 回目（N = これまでに作った旅の数 + 1）。あとから編集できる。"""
+    n = conn.execute("SELECT COUNT(*) FROM plans WHERE user_id = ? AND is_dummy = 0", (uid,)).fetchone()[0]
+    return f"星凪諸島旅行 {n + 1} 回目"
+
+
 def active_plan_id(conn: sqlite3.Connection, uid: int, create: bool, now: datetime) -> int | None:
     r = conn.execute("SELECT id FROM plans WHERE user_id = ? AND archived = 0 ORDER BY id DESC LIMIT 1", (uid,)).fetchone()
     if r:
         return r["id"]
     if not create:
         return None
-    cur = conn.execute("INSERT INTO plans(user_id, target_date, created_at) VALUES(?, NULL, ?)", (uid, now.isoformat(timespec="seconds")))
+    cur = conn.execute("INSERT INTO plans(user_id, target_date, created_at, title) VALUES(?, NULL, ?, ?)", (uid, now.isoformat(timespec="seconds"), default_title(conn, uid)))
     return cur.lastrowid
 
 
@@ -164,13 +170,14 @@ def plan_history(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
             for i in p["unvisited"]:
                 if i["id"] not in active_ids and i["id"] not in leftovers:
                     leftovers[i["id"]] = dict(i, from_title=p["title"], from_date=p["target_date"])
-    return {"plans": out, "active": active, "leftovers": list(leftovers.values())}
+    return {"plans": out, "active": active, "leftovers": list(leftovers.values()), "next_title": default_title(conn, uid)}
 
 
 def new_plan(conn: sqlite3.Connection, uid: int, now: datetime, title: str | None) -> int:
     """いまの計画を閉じて、新しい旅をつくる。"""
+    dflt = default_title(conn, uid)
     conn.execute("UPDATE plans SET archived = 1 WHERE user_id = ? AND archived = 0", (uid,))
-    cur = conn.execute("INSERT INTO plans(user_id, target_date, created_at, title) VALUES(?, NULL, ?, ?)", (uid, now.isoformat(timespec="seconds"), (title or "").strip()[:30] or None))
+    cur = conn.execute("INSERT INTO plans(user_id, target_date, created_at, title) VALUES(?, NULL, ?, ?)", (uid, now.isoformat(timespec="seconds"), ((title or "").strip()[:30] or dflt)))
     return cur.lastrowid
 
 

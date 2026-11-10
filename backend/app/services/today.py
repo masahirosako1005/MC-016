@@ -35,11 +35,8 @@ def today_view(conn: sqlite3.Connection, now: datetime) -> dict:
     letter_ready = activity_today and now.hour >= settings.letter_open_hour
 
     # いまやること（主ボタン 1 つ）
-    flower = next((p for p in people if p["seed"] and p["seed"]["can_fulfill"]), None)
     if letter_ready:
         todo = {"kind": "letter", "text": "今夜のおもいで便が届いています", "button": "便を開く", "path": "/memories/letters"}
-    elif flower:
-        todo = {"kind": "flower", "text": f"{flower['name']}の花が咲いています。会えた今日、約束を果たせます", "button": "ひとめぐり帖で長押し", "path": "/memories/book"}
     elif plan_ids:
         first = next((c for c in places if c["in_plan"] and not c["met_today"]), None)
         if first and first["people"]:

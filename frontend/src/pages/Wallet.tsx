@@ -290,6 +290,7 @@ function Roulette({ prizes, target, spinning, onDone }: { prizes: Prize[]; targe
   return (
     <div className="roulette" aria-label={target ? "抽選の結果" : spinning ? "抽選中" : "ルーレット"}>
       <div className="pointer" aria-hidden="true" />
+      <div className="wheelbox">
       <svg
         viewBox={`0 0 ${R * 2} ${R * 2}`}
         className="wheel"
@@ -310,9 +311,10 @@ function Roulette({ prizes, target, spinning, onDone }: { prizes: Prize[]; targe
             </g>
           );
         })}
-        <circle cx={R} cy={R} r={22} fill="#fbfcfd" stroke="#1b2a44" strokeWidth="2" />
-        <image href="/img/mascot/ui/hoshimaru_coupon.png" x={R - 18} y={R - 18} width="36" height="36" />
+        <circle cx={R} cy={R} r={14} fill="#fbfcfd" stroke="#1b2a44" strokeWidth="2" />
+        <circle cx={R} cy={R} r={4} fill="#e3a21a" />
       </svg>
+      </div>
     </div>
   );
 }

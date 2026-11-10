@@ -348,8 +348,9 @@ details.fold[open] > summary::after { content: "－"; }
 
 /* ルーレット */
 .roulette { position: relative; width: 240px; margin: 12px auto 4px; }
-.roulette .wheel { width: 240px; height: 240px; display: block; border-radius: 50%; box-shadow: 0 6px 18px rgba(27,42,68,.25), inset 0 0 0 4px #fbfcfd; }
-.roulette .wheel.idle { animation: wheel-idle 1.1s linear infinite; }
+/* 回る円盤は丸い箱の中に閉じ込める（四角い SVG の角が回転ではみ出して、画面や下タブが揺れるのを防ぐ） */
+.roulette .wheelbox { width: 240px; height: 240px; border-radius: 50%; overflow: hidden; contain: layout paint; box-shadow: 0 6px 18px rgba(27,42,68,.25); }
+.roulette .wheel { width: 240px; height: 240px; display: block; will-change: transform; transform-origin: 50% 50%; }
 .roulette .pointer { position: absolute; left: 50%; top: -8px; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 22px solid var(--yamabuki); z-index: 2; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
 @keyframes wheel-idle { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 

@@ -87,7 +87,6 @@ export function AdminPage() {
         <div className="row between" style={{ gap: 8 }}>
           <div>
             <h1 style={{ margin: 0 }}>運営の窓 <span className="muted" style={{ fontSize: ".95rem", fontWeight: 400 }}>— {role === "dmo" ? "地域（DMO）" : "お店・施設"}</span></h1>
-            <div className="muted small">本番ではアカウントの権限で立場が決まります（デモでは右下の ⚙ で切り替え）</div>
           </div>
           <button className="btn small ghost" onClick={() => navigate("/")}>本体へ</button>
         </div>
@@ -99,7 +98,7 @@ export function AdminPage() {
       {gear && (
         <div className="floatpanel" role="dialog" aria-label="デモ設定">
           <div className="row between"><b>デモ設定</b><button className="iconbtn" aria-label="とじる" onClick={() => setGear(false)}>×</button></div>
-          <div className="muted small" style={{ margin: "4px 0 8px" }}>本番ではアカウントの権限で決まる「立場」を、デモでは手で切り替えます。</div>
+          <div className="muted small" style={{ margin: "4px 0 8px" }}>見る立場を切り替えます。</div>
           <div className="stack" style={{ gap: 6 }}>
             <button className={`btn ${role === "dmo" ? "primary" : "ghost"}`} onClick={() => { pick("dmo"); setGear(false); }}>地域（DMO）として見る</button>
             <button className={`btn ${role === "shop" ? "primary" : "ghost"}`} onClick={() => { pick("shop"); setGear(false); }}>お店・施設として見る</button>
@@ -227,7 +226,6 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
   if (!m || !ov) return <p className="muted">読み込み中…</p>;
   return (
     <div>
-      <p className="muted" style={{ marginTop: 0 }}>{m.as_of.replace("T", " ")} 時点。{m.note} 店や人の格付け・順位は作りません。</p>
 
       <SubNav items={DMO_TABS} value={tab} onChange={pick} crumb="運営の窓 › 地域（DMO）" />
       {tab === "home" && (

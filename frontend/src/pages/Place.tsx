@@ -1,13 +1,12 @@
 /** 場所の画面。旅前は紹介と「行きたい」。旅中はここで 会えた → AR フォト → レシート → クーポン をまとめて行う。 */
 import { useEffect, useState } from "react";
-import { ApiError, del, get, post, sendForm, toast } from "../api";
+import { del, get, post, sendForm, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate } from "../router";
 import type { Seed } from "../types";
 import { Avatar, PersonLine, Photo } from "../components/parts";
 import { CameraCapture } from "../components/capture";
 import { Mascot } from "../components/mascots";
-import { SeedIcon } from "../components/art";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, TopBar } from "../components/ui";
 import type { PlaceCard, PlaceInfo } from "./Plan";
@@ -90,6 +89,40 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
         </>
       )}
 
+      {/* この場所の記録: AR フォト（新しい 3 枚）と、お買いもの（レシートの表） */}
+      <h2>ここで撮った AR フォト{pl.photo_count ? `（${pl.photo_count} 枚）` : ""}</h2>
+      {pl.photos && pl.photos.length > 0 ? (
+        <>
+          <div className="grid3">
+            {pl.photos.slice(0, 3).map((p) => (
+              <button key={p.id} style={{ padding: 0, border: 0, background: "none", cursor: "pointer", textAlign: "left" }} onClick={() => navigate(`/photo/${p.id}?from=${pl.id}`)}>
+                <img src={p.url} alt="" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", borderRadius: 8, display: "block" }} />
+                <div className="muted small" style={{ marginTop: 2 }}>{p.taken_on.slice(5).replace("-", "/")}{p.is_sample ? "・サンプル" : ""}</div>
+              </button>
+            ))}
+          </div>
+          {(pl.photo_count ?? 0) > 3 && <button className="btn ghost small block" style={{ marginTop: 8 }} onClick={() => navigate("/book")}>ほかの {(pl.photo_count ?? 0) - 3} 枚はアルバムで</button>}
+        </>
+      ) : (
+        <p className="muted small">まだありません。ここの人に会えた日に、ほしまると撮れます。</p>
+      )}
+      <h2>ここでのお買いもの{pl.receipts && pl.receipts.count > 0 ? `（${pl.receipts.count} 件・${pl.receipts.total.toLocaleString()} 円）` : ""}</h2>
+      {pl.receipts && pl.receipts.count > 0 ? (
+        <div className="card" style={{ padding: "6px 10px" }}>
+          <table className="tbl">
+            <thead><tr><th>日付</th><th>お店</th><th className="num">金額</th><th className="num">pt</th></tr></thead>
+            <tbody>
+              {pl.receipts.rows.map((r) => (
+                <tr key={r.id}><td style={{ whiteSpace: "nowrap" }}>{r.date.slice(5).replace("-", "/")}</td><td>{r.shop_name}</td><td className="num">{r.amount.toLocaleString()} 円</td><td className="num">{r.points}</td></tr>
+              ))}
+              <tr><th colSpan={2}>合計{pl.receipts.count > pl.receipts.rows.length ? `（全 ${pl.receipts.count} 件）` : ""}</th><th className="num">{pl.receipts.total.toLocaleString()} 円</th><th className="num">{pl.receipts.points}</th></tr>
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted small">まだありません。レシートを撮ると、ここに記録が並びます。</p>
+      )}
+
       {pl.voices && pl.voices.length > 0 && (
         <>
           <h2>{t("voices")}</h2>
@@ -102,18 +135,6 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
               </div>
             ))}
             <p className="muted small">デモ用の内部データです。本番では SNS 公式 API 等に差し替える前提です。</p>
-          </div>
-        </>
-      )}
-      {pl.photos && pl.photos.length > 0 && (
-        <>
-          <h2>ここで撮った一枚</h2>
-          <div className="grid3">
-            {pl.photos.map((p) => (
-              <button key={p.id} style={{ padding: 0, border: 0, background: "none", cursor: "pointer" }} onClick={() => navigate(`/photo/${p.id}?from=${pl.id}`)}>
-                <img src={p.url} alt="" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", borderRadius: 8, display: "block" }} />
-              </button>
-            ))}
           </div>
         </>
       )}
@@ -144,31 +165,20 @@ export function Bloom({ title, next, onClose }: { title: string; next: Seed | nu
   );
 }
 
-export function PersonAction({ p, placeId, onChange, onBloom }: { p: PlaceCard["people"][number]; placeId: number; onChange: () => Promise<void>; onBloom?: (b: { title: string; next: Seed | null }) => void }) {
+export function PersonAction({ p, placeId, onChange }: { p: PlaceCard["people"][number]; placeId: number; onChange: () => Promise<void>; onBloom?: (b: { title: string; next: Seed | null }) => void }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
-  const seed = p.seed as Seed | null;
   const canMeet = p.forecast.status === "open" || p.forecast.status === "closing_soon";
   const meet = async () => {
     setBusy(true);
     try {
-      const r = await post<{ already: boolean; relationship: { label: string }; new_seed: boolean; seed: Seed | null }>("/meetings", { person_id: p.id });
-      if (!r.already) toast(r.new_seed && r.seed ? `${r.relationship.label}！ ${r.seed.season_label}の約束「${r.seed.title}」が種になりました` : `${r.relationship.label}！`);
+      const r = await post<{ already: boolean; relationship: { label: string; days: number } }>("/meetings", { person_id: p.id });
+      if (!r.already) toast(`${r.relationship.label}！ ${p.name}に会えたのは ${r.relationship.days} 回目です`);
       await onChange();
     } catch (e) {
       toast((e as Error).message, "error");
     } finally {
       setBusy(false);
-    }
-  };
-  const fulfill = async () => {
-    if (!seed) return;
-    try {
-      const r = await post<{ next: Seed | null }>(`/seeds/${seed.id}/fulfill`);
-      onBloom?.({ title: seed.title, next: r.next });
-      await onChange();
-    } catch (e) {
-      toast(e instanceof ApiError ? e.message : "失敗しました", "error");
     }
   };
   return (
@@ -179,16 +189,10 @@ export function PersonAction({ p, placeId, onChange, onBloom }: { p: PlaceCard["
           <div className="row wrap" style={{ gap: 6 }}>
             <span className="title" style={{ fontSize: "1rem" }}>{p.name}</span>
             <span className="muted small">{p.role}</span>
-            {p.relationship && p.relationship.stage !== "none" && <Badge>{p.relationship.label}</Badge>}
+            {p.relationship && p.relationship.stage !== "none" && <span className={`badge rank-${p.relationship.stage}`}>{p.relationship.label}</span>}
           </div>
           <div className="muted small">{p.shop?.name}・{p.forecast.reason}</div>
           {p.event && <div className="small" style={{ color: "var(--ai-700)", fontWeight: 700 }}>{p.event.label}</div>}
-          {seed && (
-            <div className="row small" style={{ gap: 6, marginTop: 4 }}>
-              <SeedIcon state={seed.state} size={18} />
-              <span>{seed.season_label}の約束「{seed.title}」{seed.state === "flower" ? "が咲いています" : "（つぼみ）"}</span>
-            </div>
-          )}
         </div>
       </button>
       <div style={{ marginTop: 10 }}>
@@ -196,13 +200,8 @@ export function PersonAction({ p, placeId, onChange, onBloom }: { p: PlaceCard["
           <button className={`btn block ${canMeet ? "primary mark" : "ghost"}`} disabled={busy || !canMeet} onClick={meet}>
             {canMeet ? `${p.name}に${t("met_button")}` : p.forecast.label}
           </button>
-        ) : seed?.can_fulfill ? (
-          <button className="btn primary block mark" onClick={fulfill}>約束「{seed.title}」を果たす</button>
         ) : (
           <button className="btn primary block mark" onClick={() => navigate(`/camera/person/${p.id}?from=${placeId}`)}>ほしまると {t("ar_photo").replace("いっしょに ", "")}</button>
-        )}
-        {p.met_today && seed?.can_fulfill && (
-          <button className="btn ghost block small" style={{ marginTop: 6 }} onClick={() => navigate(`/camera/person/${p.id}?from=${placeId}`)}>ほしまると AR フォト</button>
         )}
       </div>
     </div>
@@ -377,7 +376,6 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   if (!p) return <div className="page"><Loading /></div>;
-  const seed = p.seed as Seed | null;
   const canMeet = p.forecast.status === "open" || p.forecast.status === "closing_soon";
   const wantPlace = async () => {
     if (!p.place) return;
@@ -423,15 +421,6 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
           <button className="btn primary block mark" onClick={wantPlace}>{p.place?.name}を行きたいに入れる</button>
         )}
       </div>
-      {seed && (
-        <div className="card row" style={{ marginTop: 10 }}>
-          <SeedIcon state={seed.state} size={32} />
-          <div className="grow">
-            <Badge flower={seed.state === "flower"}>{seed.state === "flower" ? t("seed_flower") : t("seed_bud")}</Badge> {seed.season_label}の約束「{seed.title}」
-            <div className="muted small">{seed.hint}</div>
-          </div>
-        </div>
-      )}
       {p.place && (
         <div className="card row" style={{ marginTop: 10 }}>
           <Mascot k={MASCOT_BY_SPOT[p.place.id] ?? "lighthouse"} size={72} />

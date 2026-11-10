@@ -11,6 +11,7 @@ import { Badge, Loading, TopBar } from "../components/ui";
 type Reminder = {
   date: string; weekday: string; trip_start: string; trip_end: string; trip_label: string; people: string[];
   photos: { id: number; url: string }[]; wishes: { label: string; image: string | null; place: string | null }[]; diary: string | null;
+  people_cards?: { id: number; name: string; image: string; label: string }[]; spots?: { id: number; name: string; image: string }[];
   next_season_label: string; weeks_to_next_season: number; title: string;
 };
 type LetterIndex = {
@@ -168,23 +169,41 @@ function ReminderDetail({ date }: { date: string }) {
         <div className="title" style={{ fontSize: "1.2rem", marginTop: 4 }}>{r.title}</div>
         <p style={{ margin: "8px 0 0" }}>
           {r.trip_label}、{r.people.length > 0 ? `${r.people.join("、")}に会った日のこと、覚えていますか。` : "星凪諸島を歩いた日のこと、覚えていますか。"}
-          {r.diary && <><br />あの日の一言: 「{r.diary}」</>}
         </p>
-        <div className="muted small" style={{ marginTop: 8 }}>{r.next_season_label}まで、あと {r.weeks_to_next_season} 週間。種が花になる季節です。</div>
+        <div className="muted small" style={{ marginTop: 8 }}>{r.next_season_label}まで、あと {r.weeks_to_next_season} 週間。また会いに行く計画を、そろそろ。</div>
       </div>
-      {r.photos.length > 0 && (
-        <div className="cork">
-          <div className="grid2" style={{ gap: 14 }}>
-            {r.photos.map((p, i) => (
-              <div key={p.id} className="polaroid" style={{ transform: `rotate(${(i % 2 ? 1 : -1) * (3 + i)}deg)` }} onClick={() => navigate(`/photo/${p.id}`)}>
-                <span className="pin" />
-                <img src={p.url} alt="" />
-                <div className="cap">{r.trip_label}</div>
-              </div>
-            ))}
-          </div>
+      <div className="cork">
+        <div className="grid2" style={{ gap: 16, alignItems: "start" }}>
+          {r.photos.map((p, i) => (
+            <div key={`ph${p.id}`} className="polaroid" style={{ transform: `rotate(${(i % 2 ? 1 : -1) * (2 + (i % 3))}deg)`, cursor: "pointer" }} onClick={() => navigate(`/photo/${p.id}`)}>
+              <span className="pin" />
+              <img src={p.url} alt="" />
+              <div className="cap">{r.trip_label} AR フォト</div>
+            </div>
+          ))}
+          {(r.people_cards ?? []).map((p, i) => (
+            <div key={`pe${p.id}`} className="polaroid" style={{ transform: `rotate(${(i % 2 ? -1 : 1) * 3}deg)`, cursor: "pointer" }} onClick={() => navigate(`/people/${p.id}`)}>
+              <span className="pin" style={{ background: "var(--ai-700)", borderColor: "var(--ai-900)" }} />
+              <img src={p.image} alt={p.name} style={{ objectFit: "contain", background: "var(--ai-050)" }} />
+              <div className="cap">{p.name}・{p.label}</div>
+            </div>
+          ))}
+          {(r.spots ?? []).map((sp, i) => (
+            <div key={`sp${sp.id}`} className="polaroid" style={{ transform: `rotate(${(i % 2 ? 1 : -1) * 2}deg)`, cursor: "pointer" }} onClick={() => navigate(`/place/${sp.id}`)}>
+              <span className="pin" style={{ background: "#c9527a", borderColor: "#7a1f3f" }} />
+              <img src={sp.image} alt={sp.name} />
+              <div className="cap">{sp.name}</div>
+            </div>
+          ))}
+          {r.diary && (
+            <div className="note" style={{ transform: "rotate(2deg)" }}>
+              <span className="tape" />
+              <div className="muted small">あの日の一言</div>
+              <div className="serif" style={{ fontSize: ".95rem" }}>{r.diary}</div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
       <h2 style={{ margin: "6px 0 0" }}>あの日「行きたい」と選んだ場所</h2>
       {r.wishes.length === 0 && <p className="muted small">「行きたい」を押した提案はありませんでした。思い出から押すと、ここに並びます。</p>}
       <div className="stack">
@@ -234,16 +253,24 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
         <Badge soft>{L.season_label}</Badge>
       </div>
       <p className="muted" style={{ margin: 0 }}>{L.greeting}</p>
-      <Corkboard L={L} />
-
-      <h2 style={{ margin: "6px 0 0" }}>一言日記（140 字まで）</h2>
-      <div className="card">
-        <textarea value={diary} maxLength={140} onChange={(e) => setDiary(e.target.value)} placeholder="この日のことをひとこと" />
-        <div className="row between" style={{ marginTop: 6 }}>
-          <span className="muted small">{diary.length} / 140</span>
-          <button className="btn small primary" disabled={saving} onClick={async () => { setSaving(true); try { await put(`/diaries/${day}`, { text: diary }); toast("日記を保存しました"); } catch (e) { toast((e as Error).message, "error"); } finally { setSaving(false); } }}>保存</button>
-        </div>
-      </div>
+      <Corkboard
+        L={L}
+        diary={diary}
+        saving={saving}
+        onDiary={setDiary}
+        onSave={async () => {
+          setSaving(true);
+          try {
+            await put(`/diaries/${day}`, { text: diary });
+            toast("一言をコルクボードに貼りました");
+            await load();
+          } catch (e) {
+            toast((e as Error).message, "error");
+          } finally {
+            setSaving(false);
+          }
+        }}
+      />
 
       <h2 style={{ margin: "6px 0 0" }}>次の旅の提案</h2>
       {L.suggestions.map((s) => (
@@ -268,12 +295,13 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
           </div>
         </div>
       ))}
-      <p className="muted small">思い出の中身は保存されず、開くたびに記録から組み立てられます。保存されるのは日記と「行きたい」だけです。</p>
+      <p className="muted small">保存されるのは一言と「行きたい」だけ。ほかは開くたびに記録から組み立てます。</p>
     </div>
   );
 }
 
-function Corkboard({ L }: { L: Letter }) {
+function Corkboard({ L, diary, saving, onDiary, onSave }: { L: Letter; diary: string; saving: boolean; onDiary: (v: string) => void; onSave: () => void }) {
+  const [edit, setEdit] = useState(false);
   const tiles: { key: string; node: JSX.Element; rot: number }[] = [];
   L.photos.forEach((p, i) => tiles.push({
     key: `ph${p.id}`, rot: (i % 2 ? 1 : -1) * (2 + (i % 3)),
@@ -309,12 +337,29 @@ function Corkboard({ L }: { L: Letter }) {
     <div className="cork">
       <div className="grid2" style={{ gap: 16, alignItems: "start" }}>
         {tiles.map((t) => <div key={t.key} style={{ transform: `rotate(${t.rot}deg)` }}>{t.node}</div>)}
-        {L.diary && (
-          <div className="note" style={{ transform: "rotate(2deg)" }}>
-            <span className="tape" />
-            <div className="serif" style={{ fontSize: ".95rem" }}>{L.diary}</div>
-          </div>
-        )}
+        {/* 一言はコルクボードの付箋に書く・貼る */}
+        <div className="note" style={{ transform: edit ? undefined : "rotate(2deg)", gridColumn: edit ? "1 / -1" : undefined }}>
+          <span className="tape" />
+          {edit ? (
+            <>
+              <textarea value={diary} maxLength={140} onChange={(e) => onDiary(e.target.value)} placeholder="この日のことをひとこと" style={{ minHeight: 84, background: "transparent" }} autoFocus />
+              <div className="row between" style={{ marginTop: 4 }}>
+                <span className="muted small">{diary.length} / 140</span>
+                <button className="btn small primary" disabled={saving} onClick={() => { onSave(); setEdit(false); }}>貼る</button>
+              </div>
+            </>
+          ) : L.diary ? (
+            <button style={{ background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", width: "100%" }} onClick={() => setEdit(true)} aria-label="一言をなおす">
+              <div className="serif" style={{ fontSize: ".95rem", whiteSpace: "pre-wrap" }}>{L.diary}</div>
+              <div className="muted small" style={{ marginTop: 4 }}>✎ なおす</div>
+            </button>
+          ) : (
+            <button style={{ background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", width: "100%" }} onClick={() => setEdit(true)}>
+              <div className="serif" style={{ fontSize: ".95rem", color: "var(--muted)" }}>この日の一言を<br />書いて貼る</div>
+              <div className="muted small" style={{ marginTop: 4 }}>✎ 書く（140 字まで）</div>
+            </button>
+          )}
+        </div>
         {L.receipts.count > 0 && (
           <div className="note" style={{ transform: "rotate(-2deg)", background: "#fff" }}>
             <span className="tape" />

@@ -231,17 +231,17 @@ export const TIPS = {
   place: [
     {
       title: "会えたら「会えた」を押す",
-      body: "その人に会えたら押してください。次の季節の約束が「種」になり、同じ日に AR フォトが撮れるようになります。",
+      body: "その人に会えたら押してください。ひとめぐり帖にその人が加わり、同じ日に AR フォトが撮れるようになります。",
       figure: (
         <Frame>
           <Person x={70} y={70} />
           <Arrow x1={95} y1={70} x2={135} y2={70} />
           <Person x={165} y={70} met />
           <Arrow x1={190} y1={70} x2={230} y2={70} />
-          <g transform="translate(260 70)"><path d="M0 14 C0 6 0 2 0 -2" stroke="#3b7d3a" strokeWidth="2" /><path d="M0 2 q-8 -2 -7 -9 q7 0 7 9z" fill="#8bc34a" /><ellipse cy="-6" rx="4" ry="5.5" fill="#8a6d3b" /></g>
+          <g transform="translate(244 48)"><rect width="34" height="44" rx="5" fill="#fff" stroke={ai} strokeWidth="2" /><rect x="14" y="3" width="24" height="7" rx="2" fill="#8c5a35" transform="rotate(35 26 6)" /><circle cx="17" cy="20" r="7" fill={ai1} stroke={ai} strokeWidth="1.5" /></g>
           <Label x={40} y={120}>会う</Label>
           <Label x={140} y={120}>会えた</Label>
-          <Label x={235} y={120}>種をもらう</Label>
+          <Label x={235} y={120}>帖に加わる</Label>
         </Frame>
       ),
     },
@@ -310,14 +310,14 @@ export const TIPS = {
   book: [
     {
       title: "会えた人が、帖に増えていく",
-      body: "島の 8 人がカードで並びます。会えた人は色がつき、約束を果たすと花が咲きます。全員に会うと帖が完成します。",
+      body: "島の 8 人がカードで並びます。会えた人は色がつき、会えた回数で帯が はじめまして（銅）→ また会えたね（銀）→ おなじみ（金）に変わります。",
       figure: (
         <Frame>
           {[0, 1, 2, 3].map((i) => (
             <g key={i} transform={`translate(${40 + i * 65} 35)`}>
               <rect width="52" height="70" rx="6" fill="#fff" stroke={i < 2 ? ai : ai3} strokeWidth={i < 2 ? 2 : 1} />
               <Person x={26} y={30} met={i < 2} />
-              {i === 0 && <g transform="translate(40 12)">{[0, 72, 144, 216, 288].map((a) => <ellipse key={a} cy="-4" rx="2.4" ry="4" fill={yama} transform={`rotate(${a})`} />)}</g>}
+              {i < 2 && <rect x="30" y="4" width="26" height="7" rx="2" fill={i === 0 ? "#c98a0e" : "#8c5a35"} transform="rotate(35 43 7)" />}
               <rect x="10" y="50" width="32" height="4" rx="2" fill={i < 2 ? ai : ai1} />
             </g>
           ))}
@@ -382,14 +382,16 @@ export function GuideFigure({ n }: { n: 0 | 1 | 2 }) {
   }
   return (
     <Frame>
-      <g transform="translate(70 75)"><path d="M0 14 V-2" stroke="#3b7d3a" strokeWidth="2" /><ellipse cy="-6" rx="4" ry="5.5" fill="#8a6d3b" /></g>
-      <Arrow x1={90} y1={75} x2={125} y2={75} />
-      <g transform="translate(160 75)"><path d="M0 16 V0" stroke="#3b7d3a" strokeWidth="2" /><ellipse cy="-4" rx="6" ry="9" fill="#8bc34a" /></g>
-      <Arrow x1={185} y1={75} x2={220} y2={75} />
-      <g transform="translate(260 72)">{[0, 60, 120, 180, 240, 300].map((a) => <ellipse key={a} cy="-9" rx="5" ry="9" fill={yama} transform={`rotate(${a})`} />)}<circle r="5" fill={paper} stroke={ai} strokeWidth="2" /></g>
-      <Label x={50} y={120}>種</Label>
-      <Label x={140} y={120}>つぼみ</Label>
-      <Label x={230} y={120}>次の季節に花</Label>
+      {[["#8c5a35", "はじめまして", "1 回"], ["#7f8b9a", "また会えたね", "2 回"], ["#c98a0e", "おなじみ", "3 回〜"]].map(([c, label, n], i) => (
+        <g key={i} transform={`translate(${28 + i * 98} 30)`}>
+          <rect width="70" height="74" rx="8" fill="#fff" stroke={ai} strokeWidth="1.5" />
+          <rect x="34" y="6" width="52" height="11" rx="2" fill={c} transform="rotate(35 60 11)" />
+          <Person x={35} y={38} met />
+          <text x="35" y="96" textAnchor="middle" fontSize="10" fontWeight="700" fill={ai}>{label}</text>
+          <text x="35" y="109" textAnchor="middle" fontSize="9" fill={ai}>{n}</text>
+          {i < 2 && <Arrow x1={74} y1={37} x2={94} y2={37} />}
+        </g>
+      ))}
     </Frame>
   );
 }

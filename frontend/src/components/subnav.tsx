@@ -41,7 +41,6 @@ export function SubNav({ items, value, onChange, crumb }: { items: NavItemX[]; v
       {cur && (
         <div className="crumb">
           <span className="muted small">{crumb ? `${crumb} › ` : ""}</span><b>{cur.label}</b>
-          {cur.desc && <span className="muted small">　{cur.desc}</span>}
         </div>
       )}
     </div>

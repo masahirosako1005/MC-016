@@ -16,14 +16,12 @@ const PRIO: Record<Advice["priority"], string> = { high: "いますぐ", mid: "�
 
 export function AdvicePanel({ path, onAction, deps = [] }: { path: string; onAction: (a: Advice["action"]) => void; deps?: unknown[] }) {
   const [items, setItems] = useState<Advice[] | null>(null);
-  const [note, setNote] = useState("デモではデータから規則で組み立てています。本番では生成 AI が下書きする想定です。");
   useEffect(() => {
     let alive = true;
     get<{ advice: Advice[]; note?: string }>(path)
       .then((r) => {
         if (!alive) return;
         setItems(r.advice ?? []);
-        if (r.note) setNote(r.note);
       })
       .catch(() => alive && setItems([]));
     return () => {
@@ -37,7 +35,6 @@ export function AdvicePanel({ path, onAction, deps = [] }: { path: string; onAct
         <img src="/img/mascot/ui/hoshimaru_point.png" alt="" width={56} height={56} style={{ flex: "none" }} />
         <div className="grow">
           <div className="title">ほしまるの「次の一手」</div>
-          <div className="muted small">いまのデータから、やるとよさそうなことを並べました。ボタンでその場に飛びます。{note}</div>
         </div>
       </div>
       <div className="stack" style={{ marginTop: 10 }}>

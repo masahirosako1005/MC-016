@@ -126,14 +126,24 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
             }
             for sh in master.shops(conn) if sh["spot_id"] == s["id"]
         ]
+        # この場所で撮った AR フォト（新しい順に 3 枚 + 枚数）
+        ph_where = ("FROM photos ph LEFT JOIN people pe ON pe.id = ph.person_id LEFT JOIN shops sh ON sh.id = pe.shop_id "
+                    "WHERE ph.user_id = ? AND (ph.spot_id = ? OR sh.spot_id = ?)")
         card["photos"] = [
             {"id": r["id"], "taken_on": r["taken_on"], "url": f"/api/photos/{r['id']}/image", "is_sample": bool(r["is_sample"])}
-            for r in conn.execute(
-                "SELECT ph.id, ph.taken_on, ph.is_sample FROM photos ph LEFT JOIN people pe ON pe.id = ph.person_id LEFT JOIN shops sh ON sh.id = pe.shop_id "
-                "WHERE ph.user_id = ? AND (ph.spot_id = ? OR sh.spot_id = ?) ORDER BY ph.id DESC LIMIT 6",
-                (uid, s["id"], s["id"]),
-            )
+            for r in conn.execute(f"SELECT ph.id, ph.taken_on, ph.is_sample {ph_where} ORDER BY ph.taken_on DESC, ph.id DESC LIMIT 3", (uid, s["id"], s["id"]))
         ]
+        card["photo_count"] = conn.execute(f"SELECT COUNT(*) {ph_where}", (uid, s["id"], s["id"])).fetchone()[0]
+        # この場所でのお買いもの（レシートの記録。新しい順に 5 件 + 件数・合計）
+        rc_where = "FROM receipts r JOIN shops sh ON sh.id = r.shop_id WHERE r.user_id = ? AND sh.spot_id = ? AND r.is_dummy = 0"
+        tot = conn.execute(f"SELECT COUNT(*), COALESCE(SUM(r.amount),0), COALESCE(SUM(r.points),0) {rc_where}", (uid, s["id"])).fetchone()
+        card["receipts"] = {
+            "count": tot[0], "total": tot[1], "points": tot[2],
+            "rows": [
+                {"id": r["id"], "date": r["received_on"], "shop_name": r["shop_name"], "amount": r["amount"], "points": r["points"]}
+                for r in conn.execute(f"SELECT r.id, r.received_on, r.amount, r.points, sh.name AS shop_name {rc_where} ORDER BY r.received_on DESC, r.id DESC LIMIT 5", (uid, s["id"]))
+            ],
+        }
     return card
 
 
