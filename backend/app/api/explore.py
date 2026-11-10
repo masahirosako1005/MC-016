@@ -89,11 +89,11 @@ def plan_ics(conn=Depends(get_conn)):
     d = v["target_date"].replace("-", "")
     places = "、".join(i["name"] for i in v["items"])
     people = "、".join(p["name"] for p in v["people_that_day"] if p["available"])
-    desc = f"行く場所: {places}\\n会えそうな人: {people}\\nひとめぐり便"
+    desc = f"行く場所: {places}\\n会えそうな人: {people}\\nひとめぐり"
     ics = (
         "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//hitomeguri//JP\r\nBEGIN:VEVENT\r\n"
         f"UID:hitomeguri-plan-{v['id']}@local\r\nDTSTART;VALUE=DATE:{d}\r\n"
-        f"SUMMARY:星凪諸島へ（ひとめぐり便）\r\nDESCRIPTION:{desc}\r\nLOCATION:星凪諸島\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+        f"SUMMARY:星凪諸島へ（ひとめぐり）\r\nDESCRIPTION:{desc}\r\nLOCATION:星凪諸島\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
     )
     return Response(content=ics, media_type="text/calendar; charset=utf-8", headers={"Content-Disposition": 'attachment; filename="hitomeguri.ics"'})
 

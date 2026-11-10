@@ -64,3 +64,16 @@ def test_demo_404_when_disabled(tmp_path: Path):
     assert lines[1] == "404"
     assert lines[2] == "False"
     importlib.invalidate_caches()
+
+
+def test_reset_clears_survey_answer(client):
+    """初期化すると、主人公のアンケート回答も消える（デモをやり直すたびに、その夜の画面で回答を促せる）。ダミーの回答は残す。"""
+    conn = client.app.state.conn
+    conn.execute(
+        "INSERT INTO trip_surveys(user_id, satisfaction, revisit, good, trouble, spot_id, comment, answered_on, created_at, is_dummy) VALUES(9001,4,4,'people','none',NULL,NULL,'2026-10-10','2026-10-10T20:00:00',1)"
+    )
+    assert client.post("/api/survey", json={"satisfaction": 5, "revisit": 5}).status_code == 200
+    assert client.get("/api/survey").json()["answered"] is True and client.get("/api/gifts").json()["unlocked"] is True
+    assert client.post("/api/demo/reset").status_code == 200
+    assert client.get("/api/survey").json()["answered"] is False and client.get("/api/gifts").json()["unlocked"] is False
+    assert conn.execute("SELECT COUNT(*) FROM trip_surveys WHERE is_dummy = 1").fetchone()[0] == 1

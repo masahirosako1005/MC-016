@@ -163,7 +163,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   };
 
   const gcalUrl = plan.target_date
-    ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${plan.title || "星凪諸島へ"}（ひとめぐり便）`)}&dates=${plan.target_date.replace(/-/g, "")}/${nextDay(plan.target_date)}&details=${encodeURIComponent(`行く場所: ${plan.items.map((i) => i.name).join("、")}\n会えそうな人: ${plan.people_that_day.filter((p) => p.available).map((p) => p.name).join("、")}`)}&location=${encodeURIComponent("星凪諸島")}`
+    ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${plan.title || "星凪諸島へ"}（ひとめぐり）`)}&dates=${plan.target_date.replace(/-/g, "")}/${nextDay(plan.target_date)}&details=${encodeURIComponent(`行く場所: ${plan.items.map((i) => i.name).join("、")}\n会えそうな人: ${plan.people_that_day.filter((p) => p.available).map((p) => p.name).join("、")}`)}&location=${encodeURIComponent("星凪諸島")}`
     : null;
 
   const todo = stage === "list"

@@ -226,7 +226,7 @@ const Overlay = forwardRef<SVGSVGElement, { frame: Frame; compact: boolean }>(fu
           <rect x="40" y="40" width="8" height="124" fill="#1b2a44" />
           <text x="72" y="92" fontSize="40" fontFamily="'Yu Mincho', serif" fontWeight="700" fill="#1b2a44">{frame.place_name}</text>
           <text x="72" y="140" fontSize="28" fontFamily="'Yu Gothic UI', sans-serif" fill="#2f446a">{frame.date.replace(/-/g, "/")}・{frame.season_label}・{frame.title}と</text>
-          <text x={W - 60} y={H - 50} fontSize="26" fontFamily="sans-serif" textAnchor="end" fill="#fbfcfd" stroke="#1b2a4466" strokeWidth="1">#ひとめぐり便 #星凪諸島 #ほしまる</text>
+          <text x={W - 60} y={H - 50} fontSize="26" fontFamily="sans-serif" textAnchor="end" fill="#fbfcfd" stroke="#1b2a4466" strokeWidth="1">#ひとめぐり #星凪諸島 #ほしまる</text>
         </g>
       )}
     </svg>

@@ -106,7 +106,7 @@ def photo_detail(conn: sqlite3.Connection, uid: int, photo_id: int) -> dict:
         pr = master.promise(conn, d["person_id"], next_season(season_of(taken)))
         if pr:
             d["promise"] = {"season_label": LABEL[pr["season"]], "title": pr["title"], "note": pr["note"]}
-    d["share_text"] = f"{d['title']}と撮った一枚 #ひとめぐり便 #星凪諸島 #{d['area']}" if d["kind"] == "person" else f"{d['title']}で撮った一枚 #ひとめぐり便 #星凪諸島"
+    d["share_text"] = f"{d['title']}と撮った一枚 #ひとめぐり #星凪諸島 #{d['area']}" if d["kind"] == "person" else f"{d['title']}で撮った一枚 #ひとめぐり #星凪諸島"
     # 戻り先（場所の画面）
     if d["kind"] == "person" and d["person_id"]:
         p = master.person(conn, d["person_id"])

@@ -131,6 +131,8 @@ def reset(conn=Depends(get_conn)):
             "DELETE FROM coupons WHERE user_id = ? AND is_dummy = 0",
             "DELETE FROM diaries WHERE user_id = ?",
             "DELETE FROM wishes WHERE user_id = ?",
+            "DELETE FROM trip_surveys WHERE user_id = ? AND is_dummy = 0",
+            "DELETE FROM message_reads WHERE user_id = ?",
             "DELETE FROM letter_opens WHERE user_id = ? AND is_dummy = 0",
             "DELETE FROM plan_items WHERE plan_id IN (SELECT id FROM plans WHERE user_id = ? AND is_dummy = 0)",
             "DELETE FROM plans WHERE user_id = ? AND is_dummy = 0",

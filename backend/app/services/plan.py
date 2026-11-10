@@ -26,6 +26,8 @@ def active_plan_id(conn: sqlite3.Connection, uid: int, create: bool, now: dateti
 
 
 def plan_view(conn: sqlite3.Connection, uid: int, now: datetime) -> dict:
+    # 画面は /plan と /plan/history を同時に呼ぶ。先に /plan が来ても、終わった旅を「いまの計画」として返さないよう、ここでも閉じておく
+    archive_if_done(conn, uid, now)
     pid = active_plan_id(conn, uid, False, now)
     today = now.date()
     if pid is None:
@@ -121,11 +123,21 @@ def remove_item(conn: sqlite3.Connection, uid: int, now: datetime, kind: str, ta
 
 
 def archive_if_done(conn: sqlite3.Connection, uid: int, now: datetime) -> None:
-    """予定日を過ぎた計画は旅の後に閉じる（指標「つぎの旅→来訪」に使う）。"""
+    """終わった旅の計画を閉じる（指標「つぎの旅→来訪」に使う。閉じると、つぎの旅を新しく計画できる）。
+    - 予定日を過ぎた計画。
+    - 日を決めないまま旅に出た計画: 計画を作った日以降に会えた日があり、その日が過ぎていれば、その日を旅の日として閉じる。
+    """
+    today = now.date().isoformat()
     conn.execute(
         "UPDATE plans SET archived = 1 WHERE user_id = ? AND archived = 0 AND target_date IS NOT NULL AND target_date < ?",
-        (uid, now.date().isoformat()),
+        (uid, today),
     )
+    for p in conn.execute("SELECT id, created_at FROM plans WHERE user_id = ? AND archived = 0 AND target_date IS NULL AND is_dummy = 0", (uid,)).fetchall():
+        first = conn.execute(
+            "SELECT MIN(met_on) FROM meetings WHERE user_id = ? AND is_dummy = 0 AND met_on >= ?", (uid, p["created_at"][:10])
+        ).fetchone()[0]
+        if first and first < today:
+            conn.execute("UPDATE plans SET archived = 1, target_date = ? WHERE id = ?", (first, p["id"]))
 
 
 def _visited_spot_ids(conn: sqlite3.Connection, uid: int, target_date: str | None) -> set[int]:

@@ -1,7 +1,7 @@
 [project]
 name = "hitomeguri-bin"
 version = "0.1.0"
-description = "ひとめぐり便 — 星凪諸島の再訪をつくる観光者アプリ"
+description = "ひとめぐり — 星凪諸島の再訪をつくる観光者アプリ"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "fastapi==0.115.6",

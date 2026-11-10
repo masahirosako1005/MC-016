@@ -89,3 +89,33 @@ def test_plan_history_and_leftovers(client):
     assert r.status_code == 200 and r.json()["title"] == "冬の旅" and r.json()["items"] == []
     client.post("/api/plan/items", json={"kind": "spot", "target_id": 7})
     assert client.get("/api/plan/history").json()["leftovers"] == []
+
+
+def test_finished_trip_is_closed_so_next_trip_can_be_planned(client):
+    """旅が終わったあと（30 日後など）は、/plan が「いまの計画なし」を返し、新しい旅を作れる。/plan/history より先に /plan が呼ばれても同じ。"""
+    from datetime import datetime
+
+    from app import clock
+
+    conn = client.app.state.conn
+    # 1 回目: 日を決めた計画
+    client.post("/api/plan/items", json={"kind": "spot", "target_id": 4})
+    client.put("/api/plan", json={"target_date": "2026-10-24", "title": None})
+    clock.set_demo_clock(conn, datetime(2026, 10, 24, 11, 0))
+    assert client.get("/api/plan").json()["exists"] is True  # 当日はまだ「いまの計画」
+    clock.set_demo_clock(conn, datetime(2026, 11, 23, 10, 0))
+    p = client.get("/api/plan").json()  # history を呼ぶ前でも閉じている
+    assert p["exists"] is False
+    h = client.get("/api/plan/history").json()
+    assert h["active"] is None and len(h["plans"]) == 1 and h["plans"][0]["archived"] and h["next_title"] == "星凪諸島旅行 2 回目"
+    # 2 回目: 日を決めないまま旅に出た計画も、旅の日が過ぎたら閉じる
+    assert client.post("/api/plan/new", json={"title": None}).status_code == 200
+    client.post("/api/plan/items", json={"kind": "spot", "target_id": 7})
+    clock.set_demo_clock(conn, datetime(2026, 12, 2, 11, 0))
+    assert client.post("/api/meetings", json={"person_id": 6}).status_code == 200
+    assert client.get("/api/plan").json()["exists"] is True  # 旅の当日は、まだ閉じない
+    clock.set_demo_clock(conn, datetime(2026, 12, 3, 10, 0))
+    assert client.get("/api/plan").json()["exists"] is False
+    h = client.get("/api/plan/history").json()
+    done = [x for x in h["plans"] if x["archived"]]
+    assert len(done) == 2 and done[0]["target_date"] == "2026-12-02" and h["next_title"] == "星凪諸島旅行 3 回目"

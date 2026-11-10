@@ -256,7 +256,7 @@ def nurie_title(text, y=210, size=104) -> str:
 def nurie_footer() -> str:
     return (f'<text x="90" y="1640" font-family="{GOTHIC}" font-size="34" fill="{INK}">なまえ</text>'
             f'<path d="M200 1648 H700" stroke="{INK3}" stroke-width="3"/>'
-            f'<text x="{NW - 90}" y="1640" text-anchor="end" font-family="{GOTHIC}" font-size="28" fill="{INK3}" letter-spacing="6">星凪諸島 ・ ひとめぐり便</text>')
+            f'<text x="{NW - 90}" y="1640" text-anchor="end" font-family="{GOTHIC}" font-size="28" fill="{INK3}" letter-spacing="6">星凪諸島 ・ ひとめぐり</text>')
 
 
 def nurie_basic():
@@ -318,7 +318,7 @@ def nakama_card():
             f'<path d="M524 438 H950" stroke="#b3c1d8" stroke-width="3"/>'
             f'<text x="414" y="506" font-family="{GOTHIC}" font-size="24" fill="{INK3}">はじめて来た日</text>'
             f'<path d="M590 514 H950" stroke="#b3c1d8" stroke-width="3"/>'
-            f'<text x="950" y="590" text-anchor="end" font-family="{GOTHIC}" font-size="18" fill="{INK3}" letter-spacing="6">HOSHINAGI ISLANDS ・ ひとめぐり便</text>'
+            f'<text x="950" y="590" text-anchor="end" font-family="{GOTHIC}" font-size="18" fill="{INK3}" letter-spacing="6">HOSHINAGI ISLANDS ・ ひとめぐり</text>'
             f'</g><rect x="2" y="2" width="{CW - 4}" height="{CH - 4}" rx="34" fill="none" stroke="#dfe6f1" stroke-width="4"/>')
 
 

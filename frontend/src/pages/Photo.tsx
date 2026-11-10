@@ -105,7 +105,7 @@ export function PrintPage({ id }: { id: number }) {
       }
       ctx.fillStyle = "#6b7680";
       ctx.font = "26px sans-serif";
-      ctx.fillText("ひとめぐり便 — 星凪諸島", pad, CARD_H - 50);
+      ctx.fillText("ひとめぐり — 星凪諸島", pad, CARD_H - 50);
       const url = canvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = url;
@@ -139,7 +139,7 @@ export function PrintPage({ id }: { id: number }) {
         <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>{p.title}</div>
         <div style={{ color: "#2f5d62", fontSize: "0.9rem" }}>{p.taken_on.replace(/-/g, "/")}・{p.season_label}・{p.subtitle}</div>
         {p.promise && <div style={{ color: "#8a6d3b", fontSize: "0.9rem" }}>次の季節の約束: {p.promise.season_label}「{p.promise.title}」</div>}
-        <div style={{ marginTop: "auto", color: "#6b7680", fontSize: "0.8rem" }}>ひとめぐり便 — 星凪諸島</div>
+        <div style={{ marginTop: "auto", color: "#6b7680", fontSize: "0.8rem" }}>ひとめぐり — 星凪諸島</div>
       </div>
     </div>
   );

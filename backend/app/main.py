@@ -57,7 +57,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         yield
         conn.close()
 
-    app = FastAPI(title="ひとめぐり便", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+    app = FastAPI(title="ひとめぐり", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     install_security_headers(app)
     install_error_handlers(app)
 

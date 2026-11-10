@@ -1,4 +1,4 @@
-﻿# ひとめぐり便 起動スクリプト: 画面のビルド → uv sync → 起動（1 プロセス 127.0.0.1:8000）
+﻿# ひとめぐり 起動スクリプト: 画面のビルド → uv sync → 起動（1 プロセス 127.0.0.1:8000）
 # 使い方:  .\scripts\start.ps1            通常モード
 #          .\scripts\start.ps1 -Demo      デモ層を有効にする（DEMO_MODE=1）
 #          .\scripts\start.ps1 -SkipBuild 画面のビルドを飛ばす
