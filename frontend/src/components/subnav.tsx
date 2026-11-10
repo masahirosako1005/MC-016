@@ -1,23 +1,13 @@
-/** 運営の窓のサブナビ。機能ごとに画面を分け、スマホでも横スクロールで選べる。選んだタブは sessionStorage に残す。 */
+/** 運営の窓のサブナビ。機能ごとに画面を分け、スマホでも横スクロールで選べる。開くたびにホームから始まる。 */
 import { useState } from "react";
 
 export type NavItem = { key: string; label: string };
 
-export function useSubTab(storageKey: string, initial: string): [string, (k: string) => void] {
-  const [tab, setTab] = useState<string>(() => {
-    try {
-      return sessionStorage.getItem(storageKey) || initial;
-    } catch {
-      return initial;
-    }
-  });
+export function useSubTab(_storageKey: string, initial: string): [string, (k: string) => void] {
+  // 開いたときは必ず最初のタブ（ホーム=次の一手）。タブの選択は覚えない
+  const [tab, setTab] = useState<string>(initial);
   const pick = (k: string) => {
     setTab(k);
-    try {
-      sessionStorage.setItem(storageKey, k);
-    } catch {
-      /* ignore */
-    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   return [tab, pick];

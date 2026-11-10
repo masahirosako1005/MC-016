@@ -400,43 +400,52 @@ function Deck({ cards, total, leftoverIds, skippedIds, onDecide, season_label }:
   };
   const x = leaving === "go" ? 600 : leaving === "skip" ? -600 : dx;
   const rot = x / 20;
+  // カードは積み重ね: 上の 1 枚だけ動かし、次の 1 枚は下に少し見えている。上をめくると、下のカードがそのまま上がってくる
+  const face = (c: PlaceCard, isTop: boolean) => (
+    <>
+      <div style={{ position: "relative" }}>
+        <img src={c.image} alt={c.name} style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} draggable={false} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(27,42,68,.05), rgba(27,42,68,.55))" }} />
+        {leftoverIds.has(c.id) ? (
+          <span className="badge flower" style={{ position: "absolute", top: 10, left: 10 }}>前回行けなかった場所</span>
+        ) : c.last_visit ? (
+          <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(251,252,253,.92)", color: "var(--ai-900)" }}>
+            {c.last_visit.season_label}に行った（{c.last_visit.date.slice(5).replace("-", "/")}）{!c.last_visit.same_season && <>　→ {season_label}はどう？</>}
+          </span>
+        ) : skippedIds.has(c.id) ? (
+          <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(27,42,68,.78)", color: "#fbfcfd" }}>前回は選ばなかった場所</span>
+        ) : null}
+        <div style={{ position: "absolute", left: 14, bottom: 12, color: "#fbfcfd" }}>
+          <div className="serif" style={{ fontSize: "1.5rem" }}>{c.name}</div>
+          <div className="small">{c.area}・{c.best_season_label}が見ごろ</div>
+        </div>
+        {isTop && <div className="stamp go" style={{ opacity: Math.min(1, Math.max(0, x / 90)) }}>行く</div>}
+        {isTop && <div className="stamp skip" style={{ opacity: Math.min(1, Math.max(0, -x / 90)) }}>行かない</div>}
+      </div>
+      <div style={{ padding: "10px 14px" }}>
+        <p style={{ margin: "0 0 8px", fontSize: ".95rem" }}>{c.description}</p>
+        {c.recommend && <p className="small" style={{ margin: "0 0 8px", color: "#7a5300" }}>★ お店からのおすすめ: {c.recommend}</p>}
+        <div className="muted small">{t("people_here")}</div>
+        {c.people.map((p) => (
+          <PersonLine key={p.id} p={p} onClick={isTop ? () => navigate(`/people/${p.id}`) : undefined} />
+        ))}
+      </div>
+    </>
+  );
   return (
     <>
       <div className="deck">
-        {cards[1] && (
-          <div className="dcard behind">
-            <img src={cards[1].image} alt="" style={{ width: "100%", height: 220, objectFit: "cover" }} />
-          </div>
-        )}
-        <div className="dcard" style={{ transform: `translateX(${x}px) rotate(${rot}deg)`, transition: start.current === null ? "transform .22s ease" : "none" }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-          <div style={{ position: "relative" }}>
-            <img src={top.image} alt={top.name} style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} draggable={false} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(27,42,68,.05), rgba(27,42,68,.55))" }} />
-            {leftoverIds.has(top.id) ? (
-              <span className="badge flower" style={{ position: "absolute", top: 10, left: 10 }}>前回行けなかった場所</span>
-            ) : top.last_visit ? (
-              <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(251,252,253,.92)", color: "var(--ai-900)" }}>
-                {top.last_visit.season_label}に行った（{top.last_visit.date.slice(5).replace("-", "/")}）{!top.last_visit.same_season && <>　→ {season_label}はどう？</>}
-              </span>
-            ) : skippedIds.has(top.id) ? (
-              <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(27,42,68,.78)", color: "#fbfcfd" }}>前回は選ばなかった場所</span>
-            ) : null}
-            <div style={{ position: "absolute", left: 14, bottom: 12, color: "#fbfcfd" }}>
-              <div className="serif" style={{ fontSize: "1.5rem" }}>{top.name}</div>
-              <div className="small">{top.area}・{top.best_season_label}が見ごろ</div>
+        {/* 下から順に描く。key を場所の id にして、下のカードが同じ要素のまま上に上がる（戻ってくる動きにしない） */}
+        {[cards[1], cards[0]].filter(Boolean).map((c) => {
+          const isTop = c.id === top.id;
+          return isTop ? (
+            <div key={c.id} className="dcard" style={{ transform: `translateX(${x}px) rotate(${rot}deg)`, transition: start.current === null ? "transform .22s ease" : "none" }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+              {face(c, true)}
             </div>
-            <div className="stamp go" style={{ opacity: Math.min(1, Math.max(0, x / 90)) }}>行く</div>
-            <div className="stamp skip" style={{ opacity: Math.min(1, Math.max(0, -x / 90)) }}>行かない</div>
-          </div>
-          <div style={{ padding: "10px 14px" }}>
-            <p style={{ margin: "0 0 8px", fontSize: ".95rem" }}>{top.description}</p>
-            {top.recommend && <p className="small" style={{ margin: "0 0 8px", color: "#7a5300" }}>★ お店からのおすすめ: {top.recommend}</p>}
-            <div className="muted small">{t("people_here")}</div>
-            {top.people.map((p) => (
-              <PersonLine key={p.id} p={p} onClick={() => navigate(`/people/${p.id}`)} />
-            ))}
-          </div>
-        </div>
+          ) : (
+            <div key={c.id} className="dcard behind" aria-hidden="true">{face(c, false)}</div>
+          );
+        })}
       </div>
       <div className="deck-actions">
         <button className="btn ghost" onClick={() => finish("skip")}>← 行かない</button>

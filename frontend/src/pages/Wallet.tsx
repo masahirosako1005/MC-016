@@ -107,21 +107,25 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
           </div>
           <div className="muted small" style={{ textAlign: "right" }}>{w.points_per_draw} pt で 1 回<br />クーポンは次の旅（翌日以降）から</div>
         </div>
-        <table className="tbl" style={{ marginTop: 8 }}>
-          <thead><tr><th>当たるもの</th><th className="num">確率</th></tr></thead>
-          <tbody>
-            {w.prizes.map((p) => (
-              <tr key={p.id} style={{ opacity: p.in_stock ? 1 : 0.5 }}>
-                <td>{p.name}{!p.in_stock && <span className="muted small">（在庫なし）</span>}</td>
-                <td className="num">{(p.probability * 100).toFixed(1)}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
         <Roulette prizes={w.prizes} target={pending?.prize.category ?? null} spinning={drawing} onDone={settle} />
         <button className={`btn block ${canDraw ? "primary mark" : "ghost"}`} style={{ marginTop: 10 }} disabled={!canDraw || drawing} onClick={draw}>
           {drawing ? "ドキドキ…" : canDraw ? `${t("draw")}（${w.points_per_draw} pt）` : `あと ${w.points_per_draw - w.balance} pt で抽選できます`}
         </button>
+        <details className="probs">
+          <summary>当たる確率を見る</summary>
+          <table className="tbl" style={{ marginTop: 6 }}>
+            <thead><tr><th>当たるもの</th><th className="num">確率</th></tr></thead>
+            <tbody>
+              {w.prizes.map((p) => (
+                <tr key={p.id} style={{ opacity: p.in_stock ? 1 : 0.5 }}>
+                  <td>{p.name}{!p.in_stock && <span className="muted small">（在庫なし）</span>}</td>
+                  <td className="num">{(p.probability * 100).toFixed(1)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="muted small" style={{ marginTop: 4 }}>ルーレットのマスの広さは確率とは関係ありません（見た目は同じ広さ）。</div>
+        </details>
         {result && <ResultModal r={result} onClose={() => setResult(null)} />}
       </div>
 
@@ -236,16 +240,16 @@ const CAT_LABEL = (c: string) => (c === "miss" ? "はずれ" : c);
 
 /** ルーレット演出。区分（飲食・宿泊・体験・物販・はずれ）を確率の大きさで分けた円盤が回り、上の矢印が止まった区分が結果。結果は API が先に決めている。 */
 function Roulette({ prizes, target, spinning, onDone }: { prizes: Prize[]; target: string | null; spinning: boolean; onDone: () => void }) {
+  // マスは同じ広さ。当たり（区分）と はずれ を交互に並べ、見ただけでは確率が分からないようにする（確率は「当たる確率を見る」で確認できる）
   const segs = useMemo(() => {
-    const live = prizes.filter((p) => p.probability > 0);
-    const total = live.reduce((n, p) => n + p.probability, 0) || 1;
-    let acc = 0;
-    return live.map((p, i) => {
-      const start = (acc / total) * 360;
-      acc += p.probability;
-      const end = (acc / total) * 360;
-      return { key: p.id, cat: p.category, label: CAT_LABEL(p.category), start, end, i };
-    });
+    const wins = prizes.filter((p) => p.category !== "miss" && p.probability > 0);
+    const hasMiss = prizes.some((p) => p.category === "miss" && p.probability > 0);
+    const cats: string[] = [];
+    const reps = wins.length >= 4 ? 1 : Math.ceil(4 / Math.max(1, wins.length));
+    for (let r = 0; r < reps; r++) for (const p of wins) { cats.push(p.category); if (hasMiss) cats.push("miss"); }
+    if (wins.length === 0) cats.push("miss", "miss", "miss", "miss");
+    const step = 360 / cats.length;
+    return cats.map((cat, i) => ({ key: i, cat, label: CAT_LABEL(cat), start: i * step, end: (i + 1) * step, i }));
   }, [prizes]);
   const [rot, setRot] = useState(0);
   const [dur, setDur] = useState("transform .8s linear");
@@ -261,7 +265,8 @@ function Roulette({ prizes, target, spinning, onDone }: { prizes: Prize[]; targe
   }, [spinning, target]);
   useEffect(() => {
     if (!target) return;
-    const seg = segs.find((x) => x.cat === target) ?? segs[0];
+    const cands = segs.filter((x) => x.cat === target);
+    const seg = cands.length ? cands[Date.now() % cands.length] : segs[0]; // 同じ区分のマスが複数あるので、どれに止まるかは毎回変える
     if (!seg) return;
     const width = seg.end - seg.start;
     const inside = seg.start + width * (0.3 + 0.4 * ((Date.now() % 97) / 97)); // 区分の中のどこで止まるかは少し揺らす
@@ -306,15 +311,15 @@ function Roulette({ prizes, target, spinning, onDone }: { prizes: Prize[]; targe
           const miss = sg.cat === "miss";
           return (
             <g key={sg.key}>
-              <path d={`M${R} ${R} L${x1} ${y1} A${R - 4} ${R - 4} 0 ${large} 1 ${x2} ${y2} Z`} fill={miss ? "#e6eaf1" : colors[sg.i % colors.length]} stroke="#fbfcfd" strokeWidth="2" />
+              <path d={`M${R} ${R} L${x1} ${y1} A${R - 4} ${R - 4} 0 ${large} 1 ${x2} ${y2} Z`} fill={miss ? "#e6eaf1" : colors[(sg.i >> 1) % colors.length]} stroke="#fbfcfd" strokeWidth="2" />
               <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle" fontSize={sg.end - sg.start < 28 ? 9 : 13} fontWeight="700" fill={miss ? "#56698f" : "#fbfcfd"} transform={`rotate(${mid} ${tx} ${ty})`} fontFamily="'Yu Mincho', serif">{sg.label}</text>
             </g>
           );
         })}
-        <circle cx={R} cy={R} r={14} fill="#fbfcfd" stroke="#1b2a44" strokeWidth="2" />
-        <circle cx={R} cy={R} r={4} fill="#e3a21a" />
       </svg>
       </div>
+      {/* まん中のほしまるは円盤の外に重ねてあるので、いっしょには回らない */}
+      <div className="hub" aria-hidden="true"><img src="/img/mascot/ui/hoshimaru_coupon.png" alt="" width={44} height={44} /></div>
     </div>
   );
 }

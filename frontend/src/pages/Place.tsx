@@ -1,11 +1,9 @@
 /** 場所の画面。旅前は紹介と「行きたい」。旅中はここで 会えた → AR フォト → レシート → クーポン をまとめて行う。 */
 import { useEffect, useState } from "react";
-import { del, get, post, sendForm, toast } from "../api";
+import { del, get, post, toast } from "../api";
 import { useT } from "../i18n";
-import { navigate } from "../router";
-import type { Seed } from "../types";
+import { navigate, useRoute } from "../router";
 import { Avatar, PersonLine, Photo } from "../components/parts";
-import { CameraCapture } from "../components/capture";
 import { Mascot } from "../components/mascots";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, TopBar } from "../components/ui";
@@ -17,8 +15,7 @@ type ShopView = { shop: { id: number; name: string; category: string; rate_perce
 export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => void }) {
   const t = useT();
   const [pl, setPl] = useState<PlaceCard | null>(null);
-  const [help, setHelp] = useState(0);
-  const [bloom, setBloom] = useState<{ title: string; next: Seed | null } | null>(null);
+  const [help, setHelp] = useState(0);
   const load = async () => setPl(await get<PlaceCard>(`/places/${id}`));
   useEffect(() => {
     load().catch((e) => toast((e as Error).message, "error"));
@@ -67,7 +64,7 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
       <div className="stack">
         {pl.people.map((p) =>
           onTrip ? (
-            <PersonAction key={p.id} p={p} placeId={pl.id} onChange={refresh} onBloom={(b) => setBloom(b)} />
+            <PersonAction key={p.id} p={p} placeId={pl.id} onChange={refresh} />
           ) : (
             <div key={p.id} className="card">
               <PersonLine p={p} onClick={() => navigate(`/people/${p.id}`)} />
@@ -78,19 +75,8 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
         )}
       </div>
 
-      {onTrip && (
-        <>
-          <h2>レシートでポイント</h2>
-          <ReceiptCapture shops={pl.people.map((p) => p.shop)} onDone={refresh} />
-          <h2>クーポンを使う</h2>
-          <div className="stack">
-            {pl.people.map((p) => <ShopCoupons key={p.shop.id} shopId={p.shop.id} shopName={p.shop.name} personName={p.name} onChange={refresh} />)}
-          </div>
-        </>
-      )}
-
-      {/* この場所の記録: AR フォト（新しい 3 枚）と、お買いもの（レシートの表） */}
-      <h2>ここで撮った AR フォト{pl.photo_count ? `（${pl.photo_count} 枚）` : ""}</h2>
+      {/* AR フォトの記録は、撮るボタン（上の人のカード）のすぐ下に。新しい 3 枚 */}
+      <div className="histhead">ここで撮った AR フォト{pl.photo_count ? `（${pl.photo_count} 枚）` : ""}</div>
       {pl.photos && pl.photos.length > 0 ? (
         <>
           <div className="grid3">
@@ -104,9 +90,18 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
           {(pl.photo_count ?? 0) > 3 && <button className="btn ghost small block" style={{ marginTop: 8 }} onClick={() => navigate("/book")}>ほかの {(pl.photo_count ?? 0) - 3} 枚はアルバムで</button>}
         </>
       ) : (
-        <p className="muted small">まだありません。ここの人に会えた日に、ほしまると撮れます。</p>
+        <p className="muted small" style={{ margin: 0 }}>まだありません。ここの人に会えた日に、ほしまると撮れます。</p>
       )}
-      <h2>ここでのお買いもの{pl.receipts && pl.receipts.count > 0 ? `（${pl.receipts.count} 件・${pl.receipts.total.toLocaleString()} 円）` : ""}</h2>
+
+      <h2>レシートでポイント</h2>
+      {onTrip && (
+        <div className="card stack">
+          <button className="btn primary block" onClick={() => navigate(`/receipt/${pl.id}`)}>レシートを撮る</button>
+          <p className="muted small" style={{ margin: 0 }}>撮るだけで店名と金額を読み取ります（AI-OCR）。確認して登録するとポイントに。</p>
+        </div>
+      )}
+      {/* レシートの記録は、撮るボタンのすぐ下に。新しい 5 件の表 */}
+      <div className="histhead">ここでのお買いもの{pl.receipts && pl.receipts.count > 0 ? `（${pl.receipts.count} 件・${pl.receipts.total.toLocaleString()} 円）` : ""}</div>
       {pl.receipts && pl.receipts.count > 0 ? (
         <div className="card" style={{ padding: "6px 10px" }}>
           <table className="tbl">
@@ -120,7 +115,16 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
           </table>
         </div>
       ) : (
-        <p className="muted small">まだありません。レシートを撮ると、ここに記録が並びます。</p>
+        <p className="muted small" style={{ margin: 0 }}>まだありません。{onTrip ? "レシートを撮ると、ここに記録が並びます。" : "旅の日にレシートを撮ると、ここに記録が並びます。"}</p>
+      )}
+
+      {onTrip && (
+        <>
+          <h2>クーポンを使う</h2>
+          <div className="stack">
+            {pl.people.map((p) => <ShopCoupons key={p.shop.id} shopId={p.shop.id} shopName={p.shop.name} personName={p.name} onChange={refresh} />)}
+          </div>
+        </>
       )}
 
       {pl.voices && pl.voices.length > 0 && (
@@ -138,34 +142,12 @@ export function PlacePage({ id, onChanged }: { id: number; onChanged?: () => voi
           </div>
         </>
       )}
-      {onTrip && <button className="btn ghost block" style={{ marginTop: 16 }} onClick={() => navigate("/")}>マップにもどる</button>}
-      {bloom && <Bloom title={bloom.title} next={bloom.next} onClose={() => setBloom(null)} />}
+      {onTrip && <button className="btn ghost block" style={{ marginTop: 16 }} onClick={() => navigate("/")}>マップにもどる</button>}
     </div>
   );
 }
 
-export function Bloom({ title, next, onClose }: { title: string; next: Seed | null; onClose: () => void }) {
-  return (
-    <div className="bloom" role="dialog" aria-modal="true">
-      <div className="inner">
-        <img src="/img/mascot/ui/hoshimaru_cheer.png" alt="" width={96} height={96} style={{ display: "block", margin: "0 auto -24px" }} />
-        <svg viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <ellipse key={a} cx="60" cy="34" rx="12" ry="24" fill="#e3a21a" opacity=".9" transform={`rotate(${a} 60 60)`} />)}
-          <circle cx="60" cy="60" r="14" fill="#fbfcfd" stroke="#1b2a44" strokeWidth="3" />
-        </svg>
-        <div className="serif" style={{ fontSize: "1.4rem", marginTop: 6 }}>花がさきました</div>
-        <p style={{ margin: "6px 0 0" }}>約束「{title}」を果たしました。</p>
-        {next && <p className="muted small" style={{ margin: "6px 0 0" }}>つぎは {next.season_label}の約束「{next.title}」。種になりました。</p>}
-        <div className="row" style={{ marginTop: 14 }}>
-          <button className="btn ghost grow" onClick={onClose}>とじる</button>
-          <button className="btn primary grow" onClick={() => { onClose(); navigate("/book"); }}>ひとめぐり帖で見る</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function PersonAction({ p, placeId, onChange }: { p: PlaceCard["people"][number]; placeId: number; onChange: () => Promise<void>; onBloom?: (b: { title: string; next: Seed | null }) => void }) {
+export function PersonAction({ p, placeId, onChange }: { p: PlaceCard["people"][number]; placeId: number; onChange: () => Promise<void> }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const canMeet = p.forecast.status === "open" || p.forecast.status === "closing_soon";
@@ -204,104 +186,6 @@ export function PersonAction({ p, placeId, onChange }: { p: PlaceCard["people"][
           <button className="btn primary block mark" onClick={() => navigate(`/camera/person/${p.id}?from=${placeId}`)}>ほしまると {t("ar_photo").replace("いっしょに ", "")}</button>
         )}
       </div>
-    </div>
-  );
-}
-
-/** レシート撮影 → AI-OCR 風の読み取り演出 → 確認して登録。 */
-function ReceiptCapture({ shops, onDone }: { shops: PlaceCard["people"][number]["shop"][]; onDone: () => Promise<void> }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [url, setUrl] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"idle" | "camera" | "scan" | "confirm" | "saving">("idle");
-  const [shopId, setShopId] = useState(shops[0]?.id ?? 0);
-  const [amount, setAmount] = useState("");
-  const [demo, setDemo] = useState(false);
-  useEffect(() => {
-    get<{ demo_mode: boolean }>("/health").then((h) => setDemo(h.demo_mode)).catch(() => undefined);
-  }, []);
-  const shop = shops.find((s) => s.id === shopId) ?? shops[0];
-  const amt = Number(amount);
-  const pts = shop && amt > 0 ? Math.floor((amt * 10) / 100) : 0;
-  const onFile = (f: File, objectUrl?: string) => {
-    setFile(f);
-    setUrl(objectUrl ?? URL.createObjectURL(f));
-    setPhase("scan");
-    setTimeout(() => {
-      // デモ: 読み取り結果として店と金額の候補を出す（本番は AI-OCR の結果が入る）
-      if (demo && !amount) setAmount("3000");
-      setPhase("confirm");
-    }, 1900);
-  };
-  const submit = async () => {
-    if (!file || !shop) return;
-    if (!(amt >= 1 && amt <= 100000 && Number.isInteger(amt))) {
-      toast("金額を 1〜100,000 円の整数で確認してください", "error");
-      return;
-    }
-    setPhase("saving");
-    try {
-      const fd = new FormData();
-      fd.append("shop_id", String(shop.id));
-      fd.append("amount", String(amt));
-      fd.append("image", file);
-      const r = await sendForm<{ points: number; balance: number }>("/receipts", fd);
-      toast(`${r.points} pt もらいました（合計 ${r.balance} pt）`);
-      setFile(null);
-      setUrl(null);
-      setAmount("");
-      setPhase("idle");
-      await onDone();
-    } catch (e) {
-      toast((e as Error).message, "error");
-      setPhase("confirm");
-    }
-  };
-  return (
-    <div className="card stack">
-      {phase === "idle" && (
-        <>
-          <button className="btn primary block" onClick={() => setPhase("camera")}>レシートを撮る</button>
-          <p className="muted small" style={{ margin: 0 }}>撮るだけで店名と金額を読み取ります（AI-OCR）。確認して登録するとポイントに。画像は 7 日で削除されます。</p>
-        </>
-      )}
-      {phase === "camera" && <CameraCapture hint="レシート全体を枠に入れて、シャッターを押してください" onCapture={(f, u) => onFile(f, u)} onCancel={() => setPhase("idle")} />}
-      {url && phase !== "idle" && phase !== "camera" && (
-        <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: "#000" }}>
-          <img src={url} alt="レシート" style={{ width: "100%", maxHeight: 260, objectFit: "contain", display: "block", opacity: phase === "scan" ? 0.8 : 1 }} />
-          {phase === "scan" && (
-            <>
-              <div className="scanline" />
-              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "rgba(27,42,68,.8)", color: "#fff", padding: "6px 10px", fontSize: ".85rem" }}>AI-OCR で読み取り中… 店名・金額・日付を探しています</div>
-            </>
-          )}
-          {phase !== "scan" && (
-            <>
-              <div className="ocr-box" style={{ left: "10%", top: "18%", width: "60%", height: "9%" }} />
-              <div className="ocr-box" style={{ left: "45%", top: "62%", width: "45%", height: "10%", animationDelay: ".15s" }} />
-            </>
-          )}
-        </div>
-      )}
-      {(phase === "confirm" || phase === "saving") && (
-        <>
-          <div className="row between"><span className="small" style={{ fontWeight: 700 }}>読み取り結果{demo ? "（デモ）" : ""}</span><Badge flower>確認してください</Badge></div>
-          <label className="field">
-            <span>お店（読み取り: この場所のお店）</span>
-            <select value={shopId} onChange={(e) => setShopId(Number(e.target.value))}>
-              {shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>金額（円）{demo && amount ? "・読み取り値" : ""}</span>
-            <input type="number" inputMode="numeric" min={1} max={100000} step={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="読み取れませんでした。入力してください" />
-          </label>
-          {pts > 0 && <div className="muted small">もらえるポイント: 約 {pts} pt（店の還元率で計算）</div>}
-          <div className="row">
-            <button className="btn ghost grow" onClick={() => { setPhase("idle"); setFile(null); setUrl(null); }}>撮り直す</button>
-            <button className="btn primary grow mark" disabled={phase === "saving"} onClick={submit}>この内容で登録</button>
-          </div>
-        </>
-      )}
     </div>
   );
 }
@@ -368,8 +252,8 @@ type PersonDetail = PlaceCard["people"][number] & {
 
 export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => void }) {
   const t = useT();
-  const [p, setP] = useState<PersonDetail | null>(null);
-  const [bloom, setBloom] = useState<{ title: string; next: Seed | null } | null>(null);
+  const fromBook = useRoute().query.get("from") === "book"; // ひとめぐり帖からは「記録を見るだけ」
+  const [p, setP] = useState<PersonDetail | null>(null);
   const load = async () => setP(await get<PersonDetail>(`/people/${id}`));
   useEffect(() => {
     load().catch((e) => toast((e as Error).message, "error"));
@@ -390,13 +274,13 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
   };
   return (
     <div className="page">
-      <TopBar title={p.name} backTo={p.place ? `/place/${p.place.id}` : "/plan"} />
+      <TopBar title={p.name} backTo={fromBook ? "/book" : p.place ? `/place/${p.place.id}` : "/plan"} />
       <div className="row" style={{ alignItems: "flex-start" }}>
         <Avatar p={p} size="lg" met={p.met_today} />
         <div className="grow">
           <div className="title" style={{ fontSize: "1.4rem" }}>{p.name}</div>
           <div className="muted">{p.role}・{p.shop.name}</div>
-          {p.relationship && p.relationship.stage !== "none" && <Badge>{p.relationship.label}（会えた日 {p.relationship.days} 日）</Badge>}
+          {p.relationship && p.relationship.stage !== "none" && <span className={`badge rank-${p.relationship.stage}`}>{p.relationship.label}（会えた {p.relationship.days} 回）</span>}
           <p style={{ margin: "6px 0 0" }}>{p.intro}</p>
         </div>
       </div>
@@ -412,15 +296,18 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
             address: p.shop.address ?? null, phone: p.shop.phone ?? null, url: p.shop.url ?? null, nearest: p.shop.nearest ?? null, notes: p.shop.notes ?? null }]}
         />
       )}
-      <div style={{ marginTop: 10 }}>
-        {canMeet || p.met_today ? (
-          <PersonAction p={p} placeId={p.place?.id ?? p.spot_id} onChange={async () => { await load(); onChanged?.(); }} onBloom={setBloom} />
-        ) : p.place?.in_plan ? (
-          <button className="btn done block">{p.place.name}は行きたいに入っています</button>
-        ) : (
-          <button className="btn primary block mark" onClick={wantPlace}>{p.place?.name}を行きたいに入れる</button>
-        )}
-      </div>
+      {/* 「会えた」は旅の途中、場所の画面でだけ押せる。ここは人の紹介と記録 */}
+      {!fromBook && (
+        <div style={{ marginTop: 10 }}>
+          {canMeet || p.met_today ? (
+            <button className="btn primary block mark" onClick={() => p.place && navigate(`/place/${p.place.id}`)}>{p.place?.name}の画面へ（会えた・AR フォト）</button>
+          ) : p.place?.in_plan ? (
+            <button className="btn done block">{p.place.name}は行きたいに入っています</button>
+          ) : (
+            <button className="btn primary block mark" onClick={wantPlace}>{p.place?.name}を行きたいに入れる</button>
+          )}
+        </div>
+      )}
       {p.place && (
         <div className="card row" style={{ marginTop: 10 }}>
           <Mascot k={MASCOT_BY_SPOT[p.place.id] ?? "lighthouse"} size={72} />
@@ -465,8 +352,7 @@ export function PersonPage({ id, onChanged }: { id: number; onChanged?: () => vo
             ))}
           </div>
         </>
-      )}
-      {bloom && <Bloom title={bloom.title} next={bloom.next} onClose={() => setBloom(null)} />}
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { SettingsPage } from "./pages/Settings";
 import { ShopPage } from "./pages/Shop";
 import { WalletPage } from "./pages/Wallet";
 import { CameraPage } from "./pages/Camera";
+import { ReceiptPage } from "./pages/Receipt";
 import { PhotoPage, PrintPage } from "./pages/Photo";
 import { MemoriesPage } from "./pages/Memories";
 import { BookPage } from "./pages/Book";
@@ -70,6 +71,9 @@ export function App() {
     case "shop":
       tab = "wallet";
       page = <ShopPage id={Number(route.parts[1])} onChanged={today.reload} />;
+      break;
+    case "receipt":
+      page = <ReceiptPage placeId={Number(route.parts[1])} onChanged={today.reload} />;
       break;
     case "camera":
       page = <CameraPage kind={route.parts[1]} id={Number(route.parts[2])} />;

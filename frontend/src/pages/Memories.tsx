@@ -253,24 +253,33 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
         <Badge soft>{L.season_label}</Badge>
       </div>
       <p className="muted" style={{ margin: 0 }}>{L.greeting}</p>
-      <Corkboard
-        L={L}
-        diary={diary}
-        saving={saving}
-        onDiary={setDiary}
-        onSave={async () => {
-          setSaving(true);
-          try {
-            await put(`/diaries/${day}`, { text: diary });
-            toast("一言をコルクボードに貼りました");
-            await load();
-          } catch (e) {
-            toast((e as Error).message, "error");
-          } finally {
-            setSaving(false);
-          }
-        }}
-      />
+      <div className="card">
+        <div className="row between" style={{ marginBottom: 6 }}>
+          <span style={{ fontWeight: 700 }}>この日の一言（140 字まで）</span>
+          <span className="muted small">{diary.length} / 140</span>
+        </div>
+        <textarea value={diary} maxLength={140} onChange={(e) => setDiary(e.target.value)} placeholder="この日のことをひとこと" style={{ minHeight: 72 }} />
+        <button
+          className="btn small primary block"
+          style={{ marginTop: 6 }}
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await put(`/diaries/${day}`, { text: diary });
+              toast("一言をコルクボードに貼りました");
+              await load();
+            } catch (e) {
+              toast((e as Error).message, "error");
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          {saving ? "保存中…" : "コルクボードに貼る"}
+        </button>
+      </div>
+      <Corkboard L={L} />
 
       <h2 style={{ margin: "6px 0 0" }}>次の旅の提案</h2>
       {L.suggestions.map((s) => (
@@ -300,8 +309,7 @@ function LetterDetail({ day, onChanged }: { day: string; onChanged?: () => void 
   );
 }
 
-function Corkboard({ L, diary, saving, onDiary, onSave }: { L: Letter; diary: string; saving: boolean; onDiary: (v: string) => void; onSave: () => void }) {
-  const [edit, setEdit] = useState(false);
+function Corkboard({ L }: { L: Letter }) {
   const tiles: { key: string; node: JSX.Element; rot: number }[] = [];
   L.photos.forEach((p, i) => tiles.push({
     key: `ph${p.id}`, rot: (i % 2 ? 1 : -1) * (2 + (i % 3)),
@@ -337,29 +345,13 @@ function Corkboard({ L, diary, saving, onDiary, onSave }: { L: Letter; diary: st
     <div className="cork">
       <div className="grid2" style={{ gap: 16, alignItems: "start" }}>
         {tiles.map((t) => <div key={t.key} style={{ transform: `rotate(${t.rot}deg)` }}>{t.node}</div>)}
-        {/* 一言はコルクボードの付箋に書く・貼る */}
-        <div className="note" style={{ transform: edit ? undefined : "rotate(2deg)", gridColumn: edit ? "1 / -1" : undefined }}>
-          <span className="tape" />
-          {edit ? (
-            <>
-              <textarea value={diary} maxLength={140} onChange={(e) => onDiary(e.target.value)} placeholder="この日のことをひとこと" style={{ minHeight: 84, background: "transparent" }} autoFocus />
-              <div className="row between" style={{ marginTop: 4 }}>
-                <span className="muted small">{diary.length} / 140</span>
-                <button className="btn small primary" disabled={saving} onClick={() => { onSave(); setEdit(false); }}>貼る</button>
-              </div>
-            </>
-          ) : L.diary ? (
-            <button style={{ background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", width: "100%" }} onClick={() => setEdit(true)} aria-label="一言をなおす">
-              <div className="serif" style={{ fontSize: ".95rem", whiteSpace: "pre-wrap" }}>{L.diary}</div>
-              <div className="muted small" style={{ marginTop: 4 }}>✎ なおす</div>
-            </button>
-          ) : (
-            <button style={{ background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", width: "100%" }} onClick={() => setEdit(true)}>
-              <div className="serif" style={{ fontSize: ".95rem", color: "var(--muted)" }}>この日の一言を<br />書いて貼る</div>
-              <div className="muted small" style={{ marginTop: 4 }}>✎ 書く（140 字まで）</div>
-            </button>
-          )}
-        </div>
+        {/* 一言は上の枠で書いて、ここに付箋として貼られる */}
+        {L.diary && (
+          <div className="note" style={{ transform: "rotate(2deg)" }}>
+            <span className="tape" />
+            <div className="serif" style={{ fontSize: ".95rem", whiteSpace: "pre-wrap" }}>{L.diary}</div>
+          </div>
+        )}
         {L.receipts.count > 0 && (
           <div className="note" style={{ transform: "rotate(-2deg)", background: "#fff" }}>
             <span className="tape" />

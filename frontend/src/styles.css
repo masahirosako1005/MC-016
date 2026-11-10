@@ -245,7 +245,11 @@ details.fold[open] > summary::after { content: "－"; }
 
 .deck { position: relative; height: 440px; }
 .deck .dcard { position: absolute; inset: 0; background: #fff; border: 1px solid var(--ai-100); border-radius: 12px; overflow: hidden; touch-action: pan-y; user-select: none; box-shadow: 0 6px 20px rgba(27,42,68,.08); }
-.deck .dcard.behind { transform: scale(.96) translateY(10px); opacity: .7; }
+.deck .dcard { transition: transform .22s ease, box-shadow .22s ease; }
+/* 下のカード: 少し小さく、少し下にずらして「積み重なり」に見せる。上のカードがめくられると、そのまま上がってくる */
+.deck .dcard { transform-origin: 50% 100%; }
+.deck .dcard.behind { transform: translateY(16px) scale(.94); box-shadow: 0 2px 8px rgba(27,42,68,.10); pointer-events: none; filter: brightness(.96); }
+.deck { margin-bottom: 24px; }
 .deck .stamp { position: absolute; top: 18px; padding: 6px 12px; border: 3px solid; border-radius: 8px; font-family: var(--font-head); font-weight: 700; font-size: 1.3rem; transform: rotate(-12deg); opacity: 0; }
 .deck .stamp.go { right: 16px; color: var(--yamabuki); border-color: var(--yamabuki); background: #fff8e6; }
 .deck .stamp.skip { left: 16px; color: var(--ai-500); border-color: var(--ai-500); background: var(--paper); transform: rotate(12deg); }
@@ -361,3 +365,11 @@ details.fold[open] > summary::after { content: "－"; }
 /* 運営の窓: フローティングのデモ設定 */
 .fab { position: fixed; right: 16px; bottom: 16px; width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--ai-900); color: var(--paper); font-size: 1.4rem; cursor: pointer; z-index: 40; box-shadow: 0 6px 16px rgba(27,42,68,.35); }
 .floatpanel { position: fixed; right: 16px; bottom: 78px; width: min(88vw, 320px); background: var(--paper); border: 1px solid var(--ai-300); border-radius: 12px; padding: 12px 14px; z-index: 41; box-shadow: 0 10px 30px rgba(27,42,68,.25); animation: toast-in .2s ease; }
+
+/* 場所の画面: ボタンのすぐ下に置く記録の見出し */
+.histhead { font-weight: 700; font-size: .92rem; color: var(--ai-700); margin: 12px 0 6px; padding-left: 8px; border-left: 2px solid var(--ai-300); }
+/* ルーレットのまん中（回らない） */
+.roulette .hub { position: absolute; left: 50%; top: 120px; width: 56px; height: 56px; transform: translate(-50%, -50%); border-radius: 50%; background: #fbfcfd; border: 2px solid #1b2a44; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(27,42,68,.25); pointer-events: none; }
+/* 当たる確率は折りたたみ */
+details.probs { margin-top: 10px; }
+details.probs summary { cursor: pointer; color: var(--ai-700); font-size: .9rem; padding: 6px 0; }

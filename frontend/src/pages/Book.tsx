@@ -57,7 +57,7 @@ export function BookPage() {
         {sorted.map((p) => {
           const isMet = p.relationship.days > 0;
           return (
-            <button key={p.id} className={`ccard ${isMet ? "met" : "unmet"}`} onClick={() => navigate(`/people/${p.id}`)} style={{ cursor: "pointer" }}>
+            <button key={p.id} className={`ccard ${isMet ? "met" : "unmet"}`} onClick={() => navigate(`/people/${p.id}?from=book`)} style={{ cursor: "pointer" }}>
               {isMet && RANK[p.relationship.stage] && <span className={`stamp-met ${RANK[p.relationship.stage].cls}`}>{RANK[p.relationship.stage].label}</span>}
               <img src={p.image} alt={p.name} style={{ width: 84, height: 84, objectFit: "cover", objectPosition: "top", borderRadius: "50%", border: `2px solid ${isMet ? "var(--ai-900)" : "var(--ai-100)"}`, background: "var(--ai-050)" }} />
               <div className="serif" style={{ fontSize: "1.05rem", marginTop: 6 }}>{isMet ? p.name : "？？？"}</div>
