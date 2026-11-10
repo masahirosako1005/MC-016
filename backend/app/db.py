@@ -314,6 +314,20 @@ CREATE TABLE IF NOT EXISTS message_reads(
   read_at TEXT NOT NULL,
   PRIMARY KEY(message_id, user_id)
 );
+CREATE TABLE IF NOT EXISTS trip_surveys(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  satisfaction INTEGER NOT NULL CHECK(satisfaction BETWEEN 1 AND 5),
+  revisit INTEGER NOT NULL CHECK(revisit BETWEEN 1 AND 5),
+  good TEXT NOT NULL DEFAULT '',
+  trouble TEXT NOT NULL DEFAULT '',
+  spot_id INTEGER,
+  comment TEXT,
+  answered_on TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  is_dummy INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_trip_surveys_spot ON trip_surveys(spot_id);
 """
     )
 

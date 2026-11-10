@@ -53,6 +53,10 @@ def import_run(with_dummy: bool = Query(True), conn=Depends(get_conn)):
     with write_tx(conn):
         results = [r.to_dict() for r in import_dir(conn, settings.sample_data_dir)]
         dummy_n = generate_dummy(conn) if with_dummy else 0
+        if with_dummy:
+            from ..services.survey import seed_dummy as _seed_dummy_surveys
+
+            _seed_dummy_surveys(conn)
         if results:
             svc._hist(conn, now, "import", "csv", None, {"files": [r["file"] for r in results], "inserted": sum(r["inserted"] for r in results), "dummy_rows": dummy_n})
     return {"results": results, "dummy_rows": dummy_n}

@@ -5,6 +5,7 @@ import { navigate, useRoute } from "../router";
 import { BarChart, LineChart, Stat } from "../components/charts";
 import { AdvicePanel, scrollToId, type Advice } from "../components/advice";
 import { SubNav, useSubTab } from "../components/subnav";
+import { SurveyPanel } from "../components/surveypanel";
 import { ShopPanel } from "./AdminShop";
 
 type MetricVal = { value: number | null; n: number; dummy_n: number; unit: string; suppressed: boolean };
@@ -194,6 +195,7 @@ function EventsPanel({ editable }: { editable: boolean }) {
 const DMO_TABS = [
   { key: "home", label: "ホーム", icon: "⌂", desc: "次の一手と、観光消費・来訪者の推移" },
   { key: "events", label: "イベント・来訪予定", icon: "◷", desc: "外部イベントをお店へ知らせる／計画の日ごとの来訪予定" },
+  { key: "survey", label: "アンケート", icon: "✎", desc: "旅のあとのアンケートの集計と声" },
   { key: "metrics", label: "指標・補填", icon: "▦", desc: "再訪率などの指標と、使われたクーポンの補填額" },
   { key: "settings", label: "還元率・商品・取り込み", icon: "⚙", desc: "店の還元率、抽選の商品、CSV の取り込み" },
   { key: "records", label: "レシート・履歴", icon: "≡", desc: "直近のレシートと変更履歴" },
@@ -240,6 +242,7 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
             onShop();
           } else if (a.kind === "prizes") go("settings", "dmo-prizes");
           else if (a.kind === "events") go("events", "dmo-events");
+          else if (a.kind === "survey") go("survey", "dmo-survey");
           else go("events", "dmo-visits");
         }}
       />
@@ -257,6 +260,12 @@ function DmoPanel({ onShop }: { onShop: () => void }) {
       <h2 id="dmo-visits">来訪予定（いつ、だれが来るか）</h2>
       <VisitsTable />
 
+        </>
+      )}
+      {tab === "survey" && (
+        <>
+          <h2 id="dmo-survey">旅のあとのアンケート</h2>
+          <SurveyPanel path="/admin/survey" />
         </>
       )}
       {tab === "metrics" && (

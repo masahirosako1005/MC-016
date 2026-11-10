@@ -36,6 +36,18 @@ def dmo_advice(conn: sqlite3.Connection, now: datetime) -> list[dict]:
             "why": f"参加後アンケートで満足と答えたのに、お店の人に会った記録がない旅行者が {sat} 人。場所の「ここにいる人」を目立たせ、旅前の計画に人を添えると、2 回目につながります。",
             "action": {"label": "旅前カードの『おすすめ』をお店に書いてもらう", "kind": "shops_recommend", "params": {}},
         })
+    # 2b) アンケートの「困ったこと」
+    from .survey import summary as survey_summary
+
+    sv = survey_summary(conn)
+    if not sv["suppressed"]:
+        worst = max((t for t in sv["trouble"] if t["key"] != "none"), key=lambda t: t["count"], default=None)
+        if worst and worst["count"] >= 3:
+            out.append({
+                "priority": "high", "title": f"アンケートで「{worst['label']}」の声が {worst['count']} 件",
+                "why": f"旅のあとのアンケート（回答 {sv['n']} 件）で、困ったこととして多く挙がっています。声の中身を読んで、案内やお店への共有につなげましょう。",
+                "action": {"label": "アンケートの声を読む", "kind": "survey", "params": {}},
+            })
     # 3) 消費の偏り
     if d["by_area"]:
         top = max(d["by_area"], key=lambda a: a["total"])

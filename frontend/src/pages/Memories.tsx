@@ -37,8 +37,8 @@ export function MemoriesPage({ sub, day, onChanged }: { sub: string; day?: strin
   return (
     <div className="page">
       <Tutorial id="memories" steps={TIPS.memories} trigger={help} />
-      <TopBar title={t("tab_memories")} backTo={day || sub === "reminder" || sub === "message" ? "/memories" : undefined} right={<HelpButton onClick={() => setHelp((n) => n + 1)} />} />
-      {sub === "reminder" && day ? <ReminderDetail date={day} /> : sub === "message" && day ? <MessageDetail id={Number(day)} /> : day ? <LetterDetail day={day} onChanged={onChanged} /> : <LetterList />}
+      <TopBar title={t("tab_memories")} backTo={sub === "message" ? "/memories/inbox" : day || sub === "reminder" ? "/memories" : undefined} right={<HelpButton onClick={() => setHelp((n) => n + 1)} />} />
+      {sub === "reminder" && day ? <ReminderDetail date={day} /> : sub === "message" && day ? <MessageDetail id={Number(day)} /> : day ? <LetterDetail day={day} onChanged={onChanged} /> : <LetterList box={sub === "inbox" ? "inbox" : "memory"} />}
     </div>
   );
 }
@@ -52,14 +52,17 @@ type ShopMessage = {
   title: string; body: string; coupon_face_value: number | null; coupon_days: number | null; created_at: string; date: string; read: boolean;
 };
 
-function LetterList() {
+function LetterList({ box }: { box: "memory" | "inbox" }) {
   const [idx, setIdx] = useState<LetterIndex | null>(null);
   const [msgs, setMsgs] = useState<ShopMessage[]>([]);
+  const [survey, setSurvey] = useState<{ answered: boolean; gift_count: number } | null>(null);
   useEffect(() => {
     get<LetterIndex>("/letters").then(setIdx).catch((e) => toast((e as Error).message, "error"));
     get<{ messages: ShopMessage[] }>("/messages").then((r) => setMsgs(r.messages)).catch(() => undefined);
+    get<{ answered: boolean; gift_count: number }>("/survey").then(setSurvey).catch(() => undefined);
   }, []);
   if (!idx) return <Loading />;
+  const unread = msgs.filter((m) => !m.read).length;
   type Item = { kind: "memory" | "reminder" | "message"; date: string; node: JSX.Element };
   const items: Item[] = [
     ...msgs.map((m) => ({
@@ -107,11 +110,39 @@ function LetterList() {
       ),
     })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const shown = items.filter((i) => (box === "inbox" ? i.kind === "message" : i.kind !== "message"));
   return (
     <div className="stack">
-      {idx.pending_today && <div className="card muted">きょうの思い出は {idx.open_hour}:00 に届きます。</div>}
-      {items.length === 0 && !idx.pending_today && <p className="muted">まだ思い出はありません。旅に出て人に会うと、その夜に届きます。</p>}
-      {items.map((i) => i.node)}
+      {/* 思い出便は 2 つの箱: その日の思い出（コルクボード・30 日後の便り）と、お店からの便り（お知らせの一覧） */}
+      <div className="segment" role="tablist" aria-label="思い出便">
+        <button role="tab" aria-selected={box === "memory"} className={box === "memory" ? "on" : ""} onClick={() => navigate("/memories")}>思い出</button>
+        <button role="tab" aria-selected={box === "inbox"} className={box === "inbox" ? "on" : ""} onClick={() => navigate("/memories/inbox")}>
+          お店からの便り{unread > 0 && <span className="segcount">{unread}</span>}
+        </button>
+      </div>
+      {box === "memory" ? (
+        <>
+          {survey && (
+            <button className="card row" style={{ textAlign: "left", cursor: "pointer", alignItems: "center" }} onClick={() => navigate(survey.answered ? "/gifts" : "/survey")}>
+              <img src={`/img/mascot/ui/hoshimaru_${survey.answered ? "thanks" : "letter"}.png`} alt="" width={48} height={48} />
+              <div className="grow">
+                <div style={{ fontWeight: 700 }}>{survey.answered ? "ほしまるのお礼を見る" : "旅のアンケート（任意・1 分）"}</div>
+                <div className="muted small">{survey.answered ? `待ち受けなど ${survey.gift_count} 点。答え直すこともできます。` : `答えると、ほしまるの待ち受けなど ${survey.gift_count} 点をお礼に。`}</div>
+              </div>
+              <span className="muted" aria-hidden="true">›</span>
+            </button>
+          )}
+          {idx.pending_today && <div className="card muted">きょうの思い出は {idx.open_hour}:00 に届きます。</div>}
+          {shown.length === 0 && !idx.pending_today && <p className="muted">まだ思い出はありません。旅に出て人に会うと、その夜に届きます。</p>}
+        </>
+      ) : (
+        <>
+          <p className="muted small" style={{ margin: 0 }}>会ったことのあるお店の人から届いた便りです。クーポンが付いていれば「クーポン」タブに入っています。</p>
+          {shown.length === 0 && <p className="muted">まだ届いていません。お店の人に会うと、季節のお知らせが届くことがあります。</p>}
+        </>
+      )}
+      {shown.map((i) => i.node)}
+      {box === "inbox" && survey?.answered && <button className="btn ghost small block" onClick={() => navigate("/survey")}>アンケートを答え直す</button>}
     </div>
   );
 }

@@ -25,6 +25,7 @@ export type PlaceCard = {
   id: number; name: string; full_name: string; area: string; svg_key: string; image: string; description: string; access: string;
   best_season: string; best_season_label: string; map_x: number; map_y: number; in_plan: boolean; recommend?: string | null;
   last_visit?: { date: string; season: string; season_label: string; same_season: boolean } | null;
+  wished?: { date: string } | null; // 旅のあとに思い出便で「行きたい」を押した場所
   photo_count?: number;
   receipts?: { count: number; total: number; points: number; rows: { id: number; date: string; shop_name: string; amount: number; points: number }[] };
   hours?: string; closed?: string; address?: string | null; phone?: string | null;
@@ -109,7 +110,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
   const skippedIds = new Set(prevPlan ? data.places.filter((p) => !prevIds.has(p.id) && !leftoverIds.has(p.id) && !p.last_visit).map((p) => p.id) : []);
   const remaining = data.places
     .filter((p) => !decided[p.id] && !p.in_plan)
-    .sort((a, b) => Number(leftoverIds.has(b.id)) - Number(leftoverIds.has(a.id)));
+    .sort((a, b) => Number(!!b.wished) - Number(!!a.wished) || Number(leftoverIds.has(b.id)) - Number(leftoverIds.has(a.id)));
 
   const saveDecided = (next: Record<number, "go" | "skip">) => {
     setDecided(next);
@@ -252,7 +253,7 @@ export function PlanPage({ onChanged }: { onChanged?: () => void }) {
                   <PinPopup
                     pl={mapSelPlace}
                     showStatus={false}
-                    note={mapSelPlace.last_visit ? `${mapSelPlace.last_visit.season_label}に行った場所（${mapSelPlace.last_visit.date.slice(5).replace("-", "/")}）` : undefined}
+                    note={[mapSelPlace.wished ? `♡ 旅のあとに「行きたい」と選んだ場所` : "", mapSelPlace.last_visit ? `${mapSelPlace.last_visit.season_label}に行った場所（${mapSelPlace.last_visit.date.slice(5).replace("-", "/")}）` : ""].filter(Boolean).join("・") || undefined}
                     onClose={() => setMapSel(null)}
                     actions={[
                       { label: mapSelPlace.in_plan ? "行きたいからはずす" : "行きたいに入れる", kind: mapSelPlace.in_plan ? "ghost" : "primary", onClick: () => { setPlace(mapSelPlace, !mapSelPlace.in_plan); } },
@@ -415,6 +416,11 @@ function Deck({ cards, total, leftoverIds, skippedIds, onDecide, season_label }:
         ) : skippedIds.has(c.id) ? (
           <span className="badge" style={{ position: "absolute", top: 10, left: 10, background: "rgba(27,42,68,.78)", color: "#fbfcfd" }}>前回は選ばなかった場所</span>
         ) : null}
+        {c.wished && (
+          <span className="badge wishtag" style={{ position: "absolute", top: leftoverIds.has(c.id) || c.last_visit || skippedIds.has(c.id) ? 38 : 10, left: 10 }} title="旅のあとに、思い出便で「行きたい」を押した場所です">
+            ♡ 旅のあとに「行きたい」（{c.wished.date.slice(5).replace("-", "/")}）
+          </span>
+        )}
         <div style={{ position: "absolute", left: 14, bottom: 12, color: "#fbfcfd" }}>
           <div className="serif" style={{ fontSize: "1.5rem" }}>{c.name}</div>
           <div className="small">{c.area}・{c.best_season_label}が見ごろ</div>

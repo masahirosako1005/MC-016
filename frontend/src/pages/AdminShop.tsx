@@ -7,6 +7,7 @@ import { get, post, put, sendForm, toast } from "../api";
 import { AdvicePanel, scrollToId, type Advice } from "../components/advice";
 import { BarChart, Stat } from "../components/charts";
 import { SubNav, useSubTab } from "../components/subnav";
+import { SurveyPanel } from "../components/surveypanel";
 
 type ShopRow = { id: number; name: string; area: string; category: string; person_name?: string | null };
 type ShopDash = {
@@ -37,6 +38,7 @@ const RANK_SHORT: Record<string, string> = { first: "はじめまして", again:
 const SHOP_TABS = [
   { key: "home", label: "ホーム", icon: "⌂", desc: "次の一手と、来訪のようす（地区平均との比較）" },
   { key: "visits", label: "来訪・イベント", icon: "◷", desc: "会ったことのある旅行者、この場所に来る予定、DMO からのイベントのお知らせ" },
+  { key: "voices", label: "旅行者の声", icon: "❝", desc: "アンケートで、この場所について寄せられた声" },
   { key: "info", label: "お店の情報", icon: "✎", desc: "紹介・おすすめ・写真・住所・電話・営業時間の編集" },
   { key: "letter", label: "旅行者への便り", icon: "✉", desc: "来訪回数で宛先を絞って、クーポン付きの便りを送る" },
 ];
@@ -178,6 +180,12 @@ export function ShopPanel() {
             </tbody></table>
             <div className="muted small" style={{ marginTop: 6 }}>見込み人数が大きい日は仕入れや人手を増やす目安に。</div>
           </div>
+        </div>
+      )}
+      {tab === "voices" && (
+        <div>
+          <h2>旅行者の声（アンケート）</h2>
+          <SurveyPanel path={`/admin/shops/${shopId}/survey`} />
         </div>
       )}
       {tab === "info" && (

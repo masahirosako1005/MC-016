@@ -373,3 +373,24 @@ details.fold[open] > summary::after { content: "－"; }
 /* 当たる確率は折りたたみ */
 details.probs { margin-top: 10px; }
 details.probs summary { cursor: pointer; color: var(--ai-700); font-size: .9rem; padding: 6px 0; }
+
+/* 計画カード: 旅のあとに「行きたい」を押した場所のタグ */
+.badge.wishtag { background: #fff8e6; color: #7a5300; border: 1.5px solid var(--yamabuki); font-weight: 800; }
+/* 思い出便の 2 つの箱の未読数 */
+.segment .segcount { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 6px; padding: 0 5px; border-radius: 999px; background: var(--yamabuki); color: #fff; font-size: .72rem; font-weight: 800; }
+/* アンケート: 5 段階 */
+.scale5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.scale5 button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 60px; padding: 6px 2px; border: 1.5px solid var(--ai-300); border-radius: var(--radius); background: var(--card); color: var(--ai-700); cursor: pointer; }
+.scale5 button b { font-size: 1.15rem; font-family: var(--font-head); }
+.scale5 button span { font-size: .68rem; line-height: 1.2; text-align: center; }
+.scale5 button.on { background: var(--ai-900); border-color: var(--ai-900); color: var(--paper); }
+/* お礼の素材 */
+.giftgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.giftgrid.stickers { grid-template-columns: repeat(4, 1fr); }
+.giftgrid .gift { display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--fg); text-align: center; }
+.giftgrid .gift img { width: 100%; height: auto; object-fit: contain; border-radius: 8px; border: 1px solid var(--ai-100); background: #fff; }
+.giftgrid .gift .small { line-height: 1.25; }
+/* 運営の窓: 横棒 */
+.hbar { display: grid; grid-template-columns: minmax(96px, 34%) 1fr 34px; gap: 8px; align-items: center; }
+.hbar .track { height: 12px; background: var(--ai-050); border-radius: 6px; overflow: hidden; }
+.hbar .track i { display: block; height: 100%; border-radius: 6px; }

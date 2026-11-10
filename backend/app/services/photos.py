@@ -34,7 +34,7 @@ def frame_info(conn: sqlite3.Connection, uid: int, kind: str, target_id: int, no
         from ..seed.mascots import frames_for, mascot_for
         return {
             "mascot": mascot_for(p["spot_id"], season),
-            "frames": frames_for(sp["svg_key"], sp["name"].split("（")[0]) if sp else [],
+            "frames": _with_gift_frame(conn, uid, frames_for(sp["svg_key"], sp["name"].split("（")[0])) if sp else [],
             "spot_id": p["spot_id"],
             "kind": "person", "id": target_id, "unlocked": unlocked,
             "reason": "" if unlocked else "今日その人に「会えた」を押した日だけ撮れます",
@@ -190,3 +190,13 @@ def seed_sample_photos(conn: sqlite3.Connection, uid: int) -> int:
         )
         n += 1
     return n
+
+
+def _with_gift_frame(conn: sqlite3.Connection, uid: int, frames: list[dict]) -> list[dict]:
+    """アンケートに答えた人には、お礼の AR フレームを足す（「フレームなし」の手前）。"""
+    from .survey import answered
+
+    if not answered(conn, uid):
+        return frames
+    gift = {"key": "gift_thanks", "label": "ありがとう（アンケートのお礼）", "png": "/img/frames/frame_gift_thanks.png", "spot": False}
+    return frames[:-1] + [gift] + frames[-1:] if frames else [gift]

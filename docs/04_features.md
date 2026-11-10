@@ -34,3 +34,9 @@
 
 ## デモ層（DEMO_MODE=1 のみ）
 模擬の時計（DB 保存）。`/api/demo/{state,trip-day,night,after30,next-season,clock,fix-lottery,reset}`。`#/present` は同一オリジン iframe で本体を動かし、帯のボタンで時計を進めて `postMessage` で画面を切り替える。DEMO_MODE=0 では `/api/demo/*` は JSON 404。
+
+## 旅のあとのアンケート（任意）
+- `GET /api/survey`（選択肢・前回の回答・お礼の点数）、`POST /api/survey`（satisfaction 1–5, revisit 1–5, good[], trouble[], spot_id?, comment ≤300。同じ日は上書き、「特になし」はほかと両立しない）。
+- `GET /api/gifts`: 未回答なら一覧だけ（画像の場所は返さない）、回答済みなら待ち受け・スタンプ・ぬりえ・なかま証の PNG。回答済みの人の AR フォトには「ありがとう」フレームが増える。
+- 運営: `GET /api/admin/survey`（島ぜんたい。満足度・また来たいかの分布、よかったこと・困ったこと、声）、`GET /api/admin/shops/{id}/survey`（その場所についての声だけ。点数なし）。3 件未満は `suppressed`。
+- 計画カード: `GET /api/places` の各場所に `wished`（旅のあとに「行きたい」を押した日。その後に行くと null）。

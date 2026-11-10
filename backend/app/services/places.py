@@ -95,6 +95,18 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
         d = date.fromisoformat(last)
         last_visit = {"date": last, "season": season_of(d), "season_label": LABEL[season_of(d)], "same_season": season_of(d) == season}
     main_shop = next((sh for sh in master.shops(conn) if sh["spot_id"] == s["id"]), None)
+    # 旅のあとに思い出から「行きたい」を押した場所（その後に行っていれば消える）。計画カードのタグに使う
+    wrow = conn.execute(
+        "SELECT MAX(w.created_at) FROM wishes w "
+        "LEFT JOIN shops sh1 ON w.target_type = 'shop' AND sh1.id = w.target_id "
+        "LEFT JOIN promises pr ON w.target_type = 'promise' AND pr.id = w.target_id "
+        "LEFT JOIN people pe ON pe.id = pr.person_id LEFT JOIN shops sh2 ON sh2.id = pe.shop_id "
+        "WHERE w.user_id = ? AND COALESCE(sh1.spot_id, sh2.spot_id) = ?",
+        (uid, s["id"]),
+    ).fetchone()[0]
+    wished = None
+    if wrow and (not last or wrow[:10] >= last):
+        wished = {"date": wrow[:10]}
     card = {
         "id": s["id"], "name": s["name"].split("（")[0], "full_name": s["name"], "area": s["area"], "svg_key": s["svg_key"],
         "image": f"/api/shops/{shop_photo}/photo" if shop_photo else f"/img/places/{s['svg_key']}.jpg",
@@ -104,6 +116,7 @@ def place_card(conn: sqlite3.Connection, s: dict, now: datetime, uid: int, plan_
         "map_x": s["map_x"], "map_y": s["map_y"],
         "in_plan": s["id"] in plan_ids,
         "last_visit": last_visit,
+        "wished": wished,
         # 地図のポップアップ用の軽い情報
         "hours": f"{main_shop['open_time']}〜{main_shop['close_time']}" if main_shop else "",
         "closed": (("月火水木金土日"[main_shop["closed_weekday"]] + "曜定休") if main_shop.get("closed_weekday") is not None else "無休") if main_shop else "",

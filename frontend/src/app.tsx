@@ -11,6 +11,7 @@ import { ShopPage } from "./pages/Shop";
 import { WalletPage } from "./pages/Wallet";
 import { CameraPage } from "./pages/Camera";
 import { ReceiptPage } from "./pages/Receipt";
+import { GiftsPage, SurveyPage } from "./pages/Survey";
 import { PhotoPage, PrintPage } from "./pages/Photo";
 import { MemoriesPage } from "./pages/Memories";
 import { BookPage } from "./pages/Book";
@@ -87,6 +88,14 @@ export function App() {
     case "memories":
       tab = "memories";
       page = <MemoriesPage sub={route.parts[1] ?? ""} day={route.parts[2]} onChanged={today.reload} />;
+      break;
+    case "survey":
+      tab = "memories";
+      page = <SurveyPage />;
+      break;
+    case "gifts":
+      tab = "memories";
+      page = <GiftsPage />;
       break;
     case "book":
       tab = "book";

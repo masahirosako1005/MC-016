@@ -34,6 +34,12 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         from .seed.shop_details import seed_shop_details
 
         seed_shop_details(conn)
+        try:
+            from .services.survey import seed_dummy as seed_dummy_surveys
+
+            seed_dummy_surveys(conn)
+        except Exception:
+            log.exception("アンケートのダミー作成に失敗")
         app.state.conn = conn
         settings.uploads_dir.mkdir(parents=True, exist_ok=True)
         settings.photos_dir.mkdir(parents=True, exist_ok=True)
