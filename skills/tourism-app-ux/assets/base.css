@@ -1,0 +1,185 @@
+/*
+ * 部品の CSS。tokens.css のあとに読み込む。
+ * 色は必ず変数を参照する（値を直接書かない）。
+ * 目次: 土台 / いまやること / 手順帯 / ボタン / チップ・札 / カード / 写真・人 /
+ *       下タブ / ヘッダ / 入力 / 2 択の切替 / 折りたたみ / お知らせ / ガイド・ポップアップ /
+ *       めくるカード / 地図のポップアップ / 横スクロール / 進み具合 / 下線タブ（運営）/ 表 / 印刷・動き
+ */
+
+/* ---- 土台 ---- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* 紙のごく薄い質感（画像なし） */
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(var(--main-rgb), 0.025) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(var(--main-rgb), 0.02) 0 1px, transparent 2px);
+  background-size: 7px 9px, 11px 13px;
+}
+button { font: inherit; color: inherit; }
+a { color: var(--main-700); }
+h1, h2, h3, .serif { font-family: var(--font-head); font-weight: 600; letter-spacing: 0.02em; }
+:focus-visible { outline: 2px solid var(--main-900); outline-offset: 2px; }
+
+.app { min-height: 100%; display: flex; flex-direction: column; }
+.page { flex: 1; width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--gutter) var(--gutter) calc(var(--tab-h) + 24px); }
+.page.wide { max-width: none; } /* 運営の画面 */
+.page h1 { font-size: 1.5rem; margin: 4px 0 12px; }
+.page h2 { font-size: 1.15rem; margin: 22px 0 8px; padding-left: 10px; border-left: 3px solid var(--main-900); line-height: 1.3; }
+.muted { color: var(--muted); font-size: 0.92rem; }
+.small { font-size: 0.85rem; }
+.row { display: flex; gap: 10px; align-items: center; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ---- いまやること: 各タブの一番上。文 1 つ + 主ボタン 1 つ ---- */
+.todo { background: var(--main-900); color: var(--paper); border-radius: var(--radius); border-left: 5px solid var(--accent); padding: 14px 16px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.todo .label { font-size: 0.75rem; letter-spacing: 0.2em; color: var(--accent); font-weight: 700; }
+.todo .text { font-family: var(--font-head); font-size: 1.1rem; margin: 4px 0 10px; line-height: 1.5; }
+.todo .btn { background: var(--paper); color: var(--main-900); border-color: var(--paper); }
+/* 濃い面の上は強調色がいちばん映える。ここに必ず 1 つ置く */
+.todo .btn::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+
+/* ---- 手順帯 ---- */
+.steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 4px 0 12px; }
+.steps > div { border-top: 3px solid var(--main-100); padding-top: 6px; font-size: 0.85rem; color: var(--muted); }
+.steps > div.on { border-top-color: var(--main-900); color: var(--main-900); font-weight: 700; }
+.steps > div.done { border-top-color: var(--main-500); color: var(--main-700); }
+
+/* ---- ボタン: 塗りつぶし（primary）は 1 画面に 1 つ ---- */
+.btn { min-height: var(--tap); padding: 10px 18px; border-radius: var(--radius); border: 1.5px solid var(--main-900); background: var(--card); color: var(--main-900); font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.btn.primary { background: var(--main-900); color: var(--paper); }
+.btn.ghost { border-color: var(--line-strong); color: var(--main-700); font-weight: 600; } /* とじる・やめる */
+.btn.done { background: var(--main-050); border-color: var(--main-050); color: var(--main-700); } /* 押したあと */
+.btn.block { width: 100%; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.iconbtn { min-width: var(--tap); min-height: var(--tap); border: 0; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--main-700); }
+.iconbtn svg { width: 24px; height: 24px; }
+
+/* ---- チップ（選ぶ・絞る）と札（状態を示すだけ） ---- */
+.chip { display: inline-flex; align-items: center; min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--main-700); font-size: 0.9rem; cursor: pointer; }
+.chip.on { background: var(--main-900); color: var(--paper); border-color: var(--main-900); }
+.badge { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; background: var(--main-050); color: var(--main-700); border: 1px solid var(--main-100); }
+.badge.strong { background: var(--main-900); color: var(--paper); border-color: var(--main-900); }
+.badge.soft { background: transparent; color: var(--muted); }
+.badge.reason { background: var(--accent-soft); color: var(--accent-ink); border: 1.5px solid var(--accent); } /* おすすめの理由タグ */
+
+/* ---- カード ---- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.card.highlight { border-color: var(--main-900); }
+.card.letter { border-color: var(--main-300); background: linear-gradient(180deg, #fff, var(--paper-2)); }
+.card .title { font-family: var(--font-head); font-size: 1.1rem; }
+/* ボタンのすぐ下に置く記録の見出し */
+.histhead { font-weight: 700; font-size: 0.92rem; color: var(--main-700); margin: 12px 0 6px; padding-left: 8px; border-left: 2px solid var(--main-300); }
+
+/* ---- 写真・人 ---- */
+.photo-wrap { position: relative; overflow: hidden; border-radius: var(--radius); background: var(--main-100); aspect-ratio: 3 / 2; }
+.photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-wrap .tint { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(var(--main-rgb), 0.05), rgba(var(--main-rgb), 0.45)); }
+.photo-wrap .caption { position: absolute; left: 12px; right: 12px; bottom: 10px; color: var(--paper); font-family: var(--font-head); font-size: 1.25rem; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; overflow: hidden; background: var(--main-050); border: 1px solid var(--main-100); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.avatar.sm { width: 36px; height: 36px; }
+.avatar.lg { width: 96px; height: 96px; }
+.avatar.met { border: 2px solid var(--accent); }               /* 済み: 強調色の細い輪 */
+.avatar.dim img { opacity: 0.45; filter: grayscale(0.6); }     /* まだ */
+
+/* ---- 下タブ: 5 つまで ---- */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: var(--tab-h); display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--paper); border-top: 1px solid var(--main-100); z-index: 10; }
+.tabbar button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.72rem; font-weight: 600; color: var(--main-500); cursor: pointer; position: relative; }
+.tabbar button.on { color: var(--main-900); }
+.tabbar button.on::after { content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--main-900); }
+.tabbar button img, .tabbar button svg { width: 24px; height: 24px; opacity: 0.55; }
+.tabbar button.on img, .tabbar button.on svg { opacity: 1; }
+.tabbar .dot { position: absolute; top: 10px; right: calc(50% - 18px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); } /* 未読 */
+
+/* ---- ヘッダ: 上に固定。左に戻る、右に「？」と設定 ---- */
+.topbar { position: sticky; top: 0; z-index: 8; display: flex; align-items: center; justify-content: space-between; background: var(--paper); margin: calc(var(--gutter) * -1) calc(var(--gutter) * -1) 10px; padding: 8px var(--gutter); border-bottom: 1px solid var(--main-100); }
+.topbar .title { font-family: var(--font-head); font-size: 1.15rem; }
+
+/* ---- 入力 ---- */
+input[type="text"], input[type="search"], input[type="number"], input[type="date"], textarea, select { font: inherit; width: 100%; min-height: var(--tap); padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--card); color: var(--fg); }
+textarea { min-height: 96px; resize: vertical; }
+label.field { display: block; margin: 8px 0; }
+label.field > span { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
+
+/* ---- 2 択の切替（同じ画面の 2 つの見方） ---- */
+.segment { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1.5px solid var(--main-900); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; }
+.segment button { min-height: var(--tap); border: 0; background: var(--card); color: var(--main-900); font-weight: 700; cursor: pointer; }
+.segment button.on { background: var(--main-900); color: var(--paper); }
+
+/* ---- 折りたたみ（必要な人だけ見る情報） ---- */
+details.fold > summary { cursor: pointer; list-style: none; min-height: var(--tap); display: flex; align-items: center; justify-content: space-between; color: var(--main-700); font-weight: 700; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "＋"; }
+details.fold[open] > summary::after { content: "－"; }
+
+/* ---- お知らせ: 半透明の紙に薄いテーマ色。短く、控えめに ---- */
+.toast { position: fixed; left: 50%; bottom: calc(var(--tab-h) + 16px); transform: translateX(-50%); z-index: 50; max-width: 86vw; padding: 8px 14px; border-radius: var(--radius); font-size: 0.88rem; color: var(--main-700); background: color-mix(in srgb, var(--paper) 82%, transparent); border: 1px solid rgba(var(--main-rgb), 0.18); box-shadow: 0 4px 14px rgba(var(--main-rgb), 0.10); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: rise 0.25s ease; }
+.toast.error { border-left: 3px solid var(--accent); }
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---- 初回ガイドとポップアップ ---- */
+.backdrop { position: fixed; inset: 0; background: rgba(var(--main-rgb), 0.5); z-index: 60; display: grid; place-items: center; padding: 20px; }
+.guide { background: var(--paper); border: 1px solid var(--main-300); border-radius: var(--radius-lg); max-width: 420px; width: 100%; padding: 22px 20px; }
+.guide .no { font-family: var(--font-head); color: var(--accent); font-size: 0.9rem; letter-spacing: 0.3em; }
+.guide h3 { font-size: 1.35rem; margin: 6px 0 8px; }
+.guide .figure { margin: 8px 0 10px; }
+.guide .dots { display: flex; gap: 6px; justify-content: center; margin: 14px 0; }
+.guide .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--main-100); }
+.guide .dots i.on { background: var(--main-900); }
+/* 結果・確認。スクロールなしで収める */
+.modal { background: var(--paper); border-radius: 14px; padding: 20px 18px; width: min(88vw, 360px); text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
+
+/* ---- めくるカード（積み重ね）。下に同じ働きのボタン 2 つを必ず置く ---- */
+.deck { position: relative; height: 440px; margin-bottom: 24px; }
+.deck .dcard { position: absolute; inset: 0; background: var(--card); border: 1px solid var(--main-100); border-radius: var(--radius-lg); overflow: hidden; touch-action: pan-y; user-select: none; transform-origin: 50% 100%; transition: transform 0.22s ease, box-shadow 0.22s ease; box-shadow: 0 6px 20px rgba(var(--main-rgb), 0.08); }
+.deck .dcard.behind { transform: translateY(16px) scale(0.94); pointer-events: none; filter: brightness(0.96); }
+.deck-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+
+/* ---- 地図のピンのポップアップ（地図の箱を position: relative に） ---- */
+.mappop { position: absolute; left: 8px; right: 8px; bottom: 8px; background: color-mix(in srgb, var(--paper) 96%, transparent); border: 1px solid var(--main-300); border-radius: var(--radius); padding: 10px 12px; box-shadow: 0 6px 18px rgba(var(--main-rgb), 0.18); }
+
+/* ---- 横スクロールの列（撮影画面のフレーム選択など） ---- */
+.hscroll { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.hscroll > * { flex: none; white-space: nowrap; }
+
+/* ---- 進み具合 ---- */
+.progress { height: 6px; background: var(--main-100); border-radius: 3px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+
+/* ---- 下線タブ（運営の画面の機能切替）といまの場所 ---- */
+.fntabs { display: flex; overflow-x: auto; border-bottom: 2px solid var(--main-100); scrollbar-width: none; position: sticky; top: 0; z-index: 8; background: var(--paper); }
+.fntabs::-webkit-scrollbar { display: none; }
+.fntabs button { flex: 1 0 auto; min-height: 46px; padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; background: none; color: var(--muted); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.fntabs button.on { color: var(--main-900); font-weight: 800; border-bottom-color: var(--accent); }
+.crumb { padding: 8px 2px 6px; border-bottom: 1px dashed var(--main-100); color: var(--muted); font-size: 0.85rem; }
+
+/* ---- 表 ---- */
+table.tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+table.tbl th { color: var(--muted); font-weight: 600; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---- 運営の画面: スマホ幅では 1 列 ---- */
+@media (max-width: 720px) {
+  .page.wide .grid2 { grid-template-columns: 1fr; }
+  .page.wide table.tbl { display: block; overflow-x: auto; }
+}
+
+/* ---- 印刷と、動きを減らす設定 ---- */
+@media print {
+  .tabbar, .topbar, .toast, .noprint { display: none !important; }
+  body { background: #fff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

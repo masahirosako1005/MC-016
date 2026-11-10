@@ -12,6 +12,24 @@
       "runtimeExecutable": "powershell",
       "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "scripts/start.ps1", "-SkipBuild"],
       "port": 8000
+    },
+    {
+      "name": "yumeguri-with-skill",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-Command", "npm --prefix C:\\AI-Sprint\\workspace\\skill-test\\with-skill run dev"],
+      "port": 5173
+    },
+    {
+      "name": "yumeguri-without-skill",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-Command", "npm --prefix C:\\AI-Sprint\\workspace\\skill-test\\without-skill run dev"],
+      "port": 5183
+    },
+    {
+      "name": "yumeguri-with-skill-v2",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-Command", "npm --prefix C:\\AI-Sprint\\workspace\\skill-test\\with-skill-v2 run dev"],
+      "port": 5193
     }
   ]
 }

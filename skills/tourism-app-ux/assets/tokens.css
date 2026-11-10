@@ -1,0 +1,66 @@
+/*
+ * 色・書体・寸法の変数。
+ * 使い方: 先に 4 色（テーマ色・強調色・背景・字）を決め、このファイルをコピーして「世界観」の値を差し替える。
+ * テーマ色は色名で呼べる色に（黒に見える色は避ける）。強調色はテーマ色と並べて映える色に。
+ * 下の「役割」の変数と base.css は、そのまま使える。
+ * 見本の値は「藍染と和紙の手紙」（テーマ色 = 藍、強調色 = 山吹）。見本の値のまま使わない。
+ */
+:root {
+  /* ---- 世界観（ここを差し替える） ---- */
+  --main-900: #1b2a44; /* テーマ色そのもの。字・主ボタン・選択中 */
+  --main-700: #2f446a; /* リンク・補助ボタンの文字 */
+  --main-500: #56698f; /* 補足の文字（紙の上で 4.5:1 以上を保つ） */
+  --main-300: #a9b4c8; /* 強めの枠・無効 */
+  --main-100: #e6eaf1; /* 枠線・区切り */
+  --main-050: #f1f3f7; /* 薄い面（済み・選択の背景） */
+  --paper: #fbfcfd;    /* 背景。テーマ色をごくわずかに混ぜた白 */
+  --paper-2: #f5f6f8;  /* 少し沈んだ紙 */
+  --accent: #e3a21a;      /* 強調色。どの画面でも目に入る大きさで、1〜3 箇所 */
+  --accent-soft: #fbf1d9; /* 強調色の薄い面 */
+  --accent-ink: #7a5300;  /* 強調色の薄い面に載せる文字 */
+
+  /* テーマ色の RGB（半透明の影や膜に使う） */
+  --main-rgb: 27, 42, 68;
+
+  /* ---- 役割（部品はこちらを参照する） ---- */
+  --bg: var(--paper);
+  --card: #ffffff;
+  --fg: var(--main-900);
+  --muted: var(--main-500);
+  --line: var(--main-100);
+  --line-strong: var(--main-300);
+
+  /* ---- 寸法 ---- */
+  --tab-h: 64px;   /* 下タブの高さ。固定の部品はこれを参照して上に載る */
+  --radius: 8px;
+  --radius-lg: 12px;
+  --tap: 48px;     /* 押せるものの最小の高さ */
+  --page-max: 560px;
+  --gutter: 16px;
+
+  /* ---- 書体（OS に入っているものだけ） ---- */
+  --font-body: "Yu Gothic UI", "Yu Gothic", "Meiryo UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-head: "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+
+  /* ---- 文字の大きさ（設定で 3 段階） ---- */
+  --fs: 16px;
+  font-size: var(--fs);
+}
+:root[data-font="1"] { --fs: 14px; }
+:root[data-font="2"] { --fs: 16px; }
+:root[data-font="3"] { --fs: 19px; }
+
+/* 高コントラスト。変数の上書きだけで済むよう、部品に色の値を直接書かない */
+:root[data-theme="contrast"] {
+  --main-900: #0b1220;
+  --main-700: #0b1220;
+  --main-500: #22304a;
+  --main-300: #6b7890;
+  --main-100: #c9d0dc;
+  --main-050: #eef1f5;
+  --paper: #ffffff;
+  --card: #ffffff;
+  --line: #0b1220;
+  --line-strong: #0b1220;
+  --accent: #b57b00;
+}

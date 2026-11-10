@@ -27,7 +27,7 @@
 デザインは藍染と和紙の手紙（藍 `#1b2a44`・紙 `#fbfcfd`・差し色 山吹 `#e3a21a`、見出し明朝・本文ゴシック）。人の絵は Loose Drawing、場所の写真は Unsplash、アイコンは ICOOON MONO（出典は `docs/07_licenses.md`）。
 
 ## ドキュメント
-`docs/00_requirements.md` 要件と判断ログ ／ `01_system.md` 構成 ／ `02_screens.md` 画面 ／ `03_data.md` データ ／ `04_features.md` 機能 ／ `05_tests.md` テスト ／ `06_security.md` セキュリティ ／ `07_licenses.md` ライセンス ／ `08_demo_scripts.md` デモ台本 ／ `10_progress.md` 進捗（1 行ずつ）
+`docs/00_requirements.md` 要件と判断ログ ／ `01_system.md` 構成 ／ `02_screens.md` 画面 ／ `03_data.md` データ ／ `04_features.md` 機能 ／ `05_tests.md` テスト ／ `06_security.md` セキュリティ ／ `07_licenses.md` ライセンス ／ `08_demo_scripts.md` デモ台本と 6 分の発表台本（スライドは `slides/hitomeguri-pitch.html`） ／ `10_progress.md` 進捗（1 行ずつ）
 
 ## 正直に書いておくこと
 - 「AR フォト」はカメラ映像に人の絵と飾りを重ねて合成するもので、マーカー認識や空間追跡はしていません。

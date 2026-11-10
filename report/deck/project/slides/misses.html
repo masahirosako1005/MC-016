@@ -1,0 +1,31 @@
+<section id="misses" data-transition="fade" style="background:#fbfcfd;color:#1b2a44;font-family:'Noto Sans JP', Arial, sans-serif;padding:104px 128px;display:flex;flex-direction:column;gap:44px">
+<h2 style="font-family:'Noto Serif JP', Georgia, serif;font-size:60px;font-weight:700;line-height:1.25">うまくいかなかったこと</h2>
+<p style="font-size:32px;font-weight:700;line-height:1.5">手戻りの多くは、機能を足したときの「周辺の更新漏れ」だった</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px 48px">
+<div style="display:flex;flex-direction:column;gap:6px;border-top:2px solid #1b2a44;padding:18px 0 0 0">
+<h3 style="font-size:30px;font-weight:700;line-height:1.4">名前の変更が残った</h3>
+<p style="font-size:26px;line-height:1.55;color:#55627a">既存データの文章、書き出し済みの画像、ブラウザのキャッシュに旧名が残った</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;border-top:2px solid #1b2a44;padding:18px 0 0 0">
+<h3 style="font-size:30px;font-weight:700;line-height:1.4">デモの初期化が不完全だった</h3>
+<p style="font-size:26px;line-height:1.55;color:#55627a">機能を足すたびに、回答や便りが初期化で消えず、見せたい画面が出なかった</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;border-top:2px solid #1b2a44;padding:18px 0 0 0">
+<h3 style="font-size:30px;font-weight:700;line-height:1.4">デモの演出が運まかせだった</h3>
+<p style="font-size:26px;line-height:1.55;color:#55627a">抽選がはずれると見せ場が出ない。デモ時だけ初回を当たりにする分岐を足した</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;border-top:2px solid #1b2a44;padding:18px 0 0 0">
+<h3 style="font-size:30px;font-weight:700;line-height:1.4">文言の残骸</h3>
+<p style="font-size:26px;line-height:1.55;color:#55627a">長押しを廃止した後も、画面と文書に「長押し」の説明が残った</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;border-top:2px solid #1b2a44;padding:18px 0 0 0">
+<h3 style="font-size:30px;font-weight:700;line-height:1.4">進捗ログの時刻がずれた</h3>
+<p style="font-size:26px;line-height:1.55;color:#55627a">AI が書いた時刻とコミット時刻が合わない行があった。コミットを正とした</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;border-top:2px solid #1b2a44;padding:18px 0 0 0">
+<h3 style="font-size:30px;font-weight:700;line-height:1.4">並行セッションの衝突</h3>
+<p style="font-size:26px;line-height:1.55;color:#55627a">同じ CSS クラス名がぶつかった。以後は触るファイルを分けた</p>
+</div>
+</div>
+<aside>名前の変更は、マスタ、既存データ、画像、キャッシュの 4 か所を見る、という型にしました。</aside>
+</section>

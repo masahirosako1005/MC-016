@@ -1,0 +1,235 @@
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>湯めぐり比較試験</title>
+<style>
+/* レイアウト: 1 列の報告書。画面写真だけ「なし｜0.1｜0.2」の 3 列で、常に同じ高さから見比べる */
+:root {
+  --bg: #f6f7fa;
+  --surface: #ffffff;
+  --ink: #1b2a44;
+  --ink-2: #4a5b7c;
+  --line: #dde2ec;
+  --none: #5b6472;        /* Skill なし = 灰 */
+  --none-soft: #eceef2;
+  --v1: #1b2a44;          /* Skill 0.1 = 藍 */
+  --v1-soft: #e8ecf4;
+  --v2: #8a5a12;          /* Skill 0.2 = 山吹の濃い側 */
+  --v2-soft: #fbf1d9;
+  --mark: #e3a21a;
+  --font-head: "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-body: "Yu Gothic UI", "Yu Gothic", "Meiryo UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111826; --surface: #1a2335; --ink: #e9edf5; --ink-2: #a9b4c8; --line: #2f3b54;
+    --none: #c3c9d4; --none-soft: #2a3142; --v1: #a9c0ee; --v1-soft: #24304a; --v2: #f0c46a; --v2-soft: #3a2f17; --mark: #e3a21a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111826; --surface: #1a2335; --ink: #e9edf5; --ink-2: #a9b4c8; --line: #2f3b54;
+  --none: #c3c9d4; --none-soft: #2a3142; --v1: #a9c0ee; --v1-soft: #24304a; --v2: #f0c46a; --v2-soft: #3a2f17; --mark: #e3a21a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.75;
+  padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+h1, h2, h3 { font-family: var(--font-head); font-weight: 600; letter-spacing: 0.02em; text-wrap: balance; margin: 0; }
+h1 { font-size: 2rem; line-height: 1.3; }
+h2 { font-size: 1.35rem; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+h3 { font-size: 1.1rem; }
+p { margin: 0; }
+section { display: flex; flex-direction: column; gap: 16px; }
+.meta { color: var(--ink-2); font-size: 0.9rem; }
+.lead { font-size: 1.1rem; max-width: 42em; }
+
+.tag { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; align-self: flex-start; }
+.tag.none { background: var(--none-soft); color: var(--none); }
+.tag.v1 { background: var(--v1-soft); color: var(--v1); }
+.tag.v2 { background: var(--v2-soft); color: var(--v2); }
+
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.verdict { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.verdict .v { font-family: var(--font-head); font-size: 1.15rem; line-height: 1.5; }
+.verdict.top { border-color: var(--mark); }
+
+.tablebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child > th, tr:last-child > td { border-bottom: 0; }
+thead th { color: var(--ink-2); font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+tbody th { font-weight: 600; min-width: 9em; }
+.judge td { min-width: 11em; }
+.score { font-weight: 800; margin-right: 6px; }
+.best { background: var(--v2-soft); }
+
+.scene { display: flex; flex-direction: column; gap: 12px; }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
+.shot { display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: 0.9rem; line-height: 1.6; }
+.shot img { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+@media (max-width: 560px) { .trio { gap: 6px; } .shot { font-size: 0.78rem; } }
+
+ul { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.fixlist li::marker { color: var(--mark); }
+.limits { color: var(--ink-2); font-size: 0.95rem; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:12px">
+    <p class="meta">tourism-app-ux 版 0.1 → 0.2 ／ 2026-11-10</p>
+    <h1>Skill なし・0.1・0.2 で、同じアプリを作らせて比べた</h1>
+    <p class="lead">お題は架空の温泉街の「湯めぐり」アプリ。UI の指示は「すべて任せる」だけにして、同じ依頼文を 3 回出した。1 回目の比較で分かった弱点を Skill に反映したのが版 0.2。</p>
+  </header>
+
+  <section>
+    <h2>結論</h2>
+    <div class="verdicts">
+      <div class="verdict">
+        <span class="tag none">Skill なし</span>
+        <span class="v">絵は豊か、道案内は弱い</span>
+        <span>場所ごとの色つきの絵と漢字のピンが魅力。次にやることと画面の行き来は、利用者が読み取る必要がある。</span>
+      </div>
+      <div class="verdict">
+        <span class="tag v1">Skill 0.1</span>
+        <span class="v">迷わないが、のっぺり</span>
+        <span>どの画面でも次にやることが分かる。ただしテーマ色が黒に近く、強調色が点だけで、絵も単色になった。</span>
+      </div>
+      <div class="verdict top">
+        <span class="tag v2">Skill 0.2</span>
+        <span class="v">迷わず、絵も豊か</span>
+        <span>最初に配色 4 色を決めさせた結果、えんじと若草の対比がはっきり出た。0.1 の使いやすさを保ったまま、なしの良い点も入った。</span>
+      </div>
+    </div>
+    <p class="limits">試行は各 1 回。判定は画面写真と設計メモを見比べたもので、実際の利用者による評価ではない。</p>
+  </section>
+
+  <section>
+    <h2>試験の条件</h2>
+    <div class="tablebox">
+      <table>
+        <tbody>
+          <tr><th>お題</th><td>架空の温泉街「湯乃花温泉」の湯めぐりアプリ。外湯 6・お店 4。行く前 → 当日 → 帰ったあと、お店の人の画面 1 つ、デモ用の場面切替</td></tr>
+          <tr><th>技術</th><td>React + TypeScript + Vite。サーバーなし、外部の素材なし</td></tr>
+          <tr><th>UI の指示</th><td>「画面構成・色・書体・文言・操作の流れはすべて任せる」。依頼文は 3 回とも同じ</td></tr>
+          <tr><th>ちがい</th><td>Skill を呼ばずに作る ／ 版 0.1 を使う ／ 版 0.2 を使う</td></tr>
+          <tr><th>場所</th><td>元のアプリ（ひとめぐり）のプロジェクトの外の空フォルダ。既存コードと設計メモは見えない</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>0.1 から 0.2 で変えたこと</h2>
+    <ul>
+      <li><b>最初に配色 4 色を決める。</b>テーマ色（色名で呼べる色。黒に見える色は選ばない）、強調色（テーマ色と並べて映える色）、背景の色、字の色</li>
+      <li><b>強調色は、どの画面でも目に入る大きさで使う。</b>0.1 は「1 画面に 1 箇所」と書いたため、小さな点だけになった</li>
+      <li><b>絵は色の決まりの外。</b>場所の絵と地図は色つきで、場所ごとに描き分ける</li>
+      <li><b>Skill なしの良い工夫を取り込む。</b>所要時間の目安、空き枠と「あと N つ」、場所を見分ける一文字</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>画面の見比べ</h2>
+
+    <div class="scene">
+      <h3>行く前：行きたい場所を選ぶ</h3>
+      <div class="trio">
+        <div class="shot"><span class="tag none">Skill なし</span><img src="img/without_01-before-top.png" alt="Skill なし: 夜の温泉街の大きな絵と題字、その下に色つきの絵のカード一覧"><span>題字の絵で世界観が伝わる。上半分が切替と飾りで埋まり、下タブがない。</span></div>
+        <div class="shot"><span class="tag v1">Skill 0.1</span><img src="img/with_01-plan-before.png" alt="Skill 0.1: 黒に近い茶の「いまやること」カードと、単色の紋が並ぶ一覧"><span>「いまやること」と下タブで迷わない。色は茶 1 色で、絵は紋だけ。</span></div>
+        <div class="shot"><span class="tag v2">Skill 0.2</span><img src="img/v2_01-before-plan.png" alt="Skill 0.2: えんじの「いまやること」カードに若草の帯。鶴・月・柳・石段を描き分けた色つきの絵のカード"><span>えんじに若草が映える。場所ごとの絵と一文字の印。選ぶと「およそ 2 時間 23 分」が出る。</span></div>
+      </div>
+    </div>
+
+    <div class="scene">
+      <h3>当日：地図で回る</h3>
+      <div class="trio">
+        <div class="shot"><span class="tag none">Skill なし</span><img src="img/without_04-day-map.png" alt="Skill なし: 川と山のある色つきの地図に漢字一文字のピン。下に記録ボタン"><span>色つきの地図と漢字のピンで見分けやすい。次の行き先は自分で読み取る。</span></div>
+        <div class="shot"><span class="tag v1">Skill 0.1</span><img src="img/with_05-map-day.png" alt="Skill 0.1: 「次は湯けむり茶屋へ」の案内と、白黒に近い地図に番号ピン"><span>「次は○○へ。歩いて 3 分」と示す。地図は線だけで色がない。</span></div>
+        <div class="shot"><span class="tag v2">Skill 0.2</span><img src="img/v2_02-day-map-popup.png" alt="Skill 0.2: 「次は柳の湯へ。歩いて 2 分」の案内と、川と山のある色つきの地図。若草のピンに一文字と順番"><span>行き先の案内に加え、色つきの地図、一文字と順番つきのピン。ポップアップが下のピンに少し重なる。</span></div>
+      </div>
+    </div>
+
+    <div class="scene">
+      <h3>当日：記録する</h3>
+      <div class="trio">
+        <div class="shot"><span class="tag none">Skill なし</span><img src="img/without_05-day-record.png" alt="Skill なし: 下から出るシート。朝日の絵、入力欄と候補、いちばん下にボタン"><span>絵は描き分けられている。主ボタンがいちばん下。</span></div>
+        <div class="shot"><span class="tag v1">Skill 0.1</span><img src="img/with_03-record.png" alt="Skill 0.1: 専用画面。単色の山の絵のすぐ下に記録ボタン"><span>専用の画面で、主ボタンが絵のすぐ下。絵は単色。</span></div>
+        <div class="shot"><span class="tag v2">Skill 0.2</span><img src="img/v2_03-day-record.png" alt="Skill 0.2: 専用画面。窓辺のコーヒーの色つきの絵、写真をそえるボタン、ひとこと、手形に押すボタン"><span>専用の画面に、その場所らしい色つきの絵。写真がなければ絵で残る。主ボタンは入力欄の下。</span></div>
+      </div>
+    </div>
+
+    <div class="scene">
+      <h3>集める・見返す</h3>
+      <div class="trio">
+        <div class="shot"><span class="tag none">Skill なし</span><img src="img/without_07-after-top.png" alt="Skill なし: 旅のしおり。押した印と点線の空き枠が並ぶ湯めぐり帖"><span>押していない枠を点線で残し、「あと 5 つ」と見せる。</span></div>
+        <div class="shot"><span class="tag v1">Skill 0.1</span><img src="img/with_07-memory-photos.png" alt="Skill 0.1: 時刻順に並ぶポラロイドふうの記録"><span>ポラロイドふうの記録。残りがいくつかは見えにくい。</span></div>
+        <div class="shot"><span class="tag v2">Skill 0.2</span><img src="img/v2_05-day-tegata.png" alt="Skill 0.2: 木の湯めぐり手形。若草の進み具合の棒、押した焼印と点線の空き枠"><span>木の「湯めぐり手形」。空き枠と進み具合の棒、「外湯はあと 4 つ」。この題材ならではの見せ方になった。</span></div>
+      </div>
+    </div>
+
+    <div class="scene">
+      <h3>帰ったあと：割引券</h3>
+      <div class="trio">
+        <div class="shot"><span class="tag none">Skill なし</span><img src="img/without_08-after-coupon.png" alt="Skill なし: 朱色の「おかえり券」と行けなかった場所の一覧"><span>朱色で目を引く。見返す画面の続きに出る。</span></div>
+        <div class="shot"><span class="tag v1">Skill 0.1</span><img src="img/with_08-coupon.png" alt="Skill 0.1: 白地に茶の文字の割引券と「番台で見せて使う」ボタン"><span>独立したタブで、使い方が明確。色がなく券らしさが弱い。</span></div>
+        <div class="shot"><span class="tag v2">Skill 0.2</span><img src="img/v2_08-after-coupon.png" alt="Skill 0.2: えんじの枠の割引券。若草の「次の旅で使える」札、大きな 200 円引き"><span>独立したタブ。若草の札と大きな数字で、何の券かが一目で分かる。</span></div>
+      </div>
+    </div>
+
+    <div class="scene">
+      <h3>お店の人の画面</h3>
+      <div class="trio">
+        <div class="shot"><span class="tag none">Skill なし</span><img src="img/without_09-shop-top.png" alt="Skill なし: お店の選択、来訪の数字、時間ごとのグラフ"><span>数字とグラフから始まる。何をすればいいかは示されない。</span></div>
+        <div class="shot"><span class="tag v1">Skill 0.1</span><img src="img/with_09-shop-home.png" alt="Skill 0.1: 先頭に「次の一手」、その下に数字とグラフ"><span>「次の一手」から始まる。平均と比べ、3 人未満は出さない。</span></div>
+        <div class="shot"><span class="tag v2">Skill 0.2</span><img src="img/v2_09-shop-home.png" alt="Skill 0.2: 先頭に「次の一手」、来訪の数字を「いつもの土曜」と比べる"><span>「次の一手」から始まる。「いつもの土曜より 4 人多い」と平均と比べる。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>観点ごとの判定</h2>
+    <div class="tablebox">
+      <table class="judge">
+        <thead><tr><th>観点</th><th>Skill なし</th><th>Skill 0.1</th><th>Skill 0.2</th></tr></thead>
+        <tbody>
+          <tr><th>次にやることが分かる</th><td><span class="score">△</span>画面ごとに読み取る</td><td><span class="score">◎</span>全タブに「いまやること」</td><td class="best"><span class="score">◎</span>全タブに「いまやること」</td></tr>
+          <tr><th>画面の行き来</th><td><span class="score">△</span>常設の移動手段がない</td><td><span class="score">◎</span>下タブ 4 つ</td><td class="best"><span class="score">◎</span>下タブ 5 つ</td></tr>
+          <tr><th>主ボタンに届きやすい</th><td><span class="score">○</span>シートでは最下部</td><td><span class="score">◎</span>絵のすぐ下</td><td><span class="score">○</span>記録画面は入力欄の下</td></tr>
+          <tr><th>お店の人の画面</th><td><span class="score">○</span>数字の一覧</td><td><span class="score">◎</span>提案から始まる</td><td class="best"><span class="score">◎</span>提案から始まる</td></tr>
+          <tr><th>設定・使い方</th><td><span class="score">×</span>なし</td><td><span class="score">◎</span>あり</td><td class="best"><span class="score">◎</span>あり</td></tr>
+          <tr><th>配色のめりはり</th><td><span class="score">○</span>色は多いが、まとまりは弱い</td><td><span class="score">△</span>茶 1 色でのっぺり</td><td class="best"><span class="score">◎</span>えんじと若草の対比</td></tr>
+          <tr><th>絵の豊かさ・世界観</th><td><span class="score">◎</span>場所ごとの風景</td><td><span class="score">△</span>単色の記号</td><td class="best"><span class="score">◎</span>場所ごとの風景と手形</td></tr>
+          <tr><th>場所の見分けやすさ</th><td><span class="score">◎</span>漢字一文字のピン</td><td><span class="score">○</span>紋と番号</td><td class="best"><span class="score">◎</span>一文字の印を全画面で共通に</td></tr>
+          <tr><th>また来たくなる仕掛け</th><td><span class="score">◎</span>空き枠と「あと 5 つ」</td><td><span class="score">○</span>計画への案内</td><td class="best"><span class="score">◎</span>手形の空き枠と「あと 4 つ」</td></tr>
+          <tr><th>行く前の安心感</th><td><span class="score">◎</span>所要時間を出す</td><td><span class="score">○</span>回る順の番号</td><td class="best"><span class="score">◎</span>所要時間と回る順</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="meta">色のついたマスは、版 0.2 がいちばん良いか、並んでいちばん良い観点。</p>
+  </section>
+
+  <section>
+    <h2>版 0.2 に残った気になる点</h2>
+    <ul class="fixlist">
+      <li><b>配色が Skill の例示そのまま。</b>えんじ × 若草は、Skill の中に「温泉街の例」として書いた組み合わせ。自分で考えたというより例を写した可能性が高い。例示は方向だけにとどめたほうがよい</li>
+      <li><b>同じ情報が二重に出る。</b>行く前の画面で、所要時間が「いまやること」と下の固定バーの両方に出て、固定バーが一覧に重なる</li>
+      <li><b>地図のポップアップがピンに重なる。</b>下側のピンが隠れる</li>
+      <li><b>記録画面の主ボタンが入力欄の下に下がった。</b>0.1 は絵のすぐ下だった</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>この試験の限界</h2>
+    <ul class="limits">
+      <li>各 1 回だけの試行。別の回では結果が変わる可能性がある</li>
+      <li>判定は Claude が画面写真と設計メモを見て行った。実際の利用者による評価ではない</li>
+      <li>版 0.2 は、この同じお題の結果を見て直したもの。別のお題でも同じように効くかは、まだ確かめていない</li>
+    </ul>
+  </section>
+</div>

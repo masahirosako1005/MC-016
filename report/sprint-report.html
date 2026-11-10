@@ -1,0 +1,353 @@
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>AI駆動開発スプリント 参加報告</title>
+<style>
+/* レイアウト: 1 カラムの読み物。冒頭に結論と数字、続いて時間の使い方の帯、以降は「やったこと → 学び」の表。色はアプリと同じ藍と和紙、山吹は「38分」の 1 箇所だけ。 */
+:root{
+  --bg:#fbfcfd; --surface:#f1f4f8; --fg:#1b2a44; --muted:#5a6880; --line:#d5dbe5;
+  --accent:#1b2a44; --accent-soft:#dfe5ef; --gold:#e3a21a; --tile:#ffffff;
+  --mid:#5d73a0; --soft2:#a9b8d4; --line2:#cfd6e2;
+  --serif:"Yu Mincho","YuMincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+  --sans:"Yu Gothic UI","Yu Gothic","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111a2b; --surface:#1a2740; --fg:#e8ecf3; --muted:#a3b0c6; --line:#33425e;
+    --accent:#b9c8e6; --accent-soft:#26365a; --gold:#e9b23c; --mid:#7f95c2; --soft2:#4a5d86; --line2:#33425e; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111a2b; --surface:#1a2740; --fg:#e8ecf3; --muted:#a3b0c6; --line:#33425e;
+  --accent:#b9c8e6; --accent-soft:#26365a; --gold:#e9b23c; --mid:#7f95c2; --soft2:#4a5d86; --line2:#33425e; color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.85;}
+.wrap{max-width:860px;margin:0 auto;padding-block:40px 72px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:48px;}
+header .kicker{font-size:13px;letter-spacing:.12em;color:var(--muted);margin:0 0 8px;}
+h1{font-family:var(--serif);font-size:clamp(26px,5vw,38px);line-height:1.35;margin:0 0 12px;text-wrap:balance;font-weight:600;}
+.lead{font-size:17px;margin:0;max-width:40em;}
+.meta{font-size:13px;color:var(--muted);margin:14px 0 0;}
+section{display:flex;flex-direction:column;gap:16px;min-width:0;}
+h2{font-family:var(--serif);font-size:23px;line-height:1.4;margin:0;padding-bottom:8px;border-bottom:1px solid var(--line);font-weight:600;text-wrap:balance;}
+h3{font-size:16px;margin:8px 0 0;}
+p{margin:0;max-width:42em;}
+.point{margin:0;font-weight:600;max-width:42em;}
+ul,ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:8px;max-width:42em;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0;padding:0;list-style:none;max-width:none;}
+.stats li{background:var(--surface);border-radius:6px;padding:14px 16px;}
+.stats b{display:block;font-family:var(--serif);font-size:28px;line-height:1.2;font-variant-numeric:tabular-nums;}
+.stats span{font-size:13px;color:var(--muted);}
+.takeaways{list-style:none;padding:0;display:grid;gap:12px;max-width:none;}
+.takeaways li{border-left:3px solid var(--accent);padding:2px 0 2px 16px;}
+.takeaways strong{display:block;}
+.bar{display:flex;height:34px;border-radius:4px;overflow:hidden;background:var(--accent-soft);}
+.bar .prep{width:8.2%;background:var(--muted);}
+.bar .req{width:8.3%;background:var(--accent);}
+.bar .first{width:5.3%;background:var(--gold);}
+.barlabels{display:flex;justify-content:space-between;gap:16px;font-size:14px;flex-wrap:wrap;}
+.barlabels b{font-variant-numeric:tabular-nums;}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;}
+.tl{display:flex;flex-direction:column;gap:10px;}
+.tl-axis,.tl-row{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:center;padding-right:10px;}
+.tl-hours{position:relative;height:18px;}
+.tl-hours i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.tl-day{font-size:14px;font-weight:600;line-height:1.3;}
+.tl-day small{display:block;font-weight:400;font-size:12px;color:var(--muted);}
+.tl-track{position:relative;height:36px;border-radius:4px;background:
+  repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 11.111%);border-right:1px solid var(--line);}
+.tl-track b{position:absolute;top:4px;bottom:4px;border-radius:3px;box-shadow:inset 0 0 0 1px var(--bg);}
+.c-prep{background:var(--muted);} .c-req{background:var(--accent);} .c-first{background:var(--gold);}
+.c-re{background:var(--mid);} .c-fb{background:var(--soft2);} .c-demo{background:var(--line2);}
+.tl-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 28px;}
+.tl-legend h3{margin:0 0 6px;font-size:14px;}
+.tl-legend ul{list-style:none;padding:0;gap:4px;font-size:14px;line-height:1.6;}
+.tl-legend li{display:grid;grid-template-columns:16px 92px minmax(0,1fr);align-items:baseline;}
+.tl-legend .tm{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;}
+.tl-legend .swatch{margin:0;align-self:center;}
+@media (max-width:640px){ .tl-legend{grid-template-columns:1fr;} .tl-axis,.tl-row{grid-template-columns:48px minmax(0,1fr);} }
+.made{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.shots{display:grid;gap:12px;grid-template-columns:1fr;}
+.shots.phones{grid-template-columns:repeat(4,minmax(0,1fr));}
+.shots.mascots{grid-template-columns:repeat(5,minmax(0,1fr));}
+.shots.frames{grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.78fr);align-items:end;}
+.shots.slides{grid-template-columns:repeat(2,minmax(0,1fr));}
+figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0;}
+figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:var(--tile);}
+figcaption{font-size:12.5px;color:var(--muted);line-height:1.5;}
+@media (max-width:640px){
+  .shots.phones{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .shots.mascots{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .shots.frames{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .shots.frames .wide{grid-column:1 / -1;}
+  .shots.slides{grid-template-columns:1fr;}
+}
+.scroll{overflow-x:auto;}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.65;}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line);}
+th{font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;}
+td.t{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted);}
+td.n{text-align:right;font-variant-numeric:tabular-nums;}
+tr.mark td{background:var(--surface);font-weight:600;}
+blockquote{margin:0;padding:18px 20px;background:var(--surface);border-radius:6px;font-family:var(--serif);font-size:17px;line-height:1.9;}
+blockquote footer{font-family:var(--sans);font-size:13px;color:var(--muted);margin-top:8px;}
+.note{font-size:14px;color:var(--muted);}
+.todo{border:1px dashed var(--line);border-radius:6px;padding:16px 20px;}
+.todo ul{font-size:14.5px;}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;background:var(--surface);padding:1px 5px;border-radius:3px;}
+@media (max-width:520px){ body{font-size:15px;} th,td{padding:8px 8px;} }
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="kicker">社内 AI 駆動開発スプリント競技　参加報告</p>
+  <h1>作るのは 38 分。残りの時間は「何を作るか」を決めるのに使った</h1>
+  <p class="lead">観光アプリ「ひとめぐり」を AI（Claude Code）と作りました。作るアプリの構想は事前に考えてあり、当日も環境準備と要件定義に約 2 時間かけました。仕様が固まってからは、通しで動く初版が 38 分でできています。その後チームからのフィードバック 10 回で、構造ごと作り直しました。生成 AI アプリの提案と業務活用支援に持ち帰れる学びをまとめます。</p>
+  <p class="meta">2026-11-09 〜 11-10 ／ 2〜3 人のチーム ／ 競技結果は未発表（2026-11-10 時点）</p>
+</header>
+
+<section>
+  <h2>要点</h2>
+  <ul class="takeaways">
+    <li><strong>作る速さは制約ではなくなった。</strong>時間の大半は「何を作るべきか」「どう見せるか」の判断に移りました。</li>
+    <li><strong>速さの前提は、先に要件を考えてあったこと。</strong>構想は事前に用意し、当日も実装の前に約 2 時間を環境準備と要件定義に使いました。38 分はその後の実装時間です。</li>
+    <li><strong>仕様どおりに動くことと、良い体験であることは別だった。</strong>初版は仕様を満たしていましたが、入口の構造を作り直し、中核の仕掛けも画面から外しました。</li>
+    <li><strong>UX は人が考えて渡す必要がある。</strong>画面遷移まで含めて人が決めないと、どこを触ればいいか分からないアプリになります。具体的に指示するには UI の知識も要ります。</li>
+    <li><strong>AI との「約束」と「記録」が効いた。</strong>AI に質問させる要件定義（Skill「grilling」）、音声入力での指示、要約 1 枚、迷ったときの決め方、削る順番、1 行ずつの進捗ログ。この報告もその記録から書いています。</li>
+  </ul>
+  <ul class="stats">
+    <li><b>約 2 時間</b><span>競技開始から仕様確定まで（環境準備と要件定義）</span></li>
+    <li><b>38 分</b><span>仕様確定から通しで動く初版まで</span></li>
+    <li><b>10 回</b><span>チームからのフィードバック対応</span></li>
+    <li><b>約 13,000 行</b><span>コード（Python・TypeScript・CSS）</span></li>
+    <li><b>9 → 45 件</b><span>API の自動テスト</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2>作ったもの</h2>
+  <p class="point">架空の観光地「星凪諸島」のスタンプラリーに足す、観光者向けスマホ Web アプリです。</p>
+  <ul>
+    <li><b>課題</b>：既存アプリは旅の途中しか使い道がなく、旅の後に開く理由がない。</li>
+    <li><b>狙い</b>：旅先で会ったお店の人との思い出を持ち帰り、便りとクーポンで「その人に会いに戻りたくなる」体験を作る。旅前・旅中・旅後を 1 本で通す。</li>
+    <li><b>範囲</b>：旅行者の画面（計画／マップ／思い出便／ひとめぐり帖／クーポン）、運営の画面（地域 DMO とお店）、発表用のデモ画面。</li>
+    <li><b>構成</b>：FastAPI + React + SQLite を 1 プロセス・1 ポートで。外部 API・CDN・外部フォントは使わない。DB は 31 テーブル。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>時間の使い方</h2>
+  <p class="point">約 12 時間のうち、初版の実装は 38 分（約 5%）でした。その前に環境準備と要件定義で約 1 時間ずつ、後ろに直しの約 9 時間 20 分があります。</p>
+  <div class="tl" role="img" aria-label="2日間のタイムライン。1日目は10:00から環境準備、10:59から要件定義、11:59から初版の実装、12:37から確認と再設計、13:51から17:17までフィードバック対応。2日目は9:32から12:06までフィードバック対応、14:16までデモの仕上げ">
+    <div class="tl-axis"><span></span><div class="tl-hours"><i style="left:0%">9</i><i style="left:11.1%">10</i><i style="left:22.2%">11</i><i style="left:33.3%">12</i><i style="left:44.4%">13</i><i style="left:55.6%">14</i><i style="left:66.7%">15</i><i style="left:77.8%">16</i><i style="left:88.9%">17</i><i style="left:100%">18</i></div></div>
+    <div class="tl-row"><span class="tl-day">1 日目<small>11/9</small></span>
+      <div class="tl-track">
+        <b class="c-prep" style="left:11.1%;width:10.9%"></b>
+        <b class="c-req" style="left:22%;width:11.1%"></b>
+        <b class="c-first" style="left:33.1%;width:7.1%"></b>
+        <b class="c-re" style="left:40.2%;width:13.7%"></b>
+        <b class="c-fb" style="left:53.9%;width:38.1%"></b>
+      </div></div>
+    <div class="tl-row"><span class="tl-day">2 日目<small>11/10</small></span>
+      <div class="tl-track">
+        <b class="c-fb" style="left:5.9%;width:28.5%"></b>
+        <b class="c-demo" style="left:34.4%;width:24.1%"></b>
+      </div></div>
+  </div>
+  <div class="tl-legend">
+    <div>
+      <h3>1 日目（11/9）</h3>
+      <ul>
+        <li><i class="swatch c-prep"></i><span class="tm">10:00–10:59</span>環境準備</li>
+        <li><i class="swatch c-req"></i><span class="tm">10:59–11:59</span>要件定義（構想を渡し、AI の質問に答えて詰める）</li>
+        <li><i class="swatch c-first"></i><span class="tm">11:59–12:37</span>初版の実装（全機能が通しで動く）</li>
+        <li><i class="swatch c-re"></i><span class="tm">12:37–13:51</span>初版を触って確認、UI の再設計（休憩を含む）</li>
+        <li><i class="swatch c-fb"></i><span class="tm">13:51–17:17</span>フィードバック対応 第 2〜6 回、セルフチェックと修正</li>
+      </ul>
+    </div>
+    <div>
+      <h3>2 日目（11/10）</h3>
+      <ul>
+        <li><i class="swatch c-fb"></i><span class="tm">9:32–12:06</span>フィードバック対応 第 7〜10 回、並行して発表スライド</li>
+        <li><i class="swatch c-demo"></i><span class="tm">12:06–14:16</span>デモの仕上げ（初期化の漏れ、アプリ名変更、キャッシュ対策）</li>
+      </ul>
+    </div>
+  </div>
+  <p>競技は 10:00 開始です。10:30 に最初のセッションを開き、10:59 に事前に考えてきたアプリの構想（約 1,700 字）を送りました。11:16 から Skill「grilling」で AI に質問させる形で要件を詰め、計画を承認したのが 11:57 です。事前の検討時間はこの帯に含めていません。</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>日時</th><th>出来事</th><th>テスト</th></tr></thead>
+    <tbody>
+      <tr><td class="t">競技前</td><td>どういうアプリを作るかを事前に検討</td><td class="n">—</td></tr>
+      <tr><td class="t">11-09 10:00</td><td>競技開始。環境準備（10:30 に最初のセッション）</td><td class="n">—</td></tr>
+      <tr><td class="t">10:59</td><td>事前の構想を送り、要件定義を開始。11:16 から AI の質問に答える形で詰める</td><td class="n">—</td></tr>
+      <tr><td class="t">11:57〜11:59</td><td>計画を承認、仕様確定（質問 5 ラウンド）。要約（CLAUDE.md）と要件・構成・データの文書</td><td class="n">—</td></tr>
+      <tr><td class="t">12:06</td><td>土台（DB、CSV 取り込み、時計、起動スクリプト）</td><td class="n">9</td></tr>
+      <tr><td class="t">12:12〜12:33</td><td>旅中・旅前・ポイントと抽選・AR フォト・おもいで便・指標と運営の窓・デモ層。1 機能あたり 2〜6 分</td><td class="n">28</td></tr>
+      <tr class="mark"><td class="t">12:37</td><td>5 場面の通し確認と文書一式。初版完成</td><td class="n">28</td></tr>
+      <tr class="mark"><td class="t">13:45〜13:51</td><td>UI の再設計。スタンプラリー要素を外し「場所 → そこにいる人」の構造に</td><td class="n">28</td></tr>
+      <tr><td class="t">15:04〜17:17</td><td>第 2〜6 回フィードバック対応。途中でセルフチェックと要修正 4 件の修正</td><td class="n">37</td></tr>
+      <tr><td class="t">11-10 10:37〜12:06</td><td>第 7〜10 回フィードバック対応。第 8 回で「種・花」を画面から外す。並行して発表スライド 10 枚</td><td class="n">40</td></tr>
+      <tr><td class="t">12:55〜14:16</td><td>デモの仕上げ（初期化の漏れ、アプリ名変更、キャッシュ対策）</td><td class="n">45</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">11:59 以降の時刻はコミット時刻、それ以前と 2 日目の開始（9:32）はセッション記録の時刻。合計には休憩も含む。人が指示や確認に使った時間の内訳は記録していません。</p>
+</section>
+
+<section>
+  <h2>人が決めた所</h2>
+  <p class="point">体験の良し悪しは、チームが触って決めました。AI は指摘されればすぐ直しますが、指摘されるまでは気づきませんでした。</p>
+  <blockquote>
+    開発はとても速く、クオリティも高い。ただ、どういう UX を実現したいかを画面遷移も含めて人間がしっかり考えないと、どこを触ったらいいか分からないアプリになってしまう。アプリの UI に関する知識がないと、具体的な指示もできないと感じた。
+    <footer>参加者の所感</footer>
+  </blockquote>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>最初に AI が作ったもの</th><th>人の判断</th><th>取り出した型</th></tr></thead>
+    <tbody>
+      <tr><td>「会える人」を入口にし、スタンプラリー要素も並べた</td><td>入口を「場所」に戻し、人は「ここにいる人」として添えた</td><td>入口は利用者がもともと探しているものにする</td></tr>
+      <tr><td>種 → つぼみ → 花、季節スタンプ、回数の帯を同時に見せた</td><td>見せるのは「会えた回数」の帯だけ。データと API は残した</td><td>見せる物差しは 1 つ。作り込んだ仕組みでも外す</td></tr>
+      <tr><td>大事な操作を 1.2 秒の長押しにした</td><td>全廃して「ボタン → 確認」に統一</td><td>隠れた操作は気づかれない</td></tr>
+      <tr><td>撮った写真やレシートが別のタブにしか出なかった</td><td>「撮る」ボタンの直下に結果を出した</td><td>結果は操作した場所のすぐ下に</td></tr>
+      <tr><td>ルーレットのマスの広さを確率に比例させた</td><td>マスは同じ広さにし、確率は表で見せた</td><td>演出は結果を伝えるだけ。確率は表で正直に</td></tr>
+      <tr><td>運営の画面を指標の一覧から始めた</td><td>先頭を「次の一手」の提案にした</td><td>運営者が知りたいのは次に何をするか</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>この種の指摘は 10 回で 26 項目あり、すべて「最初にやったこと → 指摘 → 直し方 → 型」の形で記録しました。</p>
+</section>
+
+<section>
+  <h2>効いた進め方</h2>
+  <p class="point">効いたのはプロンプトの工夫よりも、AI との「約束」と「記録」の置き方でした。題材を問わず使えます。</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>やったこと</th><th>効果</th></tr></thead>
+    <tbody>
+      <tr><td>実装の前に、「grilling」という Skill で AI から人へ質問させて仕様を詰める（5 ラウンド）</td><td>初期の要件定義が効率よく進んだ。人が要件を書き出すのではなく、AI が抜けや曖昧な点を順に聞いてくるので、答えるだけで仕様が固まった。着手後に質問で止まる場面も減らせた</td></tr>
+      <tr><td>AI への指示を音声入力で出す</td><td>指示出しが速くなった。背景や理由まで含めた長い説明を、打つ手間なく渡せた。要件定義の回答やフィードバックのように、話したほうが早い内容に向いていた</td></tr>
+      <tr><td>仕様の要約を 1 枚（CLAUDE.md）にして毎回読ませる</td><td>禁止事項（格付けを作らない、外部通信なし）が最後まで守られた</td></tr>
+      <tr><td>「質問はしない。迷ったら選んで記録に残す」と決める</td><td>手が止まらない。判断は後から人が読んで直せる</td></tr>
+      <tr><td>遅れたときに削る順番を先に決める</td><td>「通しで動く」を最優先に保てた</td></tr>
+      <tr><td>時刻付きの 1 行進捗ログと判断ログを AI に書かせる</td><td>経緯が残り、別のセッションや報告書がそこから始められた</td></tr>
+      <tr><td>デモ用の機能を本体から分け、時刻の取得を 1 箇所に集める</td><td>「30 日後」「次の季節」をその場で見せられた。本番に影響しないこともテストで確認</td></tr>
+      <tr><td>素材作りや資料作りを別のセッションに分けて並行させる</td><td>画面の修正を止めずに、マスコット・地図・スライドが揃った</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>AI に任せられた範囲</h2>
+  <p class="point">コードだけでなく、提案活動に必要な周辺の成果物まで AI で揃いました。</p>
+  <div class="made">
+    <h3>アプリ：旅行者の画面</h3>
+    <p>計画・マップ・ひとめぐり帖・クーポンなど下タブ 5 つ。API、DB、テスト 45 件を含みます。</p>
+    <div class="shots phones">
+      <figure><img src="img/app_plan.jpg" alt="計画の画面。島の地図に行く場所の番号ピンが並び、旅の名前と行く日を決める" loading="lazy"><figcaption>計画</figcaption></figure>
+      <figure><img src="img/app_map.jpg" alt="マップの画面。いまやることの案内と、会える人の顔が付いたピン、行く場所のカード" loading="lazy"><figcaption>マップ（旅の途中）</figcaption></figure>
+      <figure><img src="img/app_book.jpg" alt="ひとめぐり帖の画面。島の 8 人のカードと、会えた回数の帯" loading="lazy"><figcaption>ひとめぐり帖</figcaption></figure>
+      <figure><img src="img/app_wallet.jpg" alt="クーポンの画面。持っているクーポンと、ポイントで回す抽選のルーレット" loading="lazy"><figcaption>クーポンと抽選</figcaption></figure>
+    </div>
+  </div>
+  <div class="made">
+    <h3>アプリ：運営の窓</h3>
+    <p>地域（DMO）とお店の 2 つの立場。開くと数字ではなく「次の一手」の提案から始まります。</p>
+    <div class="shots"><figure><img src="img/admin.jpg" alt="運営の窓のホーム。データから組み立てた次の一手の提案が 5 件並び、それぞれに操作ボタンが付く" loading="lazy"><figcaption>運営の窓（DMO のホーム）</figcaption></figure></div>
+  </div>
+  <div class="made">
+    <h3>素材：マスコット、AR フレーム、地図</h3>
+    <p>自作マスコット「ほしまる」は場所別 7 種とポーズ 10 種。AR フレーム 12 種、アンケートのお礼素材 18 点、諸島の地図も作りました。既存キャラクターは使っていません。</p>
+    <div class="shots mascots">
+      <figure><img src="img/hoshimaru.png" alt="ほしまる。頭に星をのせたアザラシの子" loading="lazy"><figcaption>基本</figcaption></figure>
+      <figure><img src="img/hoshimaru_lighthouse.png" alt="セーラー帽のほしまる" loading="lazy"><figcaption>灯台</figcaption></figure>
+      <figure><img src="img/hoshimaru_market.png" alt="鉢巻きとうちわのほしまる" loading="lazy"><figcaption>夜市</figcaption></figure>
+      <figure><img src="img/hoshimaru_windmill.png" alt="麦わら帽子のほしまる" loading="lazy"><figcaption>風車丘</figcaption></figure>
+      <figure><img src="img/hoshimaru_hall.png" alt="イヤーマフと指揮棒のほしまる" loading="lazy"><figcaption>音楽堂</figcaption></figure>
+    </div>
+    <div class="shots frames">
+      <figure><img src="img/frame_spot_lighthouse.png" alt="灯台の AR フレーム。灯台とかもめ、場所名の札、ほしまる" loading="lazy"><figcaption>AR フレーム（灯台）</figcaption></figure>
+      <figure><img src="img/frame_spot_market.png" alt="夜市の AR フレーム。提灯の飾り" loading="lazy"><figcaption>AR フレーム（夜市）</figcaption></figure>
+      <figure><img src="img/frame_hoshizora.png" alt="星空の AR フレーム" loading="lazy"><figcaption>AR フレーム（星空）</figcaption></figure>
+      <figure class="wide"><img src="img/map.jpg" alt="星凪諸島の地形図。本島と離島" loading="lazy"><figcaption>諸島の地図（文字とピンはアプリ側で重ねる）</figcaption></figure>
+    </div>
+  </div>
+  <div class="made">
+    <h3>文書と構成図</h3>
+    <p>要件・構成・データ・画面・機能・テスト・セキュリティ・ライセンスの各文書と、サービス構成図。</p>
+    <div class="shots"><figure><img src="img/architecture.png" alt="サービス構成図。スマホのブラウザ、PC 上の FastAPI 1 プロセス、SQLite とローカル保存" loading="lazy"><figcaption>サービス構成図</figcaption></figure></div>
+  </div>
+  <div class="made">
+    <h3>発表資料</h3>
+    <p>スライド 10 枚、6 分の時間割と台本、デモ画面の場面ごとの説明。</p>
+    <div class="shots slides">
+      <figure><img src="img/slide_01.png" alt="発表スライドの表紙。場所めぐりから人めぐりへ" loading="lazy"><figcaption>スライド 1 枚目</figcaption></figure>
+      <figure><img src="img/slide_06.png" alt="発表スライド 6 枚目。入口は場所のまま" loading="lazy"><figcaption>スライド 6 枚目</figcaption></figure>
+    </div>
+  </div>
+  <div class="made">
+    <h3>点検と再利用</h3>
+    <p>事務局の 8 観点（サービス性 4・技術 4）に沿ったセルフチェックと、学びをまとめた Claude 用 Skill「tourism-app-ux」。どちらも文書なので画像はありません。</p>
+  </div>
+</section>
+
+<section>
+  <h2>品質とリスク</h2>
+  <p class="point">AI に点検させると実際に不具合が見つかり、同じ日に直せました。点検の範囲と、直す・直さないの線引きは人が決めています。</p>
+  <ul>
+    <li><b>点検の方法</b>：8 観点に沿って、テスト・ビルド・ブラウザ操作・生の HTTP での検査・全コードの読解を AI に実施させた。</li>
+    <li><b>見つけて直したもの</b>：画面配信のパストラバーサル（エンコードした <code>..</code> でリポジトリ内のファイルが取れた）／店の編集で定休日が消える／営業時間 99:99 で利用者の画面がエラー／運営向けの提案がデモ時計ではなく実時刻を見ていた。</li>
+    <li><b>点検中に追加で見つかったもの</b>：再起動のたびに運営の編集内容が初期値に戻っていた。</li>
+    <li><b>見つかったが直していないもの</b>：キーボード操作とフォーカス管理（8 観点の「多様性」は △ 評価）。</li>
+    <li><b>未確認と記録したもの</b>：実機カメラ、共有機能、実プリンタでの確認。画面側の自動テスト。</li>
+    <li><b>演出の開示</b>：レシートの「AI-OCR」は演出で、実際の読み取りは未実装。利用者向け文言が断定調である点をセルフチェックが指摘した。</li>
+    <li><b>素材の権利</b>：外部の写真・イラストは出典を一覧化。マスコットは既存キャラクターを使わず自作。</li>
+  </ul>
+  <p>「動いた」と「確認した」を分けて記録させたことが、提案時に説明できる材料になりました。</p>
+</section>
+
+<section>
+  <h2>うまくいかなかったこと</h2>
+  <p class="point">手戻りの多くは、機能を足したときの「周辺の更新漏れ」でした。</p>
+  <ul>
+    <li><b>名前の変更が残った。</b>アプリ名や人名を変えた後、既存データの文章、書き出し済みの画像、ブラウザのキャッシュに旧名が残った。</li>
+    <li><b>デモの初期化が不完全だった。</b>機能を足すたびに、アンケート回答や送った便りが初期化で消えず、見せたい画面が出なかった。</li>
+    <li><b>デモの演出が運まかせだった。</b>抽選がはずれると見せ場が出ないため、デモ時だけ初回を当たりにする分岐を足した。</li>
+    <li><b>文言の残骸。</b>長押しを廃止した後も、画面と文書に「長押し」の説明が残った。</li>
+    <li><b>進捗ログの時刻がずれた。</b>AI が書いた時刻とコミット時刻が合わない行があった。時刻はコミットを正とした。</li>
+    <li><b>並行セッションの衝突。</b>同じ CSS クラス名がぶつかった。以後は触るファイルを分けた。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>提案・業務活用支援への示唆</h2>
+  <ol>
+    <li><b>提案の初期に「動くもの」を出せる。</b>仕様が固まれば、通しで動く試作は 1 時間以内にできた。ただし仕様を固めるまでに、事前の構想と当日の約 2 時間が要った。試作の速さは、要件を先に考える時間とセットで見積もる。</li>
+    <li><b>見積もりの重心が変わる。</b>実装よりも、要件の詰め、触っての評価、直しの反復に時間がかかった。顧客にフィードバックの時間を確保してもらうことが品質に直結する。</li>
+    <li><b>UX 設計と UI の知識が、人の側の必須スキルになる。</b>AI は言われたとおりに速く作るので、体験の設計が曖昧だとその曖昧さがそのまま画面になる。支援メニューに「画面遷移と体験の設計」を含める価値がある。</li>
+    <li><b>「作らないもの」を最初に決めて渡す。</b>AI は禁止事項を最後まで守った。顧客の方針や制約を要約 1 枚に入れておくと、機能追加のたびに照らし直される。</li>
+    <li><b>記録を AI に書かせると、説明責任の材料になる。</b>判断理由、未確認事項、演出と実装の区別が残っていると、顧客への説明と引き継ぎが楽になる。</li>
+    <li><b>学びは Skill にして次の案件に持ち越せる。</b>直した内容を型として渡せば、最初から反映される見込みがある。</li>
+  </ol>
+  <h3>再利用できる成果物</h3>
+  <ul>
+    <li><b>Skill「tourism-app-ux」（版 0.1）</b>：観光・地域・店舗向けスマホアプリの UI/UX の型。フィードバックで直した 26 項目、完成前チェックリスト、進め方、部品の見本を含む。Skill あり／なしの比較試験は実施中で、効果の確認はまだです。</li>
+    <li><b>進め方のひな型</b>：Skill「grilling」での要件定義、音声入力での指示出し、要約 1 枚の書き方、判断ログ、削る順番、デモ層の分離。</li>
+    <li><b>セルフチェックの実例</b>：8 観点での点検結果と修正の記録。</li>
+  </ul>
+</section>
+
+<section class="todo">
+  <h3 style="margin:0">まだ入っていない情報</h3>
+  <ul>
+    <li>競技の正式名称、ルール、参加チーム数、審査基準</li>
+    <li>結果と講評（発表後に追記）</li>
+    <li>人が使った時間の内訳、AI の利用量とコスト</li>
+    <li>画面の写真（初版・再設計後・最終版の比較）</li>
+  </ul>
+  <p class="note">根拠にした記録：リポジトリの進捗ログ、判断ログ、8 観点セルフチェック、技術構成の文書、Skill、コミット履歴。</p>
+</section>
+
+</div>
