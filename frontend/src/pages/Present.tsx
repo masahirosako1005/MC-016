@@ -180,10 +180,11 @@ const Li = ({ children }: { children: React.ReactNode }) => <li style={{ margin:
 
 /** 場面スライドの型: 「いま左で見せていること」を番号つきの行で、下に「ねらい」を 1 行。PC 幅のときは見出しだけに縮める。 */
 type Pt = { h: string; d: React.ReactNode };
-function Points({ pts, aim, wide }: { pts: Pt[]; aim: React.ReactNode; wide: boolean }) {
+function Points({ pts, aim, wide, side }: { pts: Pt[]; aim: React.ReactNode; wide: boolean; side?: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: wide ? 6 : 10 }}>
-      <div style={{ flex: 1, minHeight: 0, display: "grid", alignContent: "space-evenly" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 18, alignItems: "stretch" }}>
+      <div style={{ flex: 1, minWidth: 0, display: "grid", alignContent: "space-evenly" }}>
         {pts.map((p, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: wide ? "1.6em 1fr" : "2.2em 1fr", alignItems: "baseline", padding: wide ? "3px 0" : "7px 0", borderTop: i ? "1px solid var(--ai-100)" : undefined }}>
             <div className="serif muted" style={{ fontSize: wide ? "1rem" : "1.35rem", fontWeight: 700 }}>{i + 1}</div>
@@ -194,9 +195,36 @@ function Points({ pts, aim, wide }: { pts: Pt[]; aim: React.ReactNode; wide: boo
           </div>
         ))}
       </div>
+      {/* 右の余白に置く見本（スマホ幅のスライドのときだけ） */}
+      {side && !wide && <div style={{ flex: "none", display: "grid", alignContent: "center" }}>{side}</div>}
+      </div>
       <div style={{ background: "var(--ai-100)", borderRadius: 6, padding: wide ? "6px 10px" : "9px 14px", display: "flex", flexDirection: wide ? "column" : "row", gap: wide ? 2 : 12, alignItems: wide ? "flex-start" : "baseline", marginBottom: 6 }}>
         <span className="muted" style={{ fontSize: ".8rem", fontWeight: 700, letterSpacing: ".15em", whiteSpace: "nowrap" }}>ねらい</span>
         <span style={{ fontSize: wide ? ".9rem" : "1.05rem", fontWeight: 700, lineHeight: 1.45 }}>{aim}</span>
+      </div>
+    </div>
+  );
+}
+
+/** アンケートのお礼の見本: ほしまるの待ち受け・スタンプ・なかま証（img/gifts の実物を小さく並べる）。 */
+function GiftSamples() {
+  const frame: React.CSSProperties = { border: "1px solid var(--ai-100)", borderRadius: 8, background: "#fff", boxShadow: "0 3px 10px rgba(27,42,68,.12)", display: "block" };
+  return (
+    <div style={{ width: 196 }}>
+      <div className="muted" style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".12em", marginBottom: 6, textAlign: "center" }}>アンケートのお礼（見本）</div>
+      <div style={{ display: "grid", gridTemplateColumns: "84px 1fr", gap: 10, alignItems: "center" }}>
+        <figure style={{ margin: 0, gridRow: "1 / span 2" }}>
+          <img src="/img/gifts/wallpapers/wp_autumn.png" alt="ほしまるの待ち受け（秋）" style={{ ...frame, width: 84, height: 182, objectFit: "cover", transform: "rotate(-3deg)" }} />
+          <figcaption className="muted" style={{ fontSize: ".68rem", textAlign: "center", marginTop: 4 }}>待ち受け</figcaption>
+        </figure>
+        <figure style={{ margin: 0 }}>
+          <img src="/img/gifts/stickers/st_thanks.png" alt="ほしまるのスタンプ" style={{ width: 96, height: 83, objectFit: "contain", display: "block", transform: "rotate(4deg)" }} />
+          <figcaption className="muted" style={{ fontSize: ".68rem", textAlign: "center" }}>スタンプ</figcaption>
+        </figure>
+        <figure style={{ margin: 0 }}>
+          <img src="/img/gifts/card/nakama.png" alt="星凪諸島なかま証" style={{ ...frame, width: 100, height: 63, objectFit: "cover", transform: "rotate(-2deg)" }} />
+          <figcaption className="muted" style={{ fontSize: ".68rem", textAlign: "center", marginTop: 3 }}>なかま証</figcaption>
+        </figure>
       </div>
     </div>
   );
@@ -237,6 +265,7 @@ const SLIDES: { scene?: string; kicker: string; title: string; mascot?: string; 
           { h: "次に行きたい場所を控えておく", d: "振り返りの中で気になった場所を、次の旅の候補に入れます。" },
           { h: "アンケートに答えると、待ち受け画像", d: "地域（DMO）とお店に声が届き、旅行者にはお礼が届きます。" },
         ]}
+        side={<GiftSamples />}
         aim="旅の後にも、アプリを開く理由をつくる。" />
     ),
   },

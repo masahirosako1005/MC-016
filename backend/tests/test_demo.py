@@ -77,3 +77,21 @@ def test_reset_clears_survey_answer(client):
     assert client.post("/api/demo/reset").status_code == 200
     assert client.get("/api/survey").json()["answered"] is False and client.get("/api/gifts").json()["unlocked"] is False
     assert conn.execute("SELECT COUNT(*) FROM trip_surveys WHERE is_dummy = 1").fetchone()[0] == 1
+
+
+def test_reset_clears_messages_sent_in_demo(client):
+    """デモ中に運営の窓から送った便りは、初期化で消える（次のデモに前回のお知らせを残さない）。"""
+    conn = client.app.state.conn
+    client.post("/api/meetings", json={"person_id": 8})
+    r = client.post("/api/admin/shops/1/messages", json={"title": "テスト配信", "body": "灯台でお待ちしています", "coupon_face_value": 300, "coupon_days": 30})
+    assert r.status_code == 200 and r.json()["sent_to"] == 1
+    msgs = client.get("/api/messages").json()["messages"]
+    assert len(msgs) == 1
+    client.post(f"/api/messages/{msgs[0]['id']}/read")
+    assert client.post("/api/demo/reset").status_code == 200
+    assert conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM message_reads").fetchone()[0] == 0
+    # 会い直しても、前回の便りやクーポンは出てこない
+    client.post("/api/meetings", json={"person_id": 8})
+    assert client.get("/api/messages").json()["messages"] == []
+    assert all("便り" not in c["name"] for c in client.get("/api/wallet").json()["coupons"])

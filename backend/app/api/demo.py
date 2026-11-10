@@ -138,6 +138,9 @@ def reset(conn=Depends(get_conn)):
             "DELETE FROM plans WHERE user_id = ? AND is_dummy = 0",
         ):
             conn.execute(sql, (uid,))
+        # デモ中に運営の窓から送った便り（お知らせ）も消す。便りに付けたクーポンは、上の coupons の削除で消えている
+        conn.execute("DELETE FROM message_reads")
+        conn.execute("DELETE FROM messages")
         # 写真: サンプル以外を削除（ファイルも）
         for r in conn.execute("SELECT path FROM photos WHERE user_id = ? AND is_sample = 0", (uid,)).fetchall():
             try:
