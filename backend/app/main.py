@@ -85,7 +85,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 candidate = (dist_root / full_path).resolve()
                 if candidate.is_relative_to(dist_root) and candidate.is_file():
                     return FileResponse(candidate)
-            return FileResponse(index_html)
+            # 画面の入口（index.html）は毎回サーバーに確かめさせる。ビルドし直したのに、ブラウザが古い画面を出し続けるのを防ぐ
+            return FileResponse(index_html, headers={"Cache-Control": "no-cache"})
 
     return app
 
