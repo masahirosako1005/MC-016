@@ -47,6 +47,15 @@ export function PresentPage() {
     return () => window.removeEventListener("keydown", on);
   }, []);
 
+  const setAdminRole = (r: "dmo" | "shop") => {
+    try {
+      localStorage.setItem("hitomeguri.admin.role", r);
+    } catch {
+      /* ignore */
+    }
+    setScreen("/admin");
+    if (frame.current) frame.current.src = `/?r=${Date.now()}#/admin?role=${r}`;
+  };
   const tell = (path: string) => {
     setScreen(path);
     frame.current?.contentWindow?.postMessage({ type: "hitomeguri", path }, window.location.origin);
@@ -140,6 +149,14 @@ export function PresentPage() {
             <button className="btn small ghost" onClick={() => tell("/wallet")}>クーポン</button>
             <button className="btn small ghost" onClick={() => tell("/book")}>帖</button>
             <button className="btn small ghost" onClick={() => tell(SCENE_PATH[cur] ?? "/")}>場面の画面へ</button>
+            {adminMode && (
+              <>
+                <span style={{ width: 1, height: 24, background: "var(--ai-100)", margin: "0 4px" }} />
+                <span className="muted small">運営の立場:</span>
+                <button className="btn small ghost" onClick={() => setAdminRole("dmo")}>地域（DMO）</button>
+                <button className="btn small ghost" onClick={() => setAdminRole("shop")}>お店・施設</button>
+              </>
+            )}
             <select value={st.fixed_prize ?? ""} style={{ width: 190, minHeight: 34, padding: 4, fontSize: ".85rem" }} onChange={async (e) => { await post("/demo/fix-lottery", { prize_id: e.target.value ? Number(e.target.value) : null }); await load(); }}>
               <option value="">次の抽選: 通常</option>
               {st.prizes.map((pz) => <option key={pz.id} value={pz.id}>抽選を固定: {pz.name}</option>)}

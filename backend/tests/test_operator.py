@@ -70,7 +70,7 @@ def test_audience_targeting_and_advice(client):
     assert r.json()["sent_to"] == 1
     # 次の一手
     adv = client.get("/api/admin/shops/8/advice").json()
-    assert adv["advice"] and any("種" in x["title"] for x in adv["advice"])
+    assert adv["advice"] and any("会った" in x["title"] for x in adv["advice"])
     assert all(set(x) >= {"priority", "title", "why", "action"} for x in adv["advice"])
     d = client.get("/api/admin/advice").json()
     assert "advice" in d and "生成 AI" in d["note"]
@@ -119,7 +119,7 @@ def test_audience_follows_demo_clock(client):
     assert a["seeds"] == {"none": 0, "bud": 0, "flower": 1}
     assert client.get("/api/admin/shops/8/audience", params={"seeds": "flower"}).json()["selected"] == 1
     adv = client.get("/api/admin/shops/8/advice").json()["advice"]
-    assert any("花" in x["title"] for x in adv)
+    assert any("会った" in x["title"] for x in adv)
     # 花の人にだけ送る
     r = client.post("/api/admin/shops/8/messages", json={"title": "花", "body": "y", "seeds": ["flower"]})
     assert r.json()["sent_to"] == 1

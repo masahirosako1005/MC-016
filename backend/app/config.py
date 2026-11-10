@@ -28,7 +28,7 @@ class Settings:
     hero_user_id: int = 8800001
     receipt_image_keep_days: int = 7
     receipt_max_bytes: int = 5 * 1024 * 1024
-    points_per_draw: int = 10
+    points_per_draw: int = 100
     coupon_valid_days: int = 365
     letter_open_hour: int = 18
     trip_gap_days: int = 2

@@ -84,20 +84,20 @@ def shop_advice(conn: sqlite3.Connection, shop_id: int, now: datetime) -> list[d
     weeks = max(0, (nxt - today).days // 7)
     aud = audience(conn, shop_id, now)
     pname = person["name"] if person else sh["name"]
-    # 1) 花が咲く人への便り
-    if aud["seeds"]["flower"]:
+    # 1) おなじみの人への季節のごあいさつ
+    if aud["stages"]["regular"]:
         out.append({
-            "priority": "high", "title": f"いま花が咲いている人が {aud['seeds']['flower']} 人",
-            "why": f"{LABEL[season]}の約束が果たせる状態の旅行者です。会えればひとめぐり帖に花が増え、再訪の記憶が強く残ります。",
-            "action": {"label": "花の人に便りを送る（クーポン付き）", "kind": "message", "params": {"seeds": ["flower"], "coupon": 500, "title": f"{LABEL[season]}の約束、待っています", "body": f"{LABEL[season]}になりました。約束の準備ができています。{pname}より"}},
+            "priority": "high", "title": f"おなじみの人が {aud['stages']['regular']} 人",
+            "why": f"3 回以上会えている人です。{LABEL[season]}のはじめに一言の便りを送ると、次の計画に入りやすくなります。",
+            "action": {"label": "おなじみの人に季節のごあいさつ", "kind": "message", "params": {"stages": ["regular"], "coupon": None, "title": f"{LABEL[season]}のごあいさつ", "body": f"いつもありがとうございます。{LABEL[season]}の{sh['name']}も、お待ちしています。{pname}より"}},
         })
-    # 2) つぼみ（次の季節）
+    # 2) また会えたねの人を 3 回目（おなじみ）に
     pr = master.promise(conn, person["id"], nxt_season) if person else None
-    if aud["seeds"]["bud"] and pr:
+    if aud["stages"]["again"] and pr:
         out.append({
-            "priority": "high", "title": f"{LABEL[nxt_season]}の種を持つ人が {aud['seeds']['bud']} 人（あと {weeks} 週間）",
-            "why": f"季節が変わると種が花になります。「{pr['title']}」の準備状況を今のうちに伝えると、計画を立ててもらえます。",
-            "action": {"label": f"『{pr['title']}』の便りを送る", "kind": "message", "params": {"seeds": ["bud"], "coupon": None, "title": f"{LABEL[nxt_season]}の「{pr['title']}」のお知らせ", "body": f"もうすぐ{LABEL[nxt_season]}。{pr['note']}"}},
+            "priority": "high", "title": f"また会えたねの人が {aud['stages']['again']} 人（{LABEL[nxt_season]}まで あと {weeks} 週間）",
+            "why": f"2 回会えた人は、次で「おなじみ」。{LABEL[nxt_season]}の「{pr['title']}」を先に知らせると、計画を立ててもらえます。",
+            "action": {"label": f"『{pr['title']}』の便りを送る", "kind": "message", "params": {"stages": ["again"], "coupon": None, "title": f"{LABEL[nxt_season]}の「{pr['title']}」のお知らせ", "body": f"もうすぐ{LABEL[nxt_season]}。{pr['note']}"}},
         })
     # 3) はじめましての人を 2 回目に
     if aud["stages"]["first"]:

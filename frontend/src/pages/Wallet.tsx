@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { get, post, sendForm, toast } from "../api";
 import { useT } from "../i18n";
 import { navigate, useRoute } from "../router";
@@ -6,6 +6,7 @@ import { TodoCard } from "../components/parts";
 import { HelpButton, TIPS, Tutorial } from "../components/tutorial";
 import { Badge, Loading, TopBar } from "../components/ui";
 
+type DrawResult = { hit: boolean; prize: { name: string; category: string }; balance: number; presenter: { id: number; name: string; role: string; shop_name: string; image: string; days: number } | null };
 type Prize = { id: number; category: string; name: string; face_value: number; probability: number; in_stock: boolean; stock: number | null };
 type Coupon = {
   id: number; category: string; name: string; face_value: number; won_on: string; valid_from: string; valid_until: string;
@@ -24,9 +25,9 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
   const [w, setW] = useState<Wallet | null>(null);
   const [showReceipt, setShowReceipt] = useState(route.query.get("receipt") === "1");
   const presetShop = Number(route.query.get("shop") || 0);
-  const [result, setResult] = useState<{ hit: boolean; prize: { name: string; category: string }; balance: number } | null>(null);
+  const [result, setResult] = useState<DrawResult | null>(null);
   const [drawing, setDrawing] = useState(false);
-  const [pending, setPending] = useState<{ hit: boolean; prize: { name: string; category: string }; balance: number } | null>(null);
+  const [pending, setPending] = useState<DrawResult | null>(null);
   const [help, setHelp] = useState(0);
   const drawRef = useRef<HTMLDivElement>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -42,7 +43,7 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
     setResult(null);
     try {
       const [r] = await Promise.all([
-        post<{ hit: boolean; prize: { name: string; category: string }; balance: number }>("/draws"),
+        post<DrawResult>("/draws"),
         new Promise((res) => setTimeout(res, 450)),
       ]);
       // 結果は先に決まっている。スロットが止まってから見せる
@@ -117,18 +118,11 @@ export function WalletPage({ onChanged }: { onChanged?: () => void }) {
             ))}
           </tbody>
         </table>
-        <Slot prizes={w.prizes} target={pending?.prize.category ?? null} spinning={drawing} onDone={settle} />
+        <Roulette prizes={w.prizes} target={pending?.prize.category ?? null} spinning={drawing} onDone={settle} />
         <button className={`btn block ${canDraw ? "primary mark" : "ghost"}`} style={{ marginTop: 10 }} disabled={!canDraw || drawing} onClick={draw}>
           {drawing ? "ドキドキ…" : canDraw ? `${t("draw")}（${w.points_per_draw} pt）` : `あと ${w.points_per_draw - w.balance} pt で抽選できます`}
         </button>
-        {result && (
-          <div className="card letter slot-result" style={{ marginTop: 10 }}>
-            <img src={`/img/mascot/ui/hoshimaru_${result.hit ? "cheer" : "sorry"}.png`} alt="" width={72} height={72} style={{ display: "block", margin: "0 auto 4px" }} />
-            <div className="title" style={{ fontSize: "1.5rem" }}>{result.hit ? "あたり！" : "ざんねん…"}</div>
-            <div>{result.prize.name}</div>
-            {result.hit ? <div className="muted small">次の旅（明日以降）からクーポンとして使えます</div> : <div className="muted small">ポイントがたまったら、またどうぞ</div>}
-          </div>
-        )}
+        {result && <ResultModal r={result} onClose={() => setResult(null)} />}
       </div>
 
       <h2>{t("receipts")}</h2>
@@ -237,61 +231,116 @@ function ReceiptForm({ shops, preset, onDone, onCancel }: { shops: Wallet["shops
 }
 
 
-/** スロット演出。3 つのリールが順に止まり、全部そろった目が結果。目はクーポンのカテゴリ（飲食・宿泊・体験・物販）と はずれ。 */
-function Slot({ prizes, target, spinning, onDone }: { prizes: Prize[]; target: string | null; spinning: boolean; onDone: () => void }) {
-  const syms = Array.from(new Map(prizes.map((p) => [p.category, p.category === "miss" ? "はずれ" : p.category])).entries());
-  const [offsets, setOffsets] = useState<number[]>([0, 0, 0]);
-  const [idle, setIdle] = useState(true);
-  const [anim, setAnim] = useState(true);
-  const doneRef = useRef(0);
-  const H = 72;
-  const REP = 7;
-  const n = Math.max(1, syms.length);
+
+const CAT_LABEL = (c: string) => (c === "miss" ? "はずれ" : c);
+
+/** ルーレット演出。区分（飲食・宿泊・体験・物販・はずれ）を確率の大きさで分けた円盤が回り、上の矢印が止まった区分が結果。結果は API が先に決めている。 */
+function Roulette({ prizes, target, spinning, onDone }: { prizes: Prize[]; target: string | null; spinning: boolean; onDone: () => void }) {
+  const segs = useMemo(() => {
+    const live = prizes.filter((p) => p.probability > 0);
+    const total = live.reduce((n, p) => n + p.probability, 0) || 1;
+    let acc = 0;
+    return live.map((p, i) => {
+      const start = (acc / total) * 360;
+      acc += p.probability;
+      const end = (acc / total) * 360;
+      return { key: p.id, cat: p.category, label: CAT_LABEL(p.category), start, end, i };
+    });
+  }, [prizes]);
+  const [rot, setRot] = useState(0);
+  const [dur, setDur] = useState("transform .8s linear");
+  const base = useRef(0);
+  const doneRef = useRef(false);
+  // 回りはじめ: 1 周ずつ送り、transitionend でさらに 1 周（CSS アニメーションだと最後の transition が始まらないため JS で回す）
   useEffect(() => {
-    if (!spinning) return;
-    setIdle(false);
-    doneRef.current = 0;
-    // いったん先頭に戻してから（アニメなし）、結果が来たら回す
-    setAnim(false);
-    setOffsets([0, 0, 0]);
-    const t0 = setTimeout(() => setAnim(true), 30);
-    return () => clearTimeout(t0);
-  }, [spinning, n]);
+    if (!spinning || target) return;
+    doneRef.current = false;
+    base.current += 360;
+    setDur("transform .8s linear");
+    setRot(base.current);
+  }, [spinning, target]);
   useEffect(() => {
     if (!target) return;
-    const idx = Math.max(0, syms.findIndex(([k]) => k === target));
-    // 結果の目で止める（3 つとも同じ目。順に 1.3s / 1.9s / 2.5s）
-    const stopAt = -((REP - 2) * n + idx) * H;
-    setOffsets([stopAt, stopAt, stopAt]);
+    const seg = segs.find((x) => x.cat === target) ?? segs[0];
+    if (!seg) return;
+    const width = seg.end - seg.start;
+    const inside = seg.start + width * (0.3 + 0.4 * ((Date.now() % 97) / 97)); // 区分の中のどこで止まるかは少し揺らす
+    const cur = ((base.current % 360) + 360) % 360;
+    const need = ((360 - inside) - cur + 360) % 360;
+    const next = base.current + 360 * 4 + need;
+    base.current = next;
+    setDur("transform 3.2s cubic-bezier(.12,.8,.18,1)");
+    setRot(next);
+    // 念のため: transitionend が来なくても結果を出す
+    const t = setTimeout(() => { if (!doneRef.current) { doneRef.current = true; onDone(); } }, 3600);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
-  if (idle && !target) {
-    return (
-      <div className="slot" aria-hidden="true">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="reel"><div className="strip"><div className="sym" style={{ color: "var(--ai-300)" }}>？</div></div></div>
-        ))}
-      </div>
-    );
-  }
-  const durations = [1.3, 1.9, 2.5];
+  }, [target, segs]);
+  const onEnd = () => {
+    if (target) {
+      if (!doneRef.current) { doneRef.current = true; onDone(); }
+    } else if (spinning) {
+      base.current += 360;
+      setRot(base.current);
+    }
+  };
+  const R = 120;
+  const toXY = (deg: number, r: number) => [R + r * Math.sin((deg * Math.PI) / 180), R - r * Math.cos((deg * Math.PI) / 180)];
+  const colors = ["#1b2a44", "#2f446a", "#56698f", "#3b5078"];
   return (
-    <div className="slot" role="img" aria-label={target ? "抽選の結果" : "抽選中"}>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="reel">
-          <div
-            className="strip"
-            style={{ transform: `translateY(${offsets[i]}px)`, transition: anim ? `transform ${durations[i]}s cubic-bezier(.15,.85,.25,1)` : "none" }}
-            onTransitionEnd={() => {
-              if (!target) return;
-              doneRef.current += 1;
-              if (doneRef.current === 3) onDone();
-            }}
-          >
-            {Array.from({ length: REP }).flatMap((_, r) => syms.map(([k, label]) => <div key={`${r}-${k}`} className={`sym ${k === "miss" ? "miss" : ""}`}>{label}</div>))}
+    <div className="roulette" aria-label={target ? "抽選の結果" : spinning ? "抽選中" : "ルーレット"}>
+      <div className="pointer" aria-hidden="true" />
+      <svg
+        viewBox={`0 0 ${R * 2} ${R * 2}`}
+        className="wheel"
+        style={{ transform: `rotate(${rot}deg)`, transition: dur }}
+        onTransitionEnd={onEnd}
+      >
+        {segs.map((sg) => {
+          const [x1, y1] = toXY(sg.start, R - 4);
+          const [x2, y2] = toXY(sg.end, R - 4);
+          const large = sg.end - sg.start > 180 ? 1 : 0;
+          const mid = (sg.start + sg.end) / 2;
+          const [tx, ty] = toXY(mid, R * 0.62);
+          const miss = sg.cat === "miss";
+          return (
+            <g key={sg.key}>
+              <path d={`M${R} ${R} L${x1} ${y1} A${R - 4} ${R - 4} 0 ${large} 1 ${x2} ${y2} Z`} fill={miss ? "#e6eaf1" : colors[sg.i % colors.length]} stroke="#fbfcfd" strokeWidth="2" />
+              <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle" fontSize={sg.end - sg.start < 28 ? 9 : 13} fontWeight="700" fill={miss ? "#56698f" : "#fbfcfd"} transform={`rotate(${mid} ${tx} ${ty})`} fontFamily="'Yu Mincho', serif">{sg.label}</text>
+            </g>
+          );
+        })}
+        <circle cx={R} cy={R} r={22} fill="#fbfcfd" stroke="#1b2a44" strokeWidth="2" />
+        <image href="/img/mascot/ui/hoshimaru_coupon.png" x={R - 18} y={R - 18} width="36" height="36" />
+      </svg>
+    </div>
+  );
+}
+
+/** 結果のポップアップ。会ったことのある、その区分の店の人がいれば、その人が渡してくれる。いなければ ほしまる。 */
+function ResultModal({ r, onClose }: { r: DrawResult; onClose: () => void }) {
+  const p = r.presenter;
+  return (
+    <div className="modal-bg" role="dialog" aria-modal="true" aria-label="抽選の結果" onClick={onClose}>
+      <div className="modal slot-result" onClick={(e) => e.stopPropagation()}>
+        {r.hit && p ? (
+          <div style={{ position: "relative", width: 120, margin: "0 auto 6px" }}>
+            <img src={p.image} alt={p.name} style={{ width: 120, height: 120, objectFit: "cover", objectPosition: "top", borderRadius: "50%", border: "3px solid var(--yamabuki)", background: "var(--ai-050)" }} />
+            <img src="/img/mascot/ui/hoshimaru_coupon.png" alt="" width={56} height={56} style={{ position: "absolute", right: -16, bottom: -6 }} />
           </div>
-        </div>
-      ))}
+        ) : (
+          <img src={`/img/mascot/ui/hoshimaru_${r.hit ? "cheer" : "sorry"}.png`} alt="" width={110} height={110} style={{ display: "block", margin: "0 auto 4px" }} />
+        )}
+        <div className="title serif" style={{ fontSize: "1.6rem" }}>{r.hit ? "あたり！" : "ざんねん…"}</div>
+        {r.hit && p ? (
+          <p style={{ margin: "6px 0 2px" }}><b>{p.name}</b><span className="muted small">（{p.role}・{p.shop_name}）</span>から<br /><b>「{r.prize.name}」</b>をもらいました</p>
+        ) : (
+          <p style={{ margin: "6px 0 2px" }}>{r.hit ? <>ほしまるから<b>「{r.prize.name}」</b></> : r.prize.name}</p>
+        )}
+        <div className="muted small">{r.hit ? "次の旅（明日以降）から、同じ区分のお店で使えます" : "ポイントがたまったら、またどうぞ"}</div>
+        {r.hit && p && <div className="muted small" style={{ marginTop: 4 }}>{p.name}とは {p.days} 日会えています。次の旅で、また。</div>}
+        <button className="btn primary block mark" style={{ marginTop: 14 }} onClick={onClose}>とじる</button>
+      </div>
     </div>
   );
 }

@@ -24,8 +24,8 @@ def test_current_event_by_md_range():
 def test_stage_thresholds():
     assert stage_of(0)["stage"] == "none"
     assert stage_of(1)["label"] == "はじめまして"
-    assert stage_of(3)["label"] == "また会えたね"
-    assert stage_of(4)["label"] == "おなじみ、おかえり"
+    assert stage_of(2)["label"] == "また会えたね"
+    assert stage_of(3)["label"] == "おなじみ、おかえり"
 
 
 def test_meet_once_per_day_and_seed(client):

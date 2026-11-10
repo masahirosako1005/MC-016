@@ -229,7 +229,7 @@ function ReceiptCapture({ shops, onDone }: { shops: PlaceCard["people"][number][
     setPhase("scan");
     setTimeout(() => {
       // デモ: 読み取り結果として店と金額の候補を出す（本番は AI-OCR の結果が入る）
-      if (demo && !amount) setAmount("1200");
+      if (demo && !amount) setAmount("3000");
       setPhase("confirm");
     }, 1900);
   };

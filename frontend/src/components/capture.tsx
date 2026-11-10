@@ -82,10 +82,11 @@ export function CameraCapture({ onCapture, onCancel, hint, mirrorDefault }: { on
         {hint && <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "rgba(27,42,68,.6)", color: "#fff", padding: "6px 10px", fontSize: ".85rem" }}>{hint}</div>}
       </div>
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { stop(); onCapture(f, URL.createObjectURL(f)); } }} />
-      <div className="row">
-        {onCancel && <button className="btn ghost grow" onClick={() => { stop(); onCancel(); }}>やめる</button>}
-        <button className="btn ghost small" onClick={() => fileRef.current?.click()}>写真を選ぶ</button>
-        <button className="btn primary grow mark" disabled={state !== "live"} onClick={shoot}>シャッター</button>
+      {/* AR フォトと同じ並び: 左に「写真を選ぶ」、まん中に大きな「撮る」、右に「やめる」 */}
+      <div className="row" style={{ alignItems: "stretch" }}>
+        <button className="btn ghost small" style={{ flex: "none" }} onClick={() => fileRef.current?.click()} aria-label="写真を選ぶ">写真を<br />選ぶ</button>
+        <button className="btn primary grow mark" style={{ minHeight: 56, fontSize: "1.1rem" }} disabled={state !== "live"} onClick={shoot}>● 撮る</button>
+        {onCancel && <button className="btn ghost small" style={{ flex: "none" }} onClick={() => { stop(); onCancel(); }}>やめる</button>}
       </div>
       {state === "live" && <div className="muted small">文字が鏡文字に見えるときは「左右反転」を押してください。保存される画像も同じ向きになります。</div>}
     </div>

@@ -5,6 +5,8 @@
 """
 from __future__ import annotations
 
+import base64
+
 import sqlite3
 import uuid
 from datetime import date, datetime
@@ -128,35 +130,57 @@ def photo_file(conn: sqlite3.Connection, uid: int, photo_id: int) -> tuple[Path,
 
 # ---- サンプル写真（SVG）。主人公の前回の旅（10/14〜16 のスタンプ）に合わせる。
 _SAMPLE = [
-    ("spot", 6, "2026-10-14", "#f1d6b8", "#8d6e63"),
-    ("spot", 3, "2026-10-14", "#2d2a3a", "#ff8a65"),
-    ("spot", 1, "2026-10-15", "#dbeaf3", "#7fb3c8"),
-    ("spot", 4, "2026-10-16", "#f6ecdd", "#7d9b76"),
+    # kind, spot_id, day（前回の旅 10/14〜16 の風景。いまの AR フォトと同じ「風景 + 場所のフレーム + 日付札」で作る）
+    ("spot", 6, "2026-10-14"),
+    ("spot", 3, "2026-10-14"),
+    ("spot", 1, "2026-10-15"),
+    ("spot", 4, "2026-10-16"),
 ]
+_SAMPLE_MARK = "hitomeguri-sample-v2"
+
+
+def _asset(rel: str) -> Path | None:
+    """画面の画像（dist か public）。テストなど dist がないときは public を見る。"""
+    for base in (settings.frontend_dist, settings.frontend_dist.parent / "public"):
+        p = base / rel
+        if p.exists():
+            return p
+    return None
+
+
+def _data_uri(p: Path | None, mime: str) -> str | None:
+    if p is None:
+        return None
+    return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode("ascii")
 
 
 def seed_sample_photos(conn: sqlite3.Connection, uid: int) -> int:
-    if conn.execute("SELECT 1 FROM photos WHERE user_id = ? AND is_sample = 1 LIMIT 1", (uid,)).fetchone():
-        return 0
+    """前回の旅のサンプル写真。古い版（人の絵を合成しただけ）が残っていれば作り直す。"""
+    old = conn.execute("SELECT id, path FROM photos WHERE user_id = ? AND is_sample = 1", (uid,)).fetchall()
+    if old:
+        first = Path(old[0]["path"])
+        if first.exists() and _SAMPLE_MARK in first.read_text(encoding="utf-8", errors="ignore"):
+            return 0
+        for r in old:
+            Path(r["path"]).unlink(missing_ok=True)
+        conn.execute("DELETE FROM photos WHERE user_id = ? AND is_sample = 1", (uid,))
     settings.photos_dir.mkdir(parents=True, exist_ok=True)
     n = 0
-    for kind, sid, day, bg, fg in _SAMPLE:
+    for kind, sid, day in _SAMPLE:
         s = master.spot(conn, sid)
         if not s:
             continue
-        title = s["name"].replace("（", " ").replace("）", "")
-        svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200">
-<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{bg}"/><stop offset="1" stop-color="{fg}"/></linearGradient></defs>
-<rect width="900" height="1200" fill="url(#g)"/>
-<circle cx="700" cy="220" r="90" fill="#fff6d5" opacity=".9"/>
-<path d="M0 900 Q225 780 450 880 T900 860 L900 1200 L0 1200Z" fill="{fg}" opacity=".8"/>
-<path d="M0 980 Q300 900 600 980 T900 960 L900 1200 L0 1200Z" fill="#3b3a36" opacity=".55"/>
-<g opacity=".95"><circle cx="450" cy="760" r="120" fill="#f4d7c2"/><path d="M330 740 Q450 600 570 740 L570 700 Q450 640 330 700Z" fill="#5d4037"/>
-<circle cx="410" cy="770" r="10" fill="#333"/><circle cx="490" cy="770" r="10" fill="#333"/><path d="M415 815 Q450 845 485 815" stroke="#a0522d" stroke-width="8" fill="none" stroke-linecap="round"/>
-<path d="M300 1200 Q450 980 600 1200Z" fill="#2f5d62"/></g>
-<rect x="40" y="40" width="820" height="110" rx="20" fill="#ffffff" opacity=".85"/>
-<text x="70" y="88" font-size="40" font-family="sans-serif" font-weight="700" fill="#27323a">{title}</text>
-<text x="70" y="130" font-size="30" font-family="sans-serif" fill="#2f5d62">{day.replace('-', '/')}・秋・AR フォト（サンプル）</text>
+        key = s["svg_key"]
+        title = s["name"].split("（")[0]
+        bg = _data_uri(_asset(f"img/places/{key}.jpg"), "image/jpeg")
+        fr = _data_uri(_asset(f"img/frames/frame_spot_{key}.png"), "image/png")
+        bg_el = f'<image href="{bg}" x="0" y="0" width="900" height="1200" preserveAspectRatio="xMidYMid slice"/>' if bg else '<rect width="900" height="1200" fill="#e6eaf1"/>'
+        fr_el = f'<image href="{fr}" x="0" y="0" width="900" height="1200"/>' if fr else ""
+        svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200" data-mark="{_SAMPLE_MARK}">
+{bg_el}
+{fr_el}
+<rect x="40" y="52" width="430" height="56" rx="8" fill="#fbfcfd" opacity=".88"/><rect x="40" y="52" width="8" height="56" fill="#1b2a44"/>
+<text x="64" y="90" font-size="24" font-family="'Yu Gothic UI', sans-serif" font-weight="700" fill="#1b2a44">{day.replace('-', '/')}・秋・{title}</text>
 </svg>"""
         path = settings.photos_dir / f"sample_{sid}_{day}.svg"
         path.write_text(svg, encoding="utf-8")

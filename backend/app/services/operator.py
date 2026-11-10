@@ -134,7 +134,24 @@ def shop_dashboard(conn: sqlite3.Connection, shop_id: int, now: datetime) -> dic
         "upcoming_events": upcoming, "upcoming_visits": visits, "messages": msgs,
         "coupons_used": {"count": coupons_used[0], "amount": coupons_used[1]},
         "reach": _reach(conn, shop_id),
+        "visitors": _visitors(conn, shop_id),
     }
+
+
+def _visitors(conn: sqlite3.Connection, shop_id: int, limit: int = 30) -> list[dict]:
+    """この店の人に会ったことのある旅行者（会えた日数・最後に会った日・関係）。本人のものを先に、あとは新しい順。"""
+    from .relationship import stage_of
+
+    rows = conn.execute(
+        "SELECT m.user_id, COUNT(DISTINCT m.met_on) AS days, MAX(m.met_on) AS last_met, MIN(m.met_on) AS first_met, MAX(m.is_dummy) AS is_dummy "
+        "FROM meetings m JOIN people p ON p.id = m.person_id WHERE p.shop_id = ? GROUP BY m.user_id ORDER BY MAX(m.is_dummy) ASC, last_met DESC LIMIT ?",
+        (shop_id, limit),
+    ).fetchall()
+    out = []
+    for r in rows:
+        st = stage_of(r["days"])
+        out.append({"user_id": r["user_id"], "days": r["days"], "last_met": r["last_met"], "first_met": r["first_met"], "stage": st["stage"], "label": st["label"], "is_dummy": bool(r["is_dummy"])})
+    return out
 
 
 def _reach(conn: sqlite3.Connection, shop_id: int) -> int:

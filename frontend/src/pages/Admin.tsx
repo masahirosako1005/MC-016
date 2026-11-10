@@ -1,7 +1,7 @@
 /** 運営の窓。事業者向け。DEMO_MODE と関係なく動く。利用者には見せない情報（補填など）もここだけ。 */
 import { useEffect, useState } from "react";
 import { get, post, put, sendForm, toast } from "../api";
-import { navigate } from "../router";
+import { navigate, useRoute } from "../router";
 import { BarChart, LineChart, Stat } from "../components/charts";
 import { AdvicePanel, scrollToId, type Advice } from "../components/advice";
 import { SubNav, useSubTab } from "../components/subnav";
@@ -58,6 +58,8 @@ export function MetricsGrid({ m, compact }: { m: Metrics; compact?: boolean }) {
 
 /** 運営の窓は 2 つの立場で使う: 地域 DMO と、お店・施設の人。 */
 export function AdminPage() {
+  const route = useRoute();
+  const [gear, setGear] = useState(false);
   const [role, setRole] = useState<"dmo" | "shop">(() => {
     try {
       return (localStorage.getItem("hitomeguri.admin.role") as "dmo" | "shop") || "dmo";
@@ -73,26 +75,37 @@ export function AdminPage() {
       /* ignore */
     }
   };
+  // present（発表用）や URL から立場を受け取る: #/admin?role=shop
+  const qrole = route.query.get("role");
+  useEffect(() => {
+    if (qrole === "dmo" || qrole === "shop") pick(qrole);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrole]);
   return (
     <div className="page wide" style={{ maxWidth: 1100 }}>
       <header className="adminhead">
         <div className="row between" style={{ gap: 8 }}>
           <div>
-            <h1 style={{ margin: 0 }}>運営の窓</h1>
-            <div className="muted small">立場をえらぶ → 下のタブで機能をえらぶ</div>
+            <h1 style={{ margin: 0 }}>運営の窓 <span className="muted" style={{ fontSize: ".95rem", fontWeight: 400 }}>— {role === "dmo" ? "地域（DMO）" : "お店・施設"}</span></h1>
+            <div className="muted small">本番ではアカウントの権限で立場が決まります（デモでは右下の ⚙ で切り替え）</div>
           </div>
           <button className="btn small ghost" onClick={() => navigate("/")}>本体へ</button>
         </div>
-        <div className="roletabs" role="tablist" aria-label="立場">
-          <button role="tab" aria-selected={role === "dmo"} className={role === "dmo" ? "on" : ""} onClick={() => pick("dmo")}>
-            <b>地域（DMO）</b><span className="small">島全体の指標・イベント・補填</span>
-          </button>
-          <button role="tab" aria-selected={role === "shop"} className={role === "shop" ? "on" : ""} onClick={() => pick("shop")}>
-            <b>お店・施設</b><span className="small">自分の店の編集・来訪・便り</span>
-          </button>
-        </div>
       </header>
       {role === "dmo" ? <DmoPanel onShop={() => pick("shop")} /> : <ShopPanel />}
+
+      {/* デモ用の設定: 立場の切り替え。フローティングで出て、選ぶと閉じる */}
+      <button className="fab" aria-label="デモ設定" title="デモ設定（立場の切り替え）" onClick={() => setGear((g) => !g)}>⚙</button>
+      {gear && (
+        <div className="floatpanel" role="dialog" aria-label="デモ設定">
+          <div className="row between"><b>デモ設定</b><button className="iconbtn" aria-label="とじる" onClick={() => setGear(false)}>×</button></div>
+          <div className="muted small" style={{ margin: "4px 0 8px" }}>本番ではアカウントの権限で決まる「立場」を、デモでは手で切り替えます。</div>
+          <div className="stack" style={{ gap: 6 }}>
+            <button className={`btn ${role === "dmo" ? "primary" : "ghost"}`} onClick={() => { pick("dmo"); setGear(false); }}>地域（DMO）として見る</button>
+            <button className={`btn ${role === "shop" ? "primary" : "ghost"}`} onClick={() => { pick("shop"); setGear(false); }}>お店・施設として見る</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

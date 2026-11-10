@@ -1,4 +1,4 @@
-"""関係 = その人に会えた別日数。1=はじめまして / 2–3=また会えたね / 4+=おなじみ、おかえり。"""
+"""関係 = その人に会えた別日数。1=はじめまして / 2=また会えたね / 3+=おなじみ、おかえり。帯の色は 銅・銀・金。"""
 from __future__ import annotations
 
 import sqlite3
@@ -9,7 +9,7 @@ def stage_of(days: int) -> dict:
         return {"days": 0, "stage": "none", "label": "まだ会っていない"}
     if days == 1:
         return {"days": days, "stage": "first", "label": "はじめまして"}
-    if days <= 3:
+    if days == 2:
         return {"days": days, "stage": "again", "label": "また会えたね"}
     return {"days": days, "stage": "regular", "label": "おなじみ、おかえり"}
 

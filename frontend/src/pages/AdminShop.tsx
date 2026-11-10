@@ -23,6 +23,7 @@ type ShopDash = {
   messages: { id: number; title: string; body: string; coupon_face_value: number | null; coupon_days: number | null; created_at: string; sent_to: number }[];
   coupons_used: { count: number; amount: number };
   reach: number;
+  visitors: { user_id: number; days: number; last_met: string; first_met: string; stage: string; label: string; is_dummy: boolean }[];
 };
 type Audience = { total: number; selected: number; stages: { first: number; again: number; regular: number }; seeds: { none: number; bud: number; flower: number } };
 
@@ -31,17 +32,13 @@ const STAGES = [
   { key: "again", label: "また会えたね", sub: "2〜3 日" },
   { key: "regular", label: "おなじみ", sub: "4 日以上" },
 ] as const;
-const SEEDS = [
-  { key: "none", label: "種なし", sub: "約束がまだ" },
-  { key: "bud", label: "種（つぼみ）", sub: "次の季節を待っている" },
-  { key: "flower", label: "花", sub: "いま約束を果たせる" },
-] as const;
 const WEEKDAYS = "月火水木金土日";
+const RANK_SHORT: Record<string, string> = { first: "はじめまして", again: "また会えたね", regular: "おなじみ" };
 const SHOP_TABS = [
   { key: "home", label: "ホーム", icon: "⌂", desc: "次の一手と、来訪のようす（地区平均との比較）" },
-  { key: "visits", label: "来訪・イベント", icon: "◷", desc: "この場所に来る予定と、DMO からのイベントのお知らせ" },
+  { key: "visits", label: "来訪・イベント", icon: "◷", desc: "会ったことのある旅行者、この場所に来る予定、DMO からのイベントのお知らせ" },
   { key: "info", label: "お店の情報", icon: "✎", desc: "紹介・おすすめ・写真・住所・電話・営業時間の編集" },
-  { key: "letter", label: "旅行者への便り", icon: "✉", desc: "来訪回数や種の状態で宛先を絞って、クーポン付きの便りを送る" },
+  { key: "letter", label: "旅行者への便り", icon: "✉", desc: "来訪回数で宛先を絞って、クーポン付きの便りを送る" },
 ];
 
 type EditState = {
@@ -60,7 +57,6 @@ export function ShopPanel() {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [msg, setMsg] = useState({ title: "", body: "", coupon: "", days: "60" });
   const [stages, setStages] = useState<string[]>([]);
-  const [seeds, setSeeds] = useState<string[]>([]);
   const [aud, setAud] = useState<Audience | null>(null);
   const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -88,9 +84,9 @@ export function ShopPanel() {
     }
   }, [shopId]);
   useEffect(() => {
-    const q = new URLSearchParams({ stages: stages.join(","), seeds: seeds.join(",") });
+    const q = new URLSearchParams({ stages: stages.join(",") });
     get<Audience>(`/admin/shops/${shopId}/audience?${q}`).then(setAud).catch(() => setAud(null));
-  }, [shopId, stages, seeds, tick]);
+  }, [shopId, stages, tick]);
 
   if (!d || !edit) return <p className="muted">読み込み中…</p>;
   const labels = d.series.map((s) => s.month);
@@ -101,7 +97,6 @@ export function ShopPanel() {
     const p = a.params as { stages?: string[]; seeds?: string[]; coupon?: number | null; title?: string; body?: string };
     if (a.kind === "message") {
       setStages(p.stages ?? []);
-      setSeeds(p.seeds ?? []);
       setMsg({ title: p.title ?? "", body: p.body ?? "", coupon: p.coupon ? String(p.coupon) : "", days: "60" });
       go("letter", "shop-message");
       toast("宛先と下書きを入れました。直して送れます");
@@ -159,6 +154,19 @@ export function ShopPanel() {
         <div id="shop-visits">
           <h2>これから来る人・イベント</h2>
           <div className="card">
+            <div className="small" style={{ fontWeight: 700 }}>会ったことのある旅行者（「会えた」を押してくれた人）</div>
+            <table className="tbl"><tbody>
+              {d.visitors.map((v) => (
+                <tr key={v.user_id}>
+                  <td style={{ whiteSpace: "nowrap" }}><span className={`badge rank-${v.stage}`}>{RANK_SHORT[v.stage] ?? v.label}</span></td>
+                  <td>旅行者 {v.user_id}{v.is_dummy ? <span className="muted small">（ダミー）</span> : ""}</td>
+                  <td className="num" style={{ whiteSpace: "nowrap" }}>{v.days} 日</td>
+                  <td className="muted small" style={{ whiteSpace: "nowrap" }}>最後 {v.last_met.slice(5).replace("-", "/")}</td>
+                </tr>
+              ))}
+              {d.visitors.length === 0 && <tr><td className="muted">まだ会った旅行者はいません</td></tr>}
+            </tbody></table>
+            <div className="muted small" style={{ marginBottom: 10 }}>「この人、前にも来てくれた」をお店の側でも思い出せるように。帯は旅行者のひとめぐり帖と同じ色です。</div>
             <div className="small" style={{ fontWeight: 700 }}>この場所に来る予定（旅行者の計画）</div>
             <table className="tbl"><tbody>
               {d.upcoming_visits.map((v) => <tr key={v.date}><td>{v.date.replace(/-/g, "/")}</td><td className="num">{v.plans} 件</td></tr>)}
@@ -219,26 +227,16 @@ export function ShopPanel() {
       <h2 id="shop-message">旅行者への便り（{d.person ? `${d.person.name}から` : "お店から"}）</h2>
       <div className="card stack">
         <div className="muted small">
-          あなたに会ったことのある旅行者は <b>{d.reach} 人</b>。来訪回数と種の状態で宛先を絞れます（何も選ばなければ全員）。クーポンを添えると、その人のクーポンにすぐ入ります（補填の対象）。
+          あなたに会ったことのある旅行者は <b>{d.reach} 人</b>。来訪回数（関係）で宛先を絞れます。クーポンを添えると、その人のクーポンにすぐ入ります（補填の対象）。
           これまでに使われたクーポン: {d.coupons_used.count} 枚・{d.coupons_used.amount.toLocaleString()} 円。
         </div>
-        <div className="grid2" style={{ alignItems: "start" }}>
+        <div>
           <div>
-            <div className="small" style={{ fontWeight: 700 }}>来訪回数（関係）で選ぶ</div>
+            <div className="small" style={{ fontWeight: 700 }}>来訪回数（関係）で選ぶ — 1 回=はじめまして（銅）／2 回=また会えたね（銀）／3 回以上=おなじみ（金）</div>
             <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
               {STAGES.map((s) => (
                 <button key={s.key} className={`chip ${stages.includes(s.key) ? "on" : ""}`} onClick={() => toggle(stages, setStages, s.key)} title={s.sub}>
                   {s.label} {aud ? aud.stages[s.key] : ""}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="small" style={{ fontWeight: 700 }}>種の状態で選ぶ</div>
-            <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
-              {SEEDS.map((s) => (
-                <button key={s.key} className={`chip ${seeds.includes(s.key) ? "on" : ""}`} onClick={() => toggle(seeds, setSeeds, s.key)} title={s.sub}>
-                  {s.key === "flower" ? "✿ " : s.key === "bud" ? "● " : ""}{s.label} {aud ? aud.seeds[s.key] : ""}
                 </button>
               ))}
             </div>
@@ -248,9 +246,9 @@ export function ShopPanel() {
           <img src="/img/mascot/ui/hoshimaru_letter.png" alt="" width={40} height={40} />
           <div className="grow">
             この条件で届く人: <b style={{ fontSize: "1.2rem" }}>{aud ? aud.selected : "…"} 人</b>
-            <span className="muted small">（関係と種は「どちらも満たす人」。数字はいまの人数の目安です）</span>
+            <span className="muted small">（何も選ばなければ全員。数字はいまの人数の目安です）</span>
           </div>
-          {(stages.length > 0 || seeds.length > 0) && <button className="btn small ghost" onClick={() => { setStages([]); setSeeds([]); }}>全員に</button>}
+          {stages.length > 0 && <button className="btn small ghost" onClick={() => setStages([])}>全員に</button>}
         </div>
         <div className="grid2">
           <label className="field" style={{ margin: 0 }}><span>件名</span><input type="text" value={msg.title} maxLength={60} onChange={(e) => setMsg({ ...msg, title: e.target.value })} placeholder="例: 雪見ぜんざい、はじめました" /></label>
@@ -265,7 +263,7 @@ export function ShopPanel() {
             const r = await post<{ sent_to: number }>(`/admin/shops/${shopId}/messages`, {
               title: msg.title, body: msg.body,
               coupon_face_value: msg.coupon ? Number(msg.coupon) : null, coupon_days: msg.coupon ? Number(msg.days) : null,
-              stages: stages.length ? stages : null, seeds: seeds.length ? seeds : null,
+              stages: stages.length ? stages : null,
             });
             toast(`${r.sent_to} 人に届けました`);
             setMsg({ title: "", body: "", coupon: "", days: "60" });

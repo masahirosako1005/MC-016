@@ -60,7 +60,7 @@ def test_draw_transaction_and_coupon_rules(client):
     r = client.post("/api/draws")
     assert r.status_code == 200
     j = r.json()
-    assert j["hit"] and j["prize"]["id"] == 2 and j["balance"] == 90
+    assert j["hit"] and j["prize"]["id"] == 2 and j["balance"] == 0
     assert conn.execute("SELECT stock FROM prizes WHERE id = 2").fetchone()[0] == before - 1
     cid = j["coupon"]["id"]
     assert j["coupon"]["valid_from"] == "2026-10-18" and j["coupon"]["valid_until"] == "2027-10-17"

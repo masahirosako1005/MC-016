@@ -75,11 +75,24 @@ def draw(conn: sqlite3.Connection, uid: int, now: datetime, rng: random.Random |
         )
         coupon = {"id": c.lastrowid, "category": chosen["category"], "name": chosen["name"], "face_value": chosen["face_value"],
                   "valid_from": (won + timedelta(days=1)).isoformat(), "valid_until": (won + timedelta(days=settings.coupon_valid_days)).isoformat()}
+    # 渡してくれる人: 会ったことのある人のうち、当たった区分の店の人（会えた日数が多い順）。いなければ ほしまる
+    presenter = None
+    if chosen["category"] != "miss":
+        prow = conn.execute(
+            "SELECT p.id, p.name, p.role, p.svg_key, s.name AS shop_name, COUNT(DISTINCT m.met_on) AS days "
+            "FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops s ON s.id = p.shop_id "
+            "WHERE m.user_id = ? AND s.category = ? GROUP BY p.id ORDER BY days DESC, p.id LIMIT 1",
+            (uid, chosen["category"]),
+        ).fetchone()
+        if prow:
+            presenter = {"id": prow["id"], "name": prow["name"], "role": prow["role"] or "店主", "shop_name": prow["shop_name"],
+                         "image": f"/img/people/{prow['svg_key']}.png", "days": prow["days"]}
     return {
         "draw_id": cur.lastrowid,
         "prize": {"id": chosen["id"], "category": chosen["category"], "name": chosen["name"], "face_value": chosen["face_value"]},
         "hit": chosen["category"] != "miss",
         "coupon": coupon,
+        "presenter": presenter,
         "balance": balance(conn, uid),
     }
 
