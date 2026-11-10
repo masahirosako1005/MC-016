@@ -51,6 +51,17 @@ def draw(conn: sqlite3.Connection, uid: int, now: datetime, rng: random.Random |
     chosen = None
     if fixed is not None:
         chosen = next((p for p in table if p["id"] == fixed), None)
+    if chosen is None and settings.demo_mode:
+        # デモのときだけ: 最初の 1 回は「会えた人のいる区分」のクーポンを当てる（その人が渡す演出を必ず見せるため）。
+        # 2 回目からは通常の抽選。DEMO_MODE=0（本番）ではこの分岐に入らない。
+        if conn.execute("SELECT 1 FROM draws WHERE user_id = ? LIMIT 1", (uid,)).fetchone() is None:
+            met_cats = [r["category"] for r in conn.execute(
+                "SELECT s.category, COUNT(DISTINCT m.met_on) AS days FROM meetings m JOIN people p ON p.id = m.person_id JOIN shops s ON s.id = p.shop_id "
+                "WHERE m.user_id = ? GROUP BY s.category ORDER BY days DESC, MIN(p.id)", (uid,))]
+            for cat in met_cats:
+                chosen = next((p for p in candidates if p["category"] == cat), None)
+                if chosen is not None:
+                    break
     if chosen is None:
         r = rng or random.SystemRandom()
         chosen = r.choices(candidates, weights=[p["effective_weight"] for p in candidates])[0]

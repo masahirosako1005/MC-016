@@ -177,6 +177,7 @@ export function GiftsPage() {
               </div>
             ),
           )}
+          <button className="btn ghost small block" style={{ marginTop: 16 }} onClick={() => navigate("/survey")}>アンケートを答え直す</button>
         </>
       )}
     </div>

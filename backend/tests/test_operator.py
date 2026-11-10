@@ -40,12 +40,12 @@ def test_shop_message_with_coupon_reaches_traveler(client):
     r = client.post("/api/admin/shops/8/messages", json={"title": "雪見ぜんざい、はじめました", "body": "また来てね", "coupon_face_value": 300, "coupon_days": 60})
     assert r.status_code == 200 and r.json()["sent_to"] == 0
     assert client.get("/api/messages").json()["messages"] == []
-    # 鈴さんに会う → 便りが届き、クーポンも付く
+    # 鈴木さんに会う → 便りが届き、クーポンも付く
     client.post("/api/meetings", json={"person_id": 6})
     r = client.post("/api/admin/shops/8/messages", json={"title": "冬のお知らせ", "body": "雪見ぜんざいを用意しています", "coupon_face_value": 300, "coupon_days": 60})
     assert r.json()["sent_to"] == 1
     msgs = client.get("/api/messages").json()["messages"]
-    assert len(msgs) == 2 and msgs[0]["title"] == "冬のお知らせ" and msgs[0]["read"] is False and msgs[0]["person_name"] == "鈴さん"
+    assert len(msgs) == 2 and msgs[0]["title"] == "冬のお知らせ" and msgs[0]["read"] is False and msgs[0]["person_name"] == "鈴木さん"
     client.post(f"/api/messages/{msgs[0]['id']}/read")
     assert client.get("/api/messages").json()["messages"][0]["read"] is True
     w = client.get("/api/wallet").json()
@@ -58,7 +58,7 @@ def test_shop_message_with_coupon_reaches_traveler(client):
 def test_audience_targeting_and_advice(client):
     conn = client.app.state.conn
     clock.set_demo_clock(conn, datetime(2026, 10, 24, 11, 0))
-    client.post("/api/meetings", json={"person_id": 6})  # 鈴さん → はじめまして・冬の種（つぼみ）
+    client.post("/api/meetings", json={"person_id": 6})  # 鈴木さん → はじめまして・冬の種（つぼみ）
     a = client.get("/api/admin/shops/8/audience").json()
     assert a["total"] == 1 and a["stages"]["first"] == 1 and a["seeds"]["bud"] == 1
     assert client.get("/api/admin/shops/8/audience", params={"stages": "regular"}).json()["selected"] == 0

@@ -40,7 +40,7 @@ def test_meet_once_per_day_and_seed(client):
     client.post("/api/plan/items", json={"kind": "spot", "target_id": 7})
     body = client.get("/api/today").json()
     assert body["places"][0]["id"] == 7 and body["places"][0]["in_plan"] is True
-    assert body["todo"]["kind"] == "meet" and "鈴さん" in body["todo"]["text"]
+    assert body["todo"]["kind"] == "meet" and "鈴木さん" in body["todo"]["text"]
 
     r = client.post("/api/meetings", json={"person_id": 2})
     assert r.status_code == 200
@@ -62,4 +62,4 @@ def test_meet_once_per_day_and_seed(client):
     body = client.get("/api/today").json()
     lake = next(p for p in body["places"] if p["id"] == 4)
     assert lake["met_today"] is True and lake["people"][0]["met_today"] is True
-    assert body["met_today"] == [{"id": 2, "name": "瑠衣さん"}]
+    assert body["met_today"] == [{"id": 2, "name": "水野さん"}]

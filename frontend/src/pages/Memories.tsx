@@ -63,10 +63,10 @@ function LetterList({ box }: { box: "memory" | "inbox" }) {
   }, []);
   if (!idx) return <Loading />;
   const unread = msgs.filter((m) => !m.read).length;
-  type Item = { kind: "memory" | "reminder" | "message"; date: string; node: JSX.Element };
+  type Item = { kind: "memory" | "reminder" | "message"; date: string; key?: string; node: JSX.Element };
   const items: Item[] = [
     ...msgs.map((m) => ({
-      kind: "message" as const, date: m.date,
+      kind: "message" as const, date: m.date, key: `m${m.id}`,
       node: (
         <button key={`m${m.id}`} className="card letter" style={{ textAlign: "left", cursor: "pointer" }} onClick={() => navigate(`/memories/message/${m.id}`)}>
           <div className="row">
@@ -110,7 +110,8 @@ function LetterList({ box }: { box: "memory" | "inbox" }) {
       ),
     })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
-  const shown = items.filter((i) => (box === "inbox" ? i.kind === "message" : i.kind !== "message"));
+  // お店からの便りは、届いた順（新しいものが上）。API の並びをそのまま使い、日付だけで並べ直さない
+  const shown = box === "inbox" ? msgs.map((m) => items.find((i) => i.kind === "message" && i.key === `m${m.id}`)!).filter(Boolean) : items.filter((i) => i.kind !== "message");
   return (
     <div className="stack">
       {/* 思い出便は 2 つの箱: その日の思い出（コルクボード・30 日後の便り）と、お店からの便り（お知らせの一覧） */}
@@ -142,7 +143,6 @@ function LetterList({ box }: { box: "memory" | "inbox" }) {
         </>
       )}
       {shown.map((i) => i.node)}
-      {box === "inbox" && survey?.answered && <button className="btn ghost small block" onClick={() => navigate("/survey")}>アンケートを答え直す</button>}
     </div>
   );
 }

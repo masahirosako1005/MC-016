@@ -24,9 +24,9 @@ def test_letter_timing_redelivery_and_wishes(client):
     r = client.get("/api/letters/2026-10-24")
     assert r.status_code == 200
     L = r.json()
-    assert L["people"][0]["name"] == "瑠衣さん" and L["redelivered"] is False
+    assert L["people"][0]["name"] == "水野さん" and L["redelivered"] is False
     assert len(L["suggestions"]) == 3 and [s["kind"] for s in L["suggestions"]] == ["season", "event", "shop"]
-    assert L["suggestions"][0]["title"].startswith("冬に、瑠衣さん")
+    assert L["suggestions"][0]["title"].startswith("冬に、水野さん")
     assert client.post("/api/letters/2026-10-24/open").status_code == 200
     assert conn.execute("SELECT COUNT(*) FROM letter_opens WHERE user_id = 8800001").fetchone()[0] == 1
 
@@ -58,7 +58,7 @@ def test_book_view(client):
     clock.set_demo_clock(conn, datetime(2026, 10, 24, 10, 0))
     client.post("/api/meetings", json={"person_id": 3})
     b = client.get("/api/book").json()
-    assert b["people"][0]["name"] == "月乃さん" and b["people"][0]["relationship"]["label"] == "はじめまして"
+    assert b["people"][0]["name"] == "望月さん" and b["people"][0]["relationship"]["label"] == "はじめまして"
     assert b["people"][0]["seed"]["season_label"] == "冬"
     assert len(b["album"]) == 4
     assert b["trips"][0]["current"] is True and b["trips"][1]["start"] == "2026-10-14" and b["trips"][1]["days"] == 3
@@ -77,7 +77,7 @@ def test_reminder_after_30_days_and_ics(client):
     clock.set_demo_clock(conn, datetime(2026, 11, 23, 10, 0))
     idx = client.get("/api/letters").json()
     r = next(x for x in idx["reminders"] if x["trip_start"] == "2026-10-24")
-    assert r["date"] == "2026-11-23" and r["people"] == ["鈴さん"] and len(r["wishes"]) == 1 and r["wishes"][0]["image"]
+    assert r["date"] == "2026-11-23" and r["people"] == ["鈴木さん"] and len(r["wishes"]) == 1 and r["wishes"][0]["image"]
     assert r["next_season_label"] == "冬" and r["weeks_to_next_season"] == 1
     # ics
     assert client.get("/api/plan/ics").status_code == 404

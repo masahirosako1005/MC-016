@@ -95,3 +95,36 @@ def test_out_of_stock_weight_goes_to_miss(conn):
     cands = [p for p in table if p["effective_weight"] > 0]
     for _ in range(200):
         assert rng.choices(cands, weights=[p["effective_weight"] for p in cands])[0]["id"] != 2
+
+
+def test_demo_first_draw_gives_coupon_from_someone_you_met(client):
+    """デモのときだけ、最初の 1 回は「会えた人のいる区分」のクーポンが当たり、その人が渡す。本番（DEMO_MODE=0）は通常の抽選。"""
+    import random
+
+    from app.config import settings
+    from app.services import lottery
+
+    conn = client.app.state.conn
+    client.post("/api/meetings", json={"person_id": 5})  # ガラス工房の職人（体験）
+    for i in range(3):
+        client.post("/api/receipts", data={"shop_id": 3, "amount": 1000 + i}, files={"image": ("r.png", tiny_png(40 + i), "image/png")})
+    assert client.get("/api/wallet").json()["balance"] >= 300
+    # 本番相当: 分岐に入らず、乱数どおりの抽選になる
+    old = settings.demo_mode
+    try:
+        object.__setattr__(settings, "demo_mode", False)
+        table = [p for p in lottery.prize_table(conn) if p["effective_weight"] > 0]
+        expect = random.Random(7).choices(table, weights=[p["effective_weight"] for p in table])[0]
+        conn.execute("BEGIN")
+        got = lottery.draw(conn, settings.hero_user_id, __import__("datetime").datetime(2026, 10, 17, 12, 0), rng=random.Random(7))
+        conn.execute("ROLLBACK")
+        assert got["prize"]["id"] == expect["id"]
+    finally:
+        object.__setattr__(settings, "demo_mode", old)
+    # デモ: 1 回目は会えた人の区分（体験）で、その人が渡す
+    j = client.post("/api/draws").json()
+    assert j["hit"] and j["prize"]["category"] == "体験" and j["presenter"]["id"] == 5
+    # 2 回目からは通常の抽選（固定されない）。固定当たりの指定があれば、そちらが優先
+    conn.execute("INSERT INTO settings(key, value) VALUES('demo_fixed_prize', '5')")
+    j2 = client.post("/api/draws").json()
+    assert j2["prize"]["id"] == 5 and j2["hit"] is False

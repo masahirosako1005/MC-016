@@ -18,7 +18,7 @@ def test_frame_lock_and_save(client):
     r = client.post("/api/photos", data={"kind": "person", "target_id": 1}, files={"image": ("a.png", tiny_png(5), "image/png")})
     assert r.status_code == 200, r.text
     d = r.json()
-    assert d["kind"] == "person" and d["title"] == "灯里さん" and d["promise"]["title"] == "星凪おでん"
+    assert d["kind"] == "person" and d["title"] == "明石さん" and d["promise"]["title"] == "星凪おでん"
     assert client.get(d["url"]).headers["content-type"].startswith("image/png")
     assert client.get(f"/api/photos/{d['id']}/print").status_code == 200
 
